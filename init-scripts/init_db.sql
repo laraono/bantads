@@ -1,0 +1,5 @@
+CREATE DATABASE client_db;
+CREATE DATABASE manager_db;
+CREATE DATABASE auth_db;
+CREATE DATABASE request_db;
+CREATE DATABASE command_db;
