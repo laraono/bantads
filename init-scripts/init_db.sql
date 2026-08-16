@@ -71,3 +71,4 @@ CREATE TABLE request (
     reason_rejection    VARCHAR(255) NULL,
     approved_at         TIMESTAMP NULL
 )
+
