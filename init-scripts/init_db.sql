@@ -4,7 +4,10 @@ CREATE DATABASE auth_db;
 CREATE DATABASE request_db;
 CREATE DATABASE command_db;
 
-CREATE TYPE event_type AS ENUM (“criado”, “saque”, “deposito”, “transferencia_origem”, “transferencia_destino”, “gerente_alterado”);
+
+\c command_db;
+
+CREATE TYPE event_type AS ENUM ('criado', 'saque', 'deposito', 'transferencia_origem', 'transferencia_destino', 'gerente_alterado');
 
 CREATE TABLE event (
     event_id       		UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -15,7 +18,10 @@ CREATE TABLE event (
     created_at     		TIMESTAMP NOT NULL DEFAULT now(),
 );
 
-CREATE TYPE transaction_type AS ENUM ("deposito", "saque", "transferencia");
+
+\c request_db;
+
+CREATE TYPE transaction_type AS ENUM ('deposito', 'saque', 'transferencia');
 
 CREATE TABLE account_data (
 	client_cpf			VARCHAR(11) NOT NULL,
@@ -39,6 +45,8 @@ CREATE TABLE account_history (
 );
 
 
+\c manager_db;
+
 CREATE TABLE manager (
     manager_id      SERIAL PRIMARY KEY,
     name            VARCHAR(50) NOT NULL,
@@ -46,6 +54,9 @@ CREATE TABLE manager (
     phone           VARCHAR(20) NOT NULL,
     is_active       BOOLEAN NOT NOT NULL
 );
+
+
+\c client_db;
 
 CREATE TABLE client (
     client_id           SERIAL PRIMARY KEY,
@@ -62,7 +73,7 @@ CREATE TABLE client (
     additional_info     VARCHAR(30) NULL,
 );
 
-CREATE TYPE request_status AS ENUM("pendente", "aprovado", "nao_aprovado");
+CREATE TYPE request_status AS ENUM('pendente', 'aprovado', 'nao_aprovado');
 
 CREATE TABLE request (
     request_id          SERIAL PRIMARY KEY,
