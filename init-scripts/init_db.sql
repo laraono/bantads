@@ -25,7 +25,7 @@ CREATE TYPE transaction_type AS ENUM ('deposito', 'saque', 'transferencia');
 
 CREATE TABLE account_data (
 	client_cpf			VARCHAR(11) NOT NULL,
-	account_number		BIGINT PRIMARY KEY NOT NULL,
+	account_number		VARCHAR(4) PRIMARY KEY NOT NULL,
 	created_at			TIMESTAMP NOT NULL,
 	manager_cpf			VARCHAR(11) NOT NULL,
 	balance				NUMERIC(19, 4),
@@ -34,7 +34,7 @@ CREATE TABLE account_data (
 
 CREATE TABLE account_history (
 	history_id			        SERIAL PRIMARY KEY,
-	account_number			    BIGINT NOT NULL,
+	account_number			    VARCHAR(4) NOT NULL,
 	type				        transaction_type NOT NULL,
 	origin_client_cpf		    VARCHAR(11) NOT NULL,
 	origin_client_name		    VARCHAR(50) NOT NULL,
