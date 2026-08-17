@@ -11,7 +11,7 @@ CREATE TYPE event_type AS ENUM ('criado', 'saque', 'deposito', 'transferencia_or
 
 CREATE TABLE event (
     event_id       		UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    object_id      		BIGINT NOT NULL,
+    object_id      		VARCHAR(4) NOT NULL,
     type				event_type NOT NULL,
     payload           	JSON NOT NULL,
     version        		BIGINT NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE account_data (
 	account_number		VARCHAR(4) PRIMARY KEY NOT NULL,
 	created_at			TIMESTAMP NOT NULL,
 	manager_cpf			VARCHAR(11) NOT NULL,
-	balance				NUMERIC(19, 4),
+	balance				NUMERIC(19, 4) NOT NULL,
 	deleted_at 			TIMESTAMP NULL
 );
 
