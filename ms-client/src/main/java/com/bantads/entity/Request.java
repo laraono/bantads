@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 public class Request {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "request_id")
     private Long requestId;
 
     @ManyToOne

@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 public class Client {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "manager_id")
     private Long managerId;
 
     @Column(nullable = false, length = 50)
