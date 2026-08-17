@@ -1,0 +1,195 @@
+version: '3.8'
+
+networks:
+  backend-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mongo_data:
+
+services:
+
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    networks:
+      - backend-net
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: main_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d main_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    networks:
+      - backend-net
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-app:
+    image: redis:7-alpine
+    container_name: redis-app
+    networks:
+      - backend-net
+    ports:
+      - "6379:6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    networks:
+      - backend-net
+    ports:
+      - "5672:5672"     
+      - "15672:15672"   
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  ms-client:
+    container_name: ms-client
+    build:
+      context: ./ms-client
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/client_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
+  ms-auth:
+    container_name: ms-auth
+    build:
+      context: ./ms-auth
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis-app
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/account_mongo?authSource=admin
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      redis-app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
+  ms-account:
+    container_name: ms-account
+    build:
+      context: ./ms-account
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_COMMAND_URL: jdbc:postgresql://postgres-db:5432/command_db
+      SPRING_DATASOURCE_REQUEST_URL: jdbc:postgresql://postgres-db:5432/request_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis-app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
+  ms-manager:
+    container_name: ms-manager
+    build:
+      context: ./ms-manager
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/manager_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
+  front:
+    container_name: front
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "80:80"
+    depends_on:
+      - ms-auth
+      - ms-client
+      - ms-account
+      - ms-manager
+    restart: always
