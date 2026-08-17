@@ -1,6 +1,7 @@
 package com.bantads.entity.read;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 public class AccountHistory {
     private Long historyId;
