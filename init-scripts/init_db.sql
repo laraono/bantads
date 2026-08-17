@@ -50,7 +50,7 @@ CREATE TABLE account_history (
 CREATE TABLE manager (
     manager_id      SERIAL PRIMARY KEY,
     name            VARCHAR(50) NOT NULL,
-    cpf             VARCHAR(11) NOT NULL,
+    cpf             VARCHAR(11) NOT NULL UNIQUE,
     phone           VARCHAR(20) NOT NULL,
     is_active       BOOLEAN NOT NOT NULL
 );
@@ -62,7 +62,7 @@ CREATE TABLE client (
     client_id           SERIAL PRIMARY KEY,
     name                VARCHAR(50) NOT NULL,
     email               VARCHAR(100) NOT NULL, 
-    cpf                 VARCHAR(11) NOT NULL,
+    cpf                 VARCHAR(11) NOT NULL UNIQUE,
     phone               VARCHAR(20) NOT NULL,
     salary              NUMERIC(19, 4) NOT NULL,
     cep                 VARCHAR(9) NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE request (
     request_id          SERIAL PRIMARY KEY,
     client_id           INTEGER NOT NULL,
     status              request_status NOT NULL,
-    reason_rejection    VARCHAR(255) NULL,
+    rejection_reason    VARCHAR(255) NULL,
     approved_at         TIMESTAMP NULL
 )
 
