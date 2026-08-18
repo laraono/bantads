@@ -82,31 +82,6 @@ services:
       timeout: 5s
       retries: 5
 
-  ms-auth:
-    container_name: ms-auth
-    build:
-      context: ./ms-auth
-      dockerfile: Dockerfile
-    networks:
-      - backend-net
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/auth_db
-      SPRING_DATASOURCE_USERNAME: user
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_DATA_REDIS_HOST: redis-app
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-    depends_on:
-      postgres-db:
-        condition: service_healthy
-      redis-app:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    restart: always
 
   ms-client:
     container_name: ms-client
@@ -130,6 +105,30 @@ services:
         condition: service_healthy
     restart: always
 
+  ms-auth:
+    container_name: ms-auth
+    build:
+      context: ./ms-auth
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis-app
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/account_mongo?authSource=admin
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      redis-app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
   ms-account:
     container_name: ms-account
     build:
@@ -144,9 +143,6 @@ services:
       SPRING_DATASOURCE_REQUEST_URL: jdbc:postgresql://postgres-db:5432/request_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
-      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/account_mongo?authSource=admin
-      SPRING_DATA_REDIS_HOST: redis-app
-      SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
     depends_on:
