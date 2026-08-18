@@ -26,7 +26,7 @@ async function handleSubmit() {
   loading.value = true
   try {
     const { token } = await login({ email: email.value, password: password.value, role: role.value })
-    setToken(token)
+    setToken(token, remember.value)
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     router.push(redirect)
   } catch {
