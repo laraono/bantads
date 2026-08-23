@@ -32,4 +32,6 @@ public class ClientDTO {
     private BigDecimal salary;
     
     private AddressDTO address;
+
+    private Long requestId;s
 }

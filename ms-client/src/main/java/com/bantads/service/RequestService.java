@@ -17,9 +17,8 @@ public class RequestService {
     private RequestRepository requestRepository;
 
 
-    public void createRequest(Client client) {
+    public void createRequest() {
         Request request = Request.builder()
-            .client(client)
             .status(RequestStatus.PENDING.getLabel())
             .build();
         requestRepository.save(request);
@@ -45,5 +44,13 @@ public class RequestService {
 
     public Request getRequestByClient(Client client) {
         return requestRepository.findByClient(client);
+    }
+
+    public void associateRequestToClient(Long id, Client client) {
+        Request request = requestRepository.getReferenceById(id);
+
+        request.setClient(client);
+
+        requestRepository.save(request);
     }
 }

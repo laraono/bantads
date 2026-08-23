@@ -60,7 +60,7 @@ public class ClientService {
 
         Client newClient = clientRepository.save(clientEntity);
 
-        requestService.createRequest(newClient);
+        requestService.associateRequestToClient(clientDTO.getRequestId(), newClient);
 
         return newClient;
     }
