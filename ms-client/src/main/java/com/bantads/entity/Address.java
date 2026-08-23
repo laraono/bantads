@@ -25,7 +25,7 @@ import lombok.Setter;
  * @author lenovo
  */
 @Entity
-@Table(name = "endereco")
+@Table(name = "address", , schema = "client_db")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -56,7 +56,7 @@ public class Address {
     @JoinColumn(name = "state_id")
     private State state;
     
-    @OneToMany(mappedBy = "endereco")
+    @OneToMany(mappedBy = "address")
     private List<Client> clients;
     
 }
