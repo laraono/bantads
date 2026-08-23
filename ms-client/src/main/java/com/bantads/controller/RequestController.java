@@ -12,12 +12,17 @@ public class RequestController {
     @Autowired
     private RequestService requestService;
 
-    @PostMapping("/{id}/")
+    @PostMapping()
+    Request createRequest() {
+        return requestService.createRequest();
+    }
+
+    @PostMapping("/{id}/approve")
     void approveRequest(@PathVariable Long id) {
         requestService.approveRequest(id);
     }
 
-    @PostMapping("/{id}")
+    @PostMapping("/{id}/cancel")
     void getClient(@PathVariable Long id, @RequestBody String rejectionReason) {
         requestService.rejectRequest(id, rejectionReason);
     }

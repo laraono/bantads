@@ -17,11 +17,12 @@ public class RequestService {
     private RequestRepository requestRepository;
 
 
-    public void createRequest() {
+    public Request createRequest() {
         Request request = Request.builder()
             .status(RequestStatus.PENDING.getLabel())
             .build();
-        requestRepository.save(request);
+        
+        return requestRepository.save(request);
     }
 
     public void approveRequest(Long id) {
