@@ -20,7 +20,8 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: main_db
+      POSTGRES_MULTIPLE_DATABASES: client_db,manager_db,auth_db,request_db,command_db
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
