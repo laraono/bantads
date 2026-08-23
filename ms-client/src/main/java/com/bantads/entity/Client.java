@@ -1,12 +1,7 @@
 package com.bantads.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -43,24 +38,10 @@ public class Client {
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal salary;
 
-    @Column(nullable = false, length = 9)
-    private String cep;
-
-    @Column(nullable = false, length = 30)
-    private String city;
-
-    @Column(nullable = false, length = 2)
-    private String state;
-
-    @Column(nullable = false, length = 30)
-    private String street;
-
-    @Column(nullable = false)
-    private Integer number;
-
-    @Column(nullable = true, length = 30, name = "additional_info")
-    private String additionalInfo;
-
-    @OneToMany(mappedBy = "client")
-    private List<Request> requests;
+    @OneToOne(mappedBy = "cliente")
+    private Request request;
+    
+    @ManyToOne
+    @JoinColumn(name = "endereco_id")
+    private Address address;
 }
