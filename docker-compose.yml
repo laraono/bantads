@@ -87,7 +87,7 @@ services:
   ms-client:
     container_name: ms-client
     build:
-      context: ./ms-client
+      context: ./backend/ms-client
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -109,7 +109,7 @@ services:
   ms-auth:
     container_name: ms-auth
     build:
-      context: ./ms-auth
+      context: ./backend/ms-auth
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -133,7 +133,7 @@ services:
   ms-account:
     container_name: ms-account
     build:
-      context: ./ms-account
+      context: ./backend/ms-account
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -160,7 +160,7 @@ services:
   ms-manager:
     container_name: ms-manager
     build:
-      context: ./ms-manager
+      context: ./backend/ms-manager
       dockerfile: Dockerfile
     networks:
       - backend-net
