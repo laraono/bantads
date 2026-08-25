@@ -83,7 +83,6 @@ services:
       timeout: 5s
       retries: 5
 
-
   ms-client:
     container_name: ms-client
     build:
@@ -179,6 +178,67 @@ services:
         condition: service_healthy
     restart: always
 
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    environment: 
+      SPRING_DATA_REDIS_HOST: redis-app
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3000:3000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis-app:
+        condition: service_healthy
+      ms-auth:
+        condition: service_started
+      ms-client:
+        condition: service_started
+      ms-account:
+        condition: service_started
+      ms-manager:
+        condition: service_started
+      api-composition:
+        condition: service_started
+    restart: always
+
+  api-composition:
+    container_name: api-composition
+    build:
+      context: ./api-composition
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3001:3001"
+    depends_on:
+      ms-auth:
+        condition: service_started
+      ms-client:
+        condition: service_started
+      ms-account:
+        condition: service_started
+      ms-manager:
+        condition: service_started
+    restart: always
+
   front:
     container_name: front
     build:
@@ -189,8 +249,5 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - ms-auth
-      - ms-client
-      - ms-account
-      - ms-manager
+      - api-gateway
     restart: always
