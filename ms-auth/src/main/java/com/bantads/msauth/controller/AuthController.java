@@ -22,7 +22,7 @@ public class AuthController {
     @GetMapping("/ping")
     public String ping() 
     {
-        return "aaaaaaaaaa";
+        return "mensagem teste de funcionamento";
     }
 
     @PostMapping("/login")
