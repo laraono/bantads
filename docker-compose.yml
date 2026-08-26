@@ -20,7 +20,8 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: main_db
+      POSTGRES_MULTIPLE_DATABASES: client_db,manager_db,auth_db,request_db,command_db
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -82,11 +83,10 @@ services:
       timeout: 5s
       retries: 5
 
-
   ms-client:
     container_name: ms-client
     build:
-      context: ./ms-client
+      context: ./backend/ms-client
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -108,7 +108,7 @@ services:
   ms-auth:
     container_name: ms-auth
     build:
-      context: ./ms-auth
+      context: ./backend/ms-auth
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -132,7 +132,7 @@ services:
   ms-account:
     container_name: ms-account
     build:
-      context: ./ms-account
+      context: ./backend/ms-account
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -159,7 +159,7 @@ services:
   ms-manager:
     container_name: ms-manager
     build:
-      context: ./ms-manager
+      context: ./backend/ms-manager
       dockerfile: Dockerfile
     networks:
       - backend-net
@@ -178,55 +178,66 @@ services:
         condition: service_healthy
     restart: always
 
-  orchestration:
-    container_name: orchestration
+  api-gateway:
+    container_name: api-gateway
     build:
-      context: ./orchestration
+      context: ./api-gateway
       dockerfile: Dockerfile
     networks:
       - backend-net
-    ports:
-      - "8085:8085"
-    mem_limit: 512m
-    environment:
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
+    environment: 
       SPRING_DATA_REDIS_HOST: redis-app
       SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "3000:3000"
     depends_on:
       rabbitmq:
         condition: service_healthy
       redis-app:
         condition: service_healthy
+      ms-auth:
+        condition: service_started
+      ms-client:
+        condition: service_started
+      ms-account:
+        condition: service_started
+      ms-manager:
+        condition: service_started
+      api-composition:
+        condition: service_started
     restart: always
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8085/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  ms-email:
-    container_name: ms-email
+  api-composition:
+    container_name: api-composition
     build:
-      context: ./ms-email
+      context: ./api-composition
       dockerfile: Dockerfile
     networks:
       - backend-net
-    ports:
-      - "8086:8086"
-    mem_limit: 512m
-    environment:
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    restart: always
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8086/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
+    ports:
+      - "3001:3001"
+    depends_on:
+      ms-auth:
+        condition: service_started
+      ms-client:
+        condition: service_started
+      ms-account:
+        condition: service_started
+      ms-manager:
+        condition: service_started
+    restart: always
 
   front:
     container_name: front
@@ -238,8 +249,5 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - ms-auth
-      - ms-client
-      - ms-account
-      - ms-manager
+      - api-gateway
     restart: always
