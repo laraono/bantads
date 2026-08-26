@@ -16,6 +16,8 @@ CREATE TABLE event (
     payload           	JSON NOT NULL,
     version        		BIGINT NOT NULL,
     created_at     		TIMESTAMP NOT NULL DEFAULT now(),
+
+    UNIQUE(object_id, version)
 );
 
 
@@ -41,7 +43,7 @@ CREATE TABLE account_history (
 	destination_client_cpf		VARCHAR(11) NULL,
 	destination_client_name		VARCHAR(40) NULL,
 	amount				        NUMERIC(19, 4) NOT NULL,
-	create_at			        TIMESTAMP NOT NULL DEFAULT NOW()
+	created_at			        TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 
@@ -52,11 +54,29 @@ CREATE TABLE manager (
     name            VARCHAR(50) NOT NULL,
     cpf             VARCHAR(11) NOT NULL UNIQUE,
     phone           VARCHAR(20) NOT NULL,
+    email           VARCHAR(100) NOT NULL UNIQUE,
     is_active       BOOLEAN NOT NOT NULL
 );
 
 
 \c client_db;
+
+CREATE TABLE state(
+    state_id        SERIAL PRIMARY KEY,
+    uf              VARCHAR(2) NOT NULL
+)
+
+CREATE TABLE address(
+    address_id      SERIAL PRIMARY KEY,
+    cep                 VARCHAR(9) NOT NULL,
+    city                VARCHAR(30) NOT NULL,
+    street              VARCHAR(30) NOT NULL,
+    number              INTEGER NOT NULL,
+    additional_info     VARCHAR(30) NULL,
+    state_id            INTEGER NOT NULL,
+
+    FOREIGN KEY(state_id) REFERENCES state(state_id)
+)
 
 CREATE TABLE client (
     client_id           SERIAL PRIMARY KEY,
@@ -65,12 +85,9 @@ CREATE TABLE client (
     cpf                 VARCHAR(11) NOT NULL UNIQUE,
     phone               VARCHAR(20) NOT NULL,
     salary              NUMERIC(19, 4) NOT NULL,
-    cep                 VARCHAR(9) NOT NULL,
-    city                VARCHAR(30) NOT NULL,
-    state               VARCHAR(2) NOT NULL,
-    street              VARCHAR(30) NOT NULL,
-    number              INTEGER NOT NULL,
-    additional_info     VARCHAR(30) NULL,
+    address_id          INTEGER NOT NULL,
+
+    FOREIGN KEY(address_id) REFERENCES address(address_id)
 );
 
 CREATE TYPE request_status AS ENUM('pendente', 'aprovado', 'nao_aprovado');
