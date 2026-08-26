@@ -11,7 +11,8 @@ import java.util.UUID;
 
 @Data
 @Document(collection = "auths")
-public class Auth {
+public class Auth 
+{
 
     @Id
     private UUID userId;

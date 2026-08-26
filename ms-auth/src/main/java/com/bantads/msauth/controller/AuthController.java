@@ -11,23 +11,25 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
-public class AuthController {
+public class AuthController 
+{
 
     private final AuthService authService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService) 
+    {
         this.authService = authService;
     }
 
     @GetMapping("/ping")
-    public String ping() {
+    public String ping() 
+    {
         return "mensagem teste de funcionamento";
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(
-            @RequestBody Map<String, String> request
-    ) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) 
+    {
 
         String login = request.get("login");
         String password = request.get("password");
@@ -45,7 +47,8 @@ public class AuthController {
     }
 
     @PostMapping
-    public Auth createAuth(@RequestBody Auth auth) {
+    public Auth createAuth(@RequestBody Auth auth) 
+    {
 
         return authService.create(
                 auth.getCpf(),
@@ -57,7 +60,8 @@ public class AuthController {
     }
 
     @GetMapping
-    public Iterable<Auth> listAuths() {
+    public Iterable<Auth> listAuths() 
+    {
         return authService.findAll();
     }
 }

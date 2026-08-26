@@ -16,34 +16,27 @@ public class AuthService {
 
     private final AuthRepository authRepository;
 
-    public AuthService(AuthRepository authRepository) {
+    public AuthService(AuthRepository authRepository) 
+    {
         this.authRepository = authRepository;
     }
 
-    public Auth authenticate(String login, String password) {
+    public Auth authenticate(String login, String password) 
+    {
 
-        Auth auth = authRepository.findByLogin(login)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "NÃO AUTORIZADO"
-                ));
+        Auth auth = authRepository.findByLogin(login).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,"NÃO AUTORIZADO"));
 
-        if (!Boolean.TRUE.equals(auth.getActive())) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "NÃO AUTORIZADO"
+        if (!Boolean.TRUE.equals(auth.getActive())) 
+            {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"NÃO AUTORIZADO"
             );
         }
 
-        boolean passwordValid = Password
-                .check(password, auth.getPassword())
-                .withArgon2();
+        boolean passwordValid = Password.check(password, auth.getPassword()).withArgon2();
 
-        if (!passwordValid) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "NÃO AUTORIZADO"
-            );
+        if (!passwordValid) 
+        {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"NÃO AUTORIZADO");
         }
 
         return auth;
@@ -57,11 +50,9 @@ public class AuthService {
             Boolean active
     ) {
 
-        if (authRepository.existsByLogin(login)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "CONTA JÁ EXISTE"
-            );
+        if (authRepository.existsByLogin(login)) 
+        {
+            throw new ResponseStatusException( HttpStatus.CONFLICT,"CONTA JÁ EXISTE");
         }
 
         Auth auth = new Auth();
@@ -71,17 +62,15 @@ public class AuthService {
         auth.setLogin(login);
         auth.setActive(active);
 
-        String hash = Password
-                .hash(rawPassword)
-                .withArgon2()
-                .getResult();
+        String hash = Password.hash(rawPassword).withArgon2().getResult();
 
         auth.setPassword(hash);
 
         return authRepository.save(auth);
     }
 
-    public List<Auth> findAll() {
+    public List<Auth> findAll() 
+    {
         return authRepository.findAll();
     }
 }
