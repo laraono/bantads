@@ -2,6 +2,7 @@ package com.bantads.msauth.controller;
 
 import com.bantads.msauth.entity.Auth;
 import com.bantads.msauth.service.AuthService;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,34 +15,38 @@ public class AuthController {
 
     private final AuthService authService;
 
-    public AuthController(AuthService authService) 
-    {
+    public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
     @GetMapping("/ping")
-    public String ping() 
-    {
+    public String ping() {
         return "mensagem teste de funcionamento";
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request
-    ) 
-    {
+    public ResponseEntity<Map<String, Object>> login(
+            @RequestBody Map<String, String> request
+    ) {
+
         String login = request.get("login");
         String password = request.get("password");
+
         Auth auth = authService.authenticate(login, password);
+
         Map<String, Object> response = new HashMap<>();
+
         response.put("auth", true);
         response.put("cpf", auth.getCpf());
         response.put("tipo", auth.getType());
         response.put("login", auth.getLogin());
+
         return ResponseEntity.ok(response);
     }
+
     @PostMapping
-    public Auth createAuth(@RequestBody Auth auth) 
-    {
+    public Auth createAuth(@RequestBody Auth auth) {
+
         return authService.create(
                 auth.getCpf(),
                 auth.getType(),
@@ -50,9 +55,9 @@ public class AuthController {
                 auth.getActive()
         );
     }
+
     @GetMapping
-    public Iterable<Auth> listAuths()
-    {
+    public Iterable<Auth> listAuths() {
         return authService.findAll();
     }
 }
