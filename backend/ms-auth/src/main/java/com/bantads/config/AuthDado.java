@@ -1,6 +1,6 @@
-package com.bantads.msauth.config;
+package com.bantads.config;
 
-import com.bantads.msauth.service.AuthService;
+import com.bantads.service.AuthService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

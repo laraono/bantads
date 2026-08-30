@@ -2,6 +2,7 @@
   "dependencies": {
     "amqplib": "^2.0.1",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "http-proxy-middleware": "^3.0.7",
     "ioredis": "^6.0.0"

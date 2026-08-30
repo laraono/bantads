@@ -1,8 +1,8 @@
-package com.bantads.msauth.repository;
+package com.bantads.repository;
 
 import org.springframework.stereotype.Repository;
 
-import com.bantads.msauth.entity.Auth;
+import com.bantads.entity.Auth;
 
 import java.util.ArrayList;
 import java.util.List;

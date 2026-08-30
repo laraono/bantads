@@ -1,6 +1,7 @@
 package com.bantads.controller;
 
 
+import com.bantads.entity.Request;
 import com.bantads.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

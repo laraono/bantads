@@ -1,7 +1,7 @@
-package com.bantads.msauth.controller;
+package com.bantads.controller;
 
-import com.bantads.msauth.entity.Auth;
-import com.bantads.msauth.service.AuthService;
+import com.bantads.entity.Auth;
+import com.bantads.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

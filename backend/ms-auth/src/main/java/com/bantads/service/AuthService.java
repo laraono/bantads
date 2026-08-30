@@ -1,6 +1,6 @@
-package com.bantads.msauth.service;
-import com.bantads.msauth.entity.Auth;
-import com.bantads.msauth.repository.AuthRepository;
+package com.bantads.service;
+import com.bantads.entity.Auth;
+import com.bantads.repository.AuthRepository;
 import com.password4j.Password;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
