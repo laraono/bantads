@@ -12,6 +12,7 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import java.util.HashMap;
         entityManagerFactoryRef = "commandEntityManager",
         transactionManagerRef = "commandTransactionManager"
 )
+@EnableTransactionManagement
 public class PersistenceCommandConfiguration {
     @Autowired
     private Environment env;
@@ -30,20 +32,19 @@ public class PersistenceCommandConfiguration {
     @Bean
     @Primary
     public LocalContainerEntityManagerFactoryBean commandEntityManager() {
-        LocalContainerEntityManagerFactoryBean em
-                = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(commandDataSource());
-        em.setPackagesToScan(
-                new String[] { "com.bantads.entity.event" });
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
 
-        HibernateJpaVendorAdapter vendorAdapter
-                = new HibernateJpaVendorAdapter();
+        em.setDataSource(commandDataSource());
+        em.setPackagesToScan(new String[] { "com.bantads.entity.event" });
+
+        HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+
         em.setJpaVendorAdapter(vendorAdapter);
+
         HashMap<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.hbm2ddl.auto",
-                env.getProperty("hibernate.hbm2ddl.auto"));
-        properties.put("hibernate.dialect",
-                env.getProperty("hibernate.dialect"));
+
+        properties.put("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto"));
+        properties.put("hibernate.dialect", env.getProperty("hibernate.dialect"));
         em.setJpaPropertyMap(properties);
 
         return em;
@@ -53,10 +54,9 @@ public class PersistenceCommandConfiguration {
     @Bean
     public DataSource commandDataSource() {
 
-        DriverManagerDataSource dataSource
-                = new DriverManagerDataSource();
-        dataSource.setDriverClassName(
-                env.getProperty("jdbc.driverClassName"));
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+
+        dataSource.setDriverClassName(env.getProperty("jdbc.driverClassName"));
         dataSource.setUrl(env.getProperty("user.jdbc.url"));
         dataSource.setUsername(env.getProperty("jdbc.user"));
         dataSource.setPassword(env.getProperty("jdbc.pass"));
@@ -68,10 +68,9 @@ public class PersistenceCommandConfiguration {
     @Bean
     public PlatformTransactionManager commandTransactionManager() {
 
-        JpaTransactionManager transactionManager
-                = new JpaTransactionManager();
-        transactionManager.setEntityManagerFactory(
-                commandEntityManager().getObject());
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(commandEntityManager().getObject());
+
         return transactionManager;
     }
 }
