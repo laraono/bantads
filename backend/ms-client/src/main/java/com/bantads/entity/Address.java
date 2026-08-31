@@ -25,7 +25,7 @@ import lombok.Setter;
  * @author lenovo
  */
 @Entity
-@Table(name = "address", , schema = "client_db")
+@Table(name = "address", schema = "client_db")
 @Getter
 @Setter
 @NoArgsConstructor

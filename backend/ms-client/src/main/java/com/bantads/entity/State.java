@@ -36,7 +36,7 @@ public class State {
     private Long stateId;
     
     @Column(nullable = false, length = 2)
-    private String uf../init-scripts/init_db.sql;
+    private String uf;
     
     @OneToMany(mappedBy = "state")
     private List<Address> address;

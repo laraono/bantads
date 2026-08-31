@@ -33,5 +33,5 @@ public class ClientDTO {
     
     private AddressDTO address;
 
-    private Long requestId;s
+    private Long requestId;
 }
