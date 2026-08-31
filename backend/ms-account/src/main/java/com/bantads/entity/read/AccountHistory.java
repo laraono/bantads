@@ -2,6 +2,7 @@ package com.bantads.entity.read;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -40,7 +41,8 @@ public class AccountHistory {
     @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column(name = "created_at", insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private Date createdAt;
 
     @Column(nullable = false, name = "manager_cpf")
