@@ -1,7 +1,9 @@
+<script setup lang="ts"></script>
+
 <template>
-  <div id="app">
+  <v-app>
     <router-view />
-  </div>
+  </v-app>
 </template>
 
 <style>
@@ -15,5 +17,3 @@ body {
   min-height: 100vh;
 }
 </style>
-
-

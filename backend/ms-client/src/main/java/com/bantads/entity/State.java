@@ -18,12 +18,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- *
- * @author lenovo
- */
+
 @Entity
-@Table(name = "state", schema = "client_db")
+@Table(name = "state")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -36,7 +33,7 @@ public class State {
     private Long stateId;
     
     @Column(nullable = false, length = 2)
-    private String uf../init-scripts/init_db.sql;
+    private String uf;
     
     @OneToMany(mappedBy = "state")
     private List<Address> address;
