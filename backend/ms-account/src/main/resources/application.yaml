@@ -1,3 +1,6 @@
 spring:
   application:
     name: msaccount
+
+server:
+  port: 8083
