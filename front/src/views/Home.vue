@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import TransactionModal from '../components/TransactionModal.vue'
+import Sidebar from '../components/Sidebar.vue'
 
 type ModalTab = 'transferencia' | 'saque' | 'depositar'
 
@@ -58,43 +59,15 @@ function handleTransaction(payload: { tab: ModalTab; amount: number }) {
 
 function formatCurrency(value: number): string {
   const sign = value < 0 ? '-' : ''
-  return `${sign}R$${Math.abs(value).toFixed(2)}`
+  return `${sign}R$${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-const formattedBalance = computed(() => `R$${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
 </script>
 
 <template>
   <div class="layout">
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="brand-name">BandTads</span>
-      </div>
-
-      <nav class="nav">
-        <a class="nav-item active" href="#">
-          <svg viewBox="0 0 24 24" class="nav-icon"><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" /></svg>
-          <span>Home</span>
-        </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24" class="nav-icon"><path d="m3 17 5-5 4 4 8-8" /><path d="M15 8h5v5" /></svg>
-          <span>Extrato detalhado</span>
-        </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24" class="nav-icon"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z" /></svg>
-          <span>Configurações</span>
-        </a>
-      </nav>
-
-      <div class="user-card">
-        <div class="avatar">{{ user.initials }}</div>
-        <div class="user-info">
-          <span class="user-name">{{ user.fullName }}</span>
-          <span class="user-email">{{ user.email }}</span>
-        </div>
-        <svg viewBox="0 0 24 24" class="logout-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></svg>
-      </div>
-    </aside>
+    <Sidebar active="home" :user="user" />
 
     <div class="main">
       <header class="topbar">
@@ -190,125 +163,6 @@ const formattedBalance = computed(() => `R$${account.balance.toLocaleString('en-
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: #f3f4f6;
-}
-
-/* Sidebar */
-.sidebar {
-  width: 240px;
-  background: #0d1b2a;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 16px;
-  flex-shrink: 0;
-}
-
-.brand {
-  padding: 0 8px 24px;
-}
-
-.brand-name {
-  color: #f0c968;
-  font-weight: 700;
-  font-size: 20px;
-}
-
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #cbd5e1;
-  text-decoration: none;
-  font-size: 14px;
-  transition: background 0.15s;
-}
-
-.nav-item:hover {
-  background: #16243a;
-}
-
-.nav-item.active {
-  background: #f0c968;
-  color: #1a1a1a;
-  font-weight: 600;
-}
-
-.nav-icon {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-}
-
-.user-card {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border-top: 1px solid #1e2d42;
-  padding-top: 20px;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #f0c968;
-  color: #1a1a1a;
-  font-weight: 700;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.user-name {
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-email {
-  color: #94a3b8;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.logout-icon {
-  width: 16px;
-  height: 16px;
-  fill: none;
-  stroke: #94a3b8;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-  cursor: pointer;
 }
 
 /* Main */
