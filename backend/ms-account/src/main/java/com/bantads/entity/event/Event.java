@@ -37,7 +37,7 @@ public class Event {
 
     @Column(nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
-    private  Map<String, Object> payload ;
+    private  Map<String, String> payload ;
 
     @Column(name = "created_at", insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdAt;

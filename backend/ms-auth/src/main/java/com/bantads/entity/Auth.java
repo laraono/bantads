@@ -1,23 +1,33 @@
 package com.bantads.entity;
 
-@Document(collection = "authors")
-class Auth {
-    @Id(name = "user_id")
-    private UUID userId;
+import lombok.Data;
 
-    @Field(name = "user_cpf")
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+@Data
+@Document(collection = "auths")
+public class Auth 
+{
+
+    @Id
+    private String userId;
+
+    @Field("user_cpf")
     private String cpf;
 
-    @Field(name = "user_type")
+    @Field("user_type")
     private String type;
 
-    @Field(name = "login")
+    @Indexed(unique = true)
+    @Field("login")
     private String login;
 
-    @Field(name = "password")
+    @Field("password")
     private String password;
 
-    @Field(name = "is_active")
+    @Field("is_active")
     private Boolean active;
-
 }

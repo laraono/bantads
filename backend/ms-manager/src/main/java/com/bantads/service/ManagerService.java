@@ -35,7 +35,7 @@ public class ManagerService {
     }
 
     public void deleteManager(Long id) {
-        List<Manager> managers = managerRepository.findAllByManagerIdNotAndisActive(id, true);
+        List<Manager> managers = managerRepository.findByManagerIdNotAndIsActive(id, true);
 
         if(!managers.isEmpty()) {
             Manager manager = this.getManager(id);
