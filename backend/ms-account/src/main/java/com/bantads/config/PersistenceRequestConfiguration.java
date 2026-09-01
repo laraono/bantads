@@ -4,6 +4,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -19,18 +20,19 @@ import java.util.HashMap;
 @PropertySource({ "classpath:persistence-multiple-db.properties" })
 @EnableJpaRepositories(
         basePackages = "com.bantads.repository.read",
-        entityManagerFactoryRef = "requestEntityManager",
-        transactionManagerRef = "requestTransactionManager"
+        entityManagerFactoryRef = "eventEntityManager",
+        transactionManagerRef = "commandTransactionManager"
 )
 public class PersistenceRequestConfiguration {
     @Autowired
     private Environment env;
 
     @Bean
-    public LocalContainerEntityManagerFactoryBean requestEntityManager() {
+    @Primary
+    public LocalContainerEntityManagerFactoryBean commandEntityManager() {
         LocalContainerEntityManagerFactoryBean em
                 = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(requestDataSource());
+        em.setDataSource(commandDataSource());
         em.setPackagesToScan(
                 new String[] { "com.bantads.entity.read" });
 
@@ -47,24 +49,29 @@ public class PersistenceRequestConfiguration {
         return em;
     }
 
+    @Primary
     @Bean
-    public DataSource requestDataSource() {
+    public DataSource commandDataSource() {
+
         DriverManagerDataSource dataSource
                 = new DriverManagerDataSource();
         dataSource.setDriverClassName(
                 env.getProperty("jdbc.driverClassName"));
-        dataSource.setUrl(env.getProperty("request.jdbc.url"));
+        dataSource.setUrl(env.getProperty("user.jdbc.url"));
         dataSource.setUsername(env.getProperty("jdbc.user"));
         dataSource.setPassword(env.getProperty("jdbc.pass"));
+
         return dataSource;
     }
 
+    @Primary
     @Bean
-    public PlatformTransactionManager requestTransactionManager() {
+    public PlatformTransactionManager commandTransactionManager() {
+
         JpaTransactionManager transactionManager
                 = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(
-                requestEntityManager().getObject());
+                commandEntityManager().getObject());
         return transactionManager;
     }
 }

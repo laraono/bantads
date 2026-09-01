@@ -1,6 +1,9 @@
 const { Router } = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-
+const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const redis = require('../config/redis');
 const authController = require('../controllers/authController');
 
 const router = Router();

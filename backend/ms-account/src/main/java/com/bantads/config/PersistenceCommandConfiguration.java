@@ -27,8 +27,8 @@ public class PersistenceCommandConfiguration {
     @Autowired
     private Environment env;
 
-    @Primary
     @Bean
+    @Primary
     public LocalContainerEntityManagerFactoryBean commandEntityManager() {
         LocalContainerEntityManagerFactoryBean em
                 = new LocalContainerEntityManagerFactoryBean();
@@ -52,19 +52,22 @@ public class PersistenceCommandConfiguration {
     @Primary
     @Bean
     public DataSource commandDataSource() {
+
         DriverManagerDataSource dataSource
                 = new DriverManagerDataSource();
         dataSource.setDriverClassName(
                 env.getProperty("jdbc.driverClassName"));
-        dataSource.setUrl(env.getProperty("command.jdbc.url"));
+        dataSource.setUrl(env.getProperty("user.jdbc.url"));
         dataSource.setUsername(env.getProperty("jdbc.user"));
         dataSource.setPassword(env.getProperty("jdbc.pass"));
+
         return dataSource;
     }
 
     @Primary
     @Bean
     public PlatformTransactionManager commandTransactionManager() {
+
         JpaTransactionManager transactionManager
                 = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(

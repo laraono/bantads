@@ -1,22 +1,3 @@
 spring:
   application:
     name: msclient
-  datasource:
-    url: jdbc:postgresql://localhost:5432/client_db
-    username: user
-    password: password
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      jakarta:
-        persistence:
-          jdbc:
-            url: jdbc:postgresql://localhost:5432/client_db
-            driver: org.postgresql.Driver
-            user: user
-            password: password
-
-server:
-  port: 8082

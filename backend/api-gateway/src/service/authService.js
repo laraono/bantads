@@ -8,8 +8,6 @@ const MS_AUTH_PORT = process.env.MS_AUTH_PORT || '8081';
 const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta';
 
 class AuthService {
-
-    
     async authenticate(body) {
         const authResponse = await axios.post(`http://${MS_AUTH_HOST}:${MS_AUTH_PORT}/auth/login`, body);
         const data = authResponse.data;
