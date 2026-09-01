@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin
-@RestController("/requests")
+@RestController
+@RequestMapping("/requests")
 public class RequestController {
 
     @Autowired

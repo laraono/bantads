@@ -7,7 +7,7 @@ class AuthController {
             return res.status(200).json(result);
         } catch (err) {
             const status = err.status || 401;
-            return res.status(status).json({ message: err.message || 'Falha na autenticação' });
+            return res.status(status).json({ error: err.message || 'Falha na autenticação' });
         }
     }
 
@@ -18,7 +18,7 @@ class AuthController {
             return res.status(200).json({ message: 'Logout realizado com sucesso' });
         } catch (err) {
             const status = err.status || 500;
-            return res.status(status).json({ message: err.message || 'Erro ao realizar logout' });
+            return res.status(status).json({ error: err.message || 'Erro ao realizar logout' });
         }
     }
 }

@@ -50,6 +50,7 @@ public class AuthController
     {
 
         return authService.create(
+                auth.getUserId(),
                 auth.getCpf(),
                 auth.getType(),
                 auth.getLogin(),

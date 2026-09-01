@@ -20,7 +20,7 @@ import lombok.Setter;
 
 
 @Entity
-@Table(name = "state", schema = "client_db")
+@Table(name = "state")
 @Getter
 @Setter
 @NoArgsConstructor

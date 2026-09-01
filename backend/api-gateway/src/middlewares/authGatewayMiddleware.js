@@ -34,7 +34,7 @@ function authGatewayFilter(requiredRole = null) {
             await redis.expire(sessionKey, 1800);
 
             if (requiredRole && decoded.tipo !== requiredRole) {
-                return res.status(403).json({ erro: 'Acesso negado para este perfil' });
+                return res.status(403).json({ message: 'Acesso negado para este perfil' });
             }
 
             req.headers['x-user-cpf'] = decoded.cpf;
@@ -42,7 +42,7 @@ function authGatewayFilter(requiredRole = null) {
 
             next();
         } catch (err) {
-            return res.status(403).json({ error: 'Token inválido' });
+            return res.status(403).json({ message: 'Token inválido' });
         }
     };
 }

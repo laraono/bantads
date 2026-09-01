@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const Redis = require('ioredis');
 require('dotenv').config();
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,7 @@ redis.on('error', (err) => console.error('Erro de conexão com o Redis:', err));
 app.use(express.json());
 app.use(cors());
 
+app.use('/api/auth', authRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({status: 'UP', service: 'API Gateway está estável'})
@@ -25,6 +27,3 @@ app.post('/reboot', (req, res) => {
   res.status(200).json({status: 'OK', message: 'API Gateway foi reiniciado'})
 });
 
-
-
-app.listen(PORT, () => console.log(`API Gateway rodando na porta ${PORT}`));

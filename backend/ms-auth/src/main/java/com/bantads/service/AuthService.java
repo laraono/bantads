@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -41,6 +42,7 @@ public class AuthService {
     }
 
     public Auth create(
+            UUID userId,
             String cpf,
             String type,
             String login,
@@ -55,6 +57,11 @@ public class AuthService {
 
         Auth auth = new Auth();
 
+        if (userId != null) {
+            auth.setUserId(userId);
+        } else {
+            auth.setUserId(UUID.randomUUID());
+        }
         auth.setCpf(cpf);
         auth.setType(type);
         auth.setLogin(login);

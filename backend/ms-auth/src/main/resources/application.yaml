@@ -3,7 +3,11 @@ spring:
     name: msauth
   data:
     mongodb:
-      uri: mongodb://localhost:27017/auth_db
+      host: ${SPRING_DATA_MONGODB_HOST:localhost}
+      port: ${SPRING_DATA_MONGODB_PORT:27017}
+      database: ${SPRING_DATA_MONGODB_DATABASE:auth_db}
+      username: ${SPRING_DATA_MONGODB_USERNAME:}
+      password: ${SPRING_DATA_MONGODB_PASSWORD:}
 
 server:
   port: 8081

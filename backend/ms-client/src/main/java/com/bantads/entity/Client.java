@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "client", schema = "client_db")
+@Table(name = "client")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,7 +37,7 @@ public class Client {
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal salary;
 
-    @OneToOne(mappedBy = "cliente")
+    @OneToOne(mappedBy = "client")
     private Request request;
     
     @ManyToOne
