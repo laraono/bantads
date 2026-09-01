@@ -16,16 +16,16 @@ public class RequestController {
 
     @PostMapping()
     Request createRequest() {
-        return requestService.createRequest();
+        return this.requestService.createRequest();
     }
 
     @PostMapping("/{id}/approve")
     void approveRequest(@PathVariable Long id) {
-        requestService.approveRequest(id);
+        this.requestService.approveRequest(id);
     }
 
     @PostMapping("/{id}/cancel")
     void getClient(@PathVariable Long id, @RequestBody String rejectionReason) {
-        requestService.rejectRequest(id, rejectionReason);
+        this.requestService.rejectRequest(id, rejectionReason);
     }
 }
