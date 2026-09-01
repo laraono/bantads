@@ -19,7 +19,8 @@ import org.springframework.web.bind.annotation.*;
  * @author lenovo
  */
 @CrossOrigin
-@RestController("/clients")
+@RestController
+@RequestMapping("/clients")
 public class ClientController {
     
     @Autowired

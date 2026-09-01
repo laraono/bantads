@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ManagerRepository extends JpaRepository<Manager, Long> {
 
-    List<Manager> findAllByManagerIdNotAndisActive(Long id, boolean isActive);
+    List<Manager> findByManagerIdNotAndIsActive(Long id, boolean isActive);
 
     List<Manager> findAllByIsActive(boolean isActive);
 

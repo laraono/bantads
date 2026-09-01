@@ -18,12 +18,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- *
- * @author lenovo
- */
+
 @Entity
-@Table(name = "state", schema = "client_db")
+@Table(name = "state")
 @Getter
 @Setter
 @NoArgsConstructor

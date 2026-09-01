@@ -55,7 +55,7 @@ CREATE TABLE manager (
     cpf             VARCHAR(11) NOT NULL UNIQUE,
     phone           VARCHAR(20) NOT NULL,
     email           VARCHAR(100) NOT NULL UNIQUE,
-    is_active       BOOLEAN NOT NOT NULL
+    is_active       BOOLEAN NOT NULL
 );
 
 
@@ -64,7 +64,7 @@ CREATE TABLE manager (
 CREATE TABLE state(
     state_id        SERIAL PRIMARY KEY,
     uf              VARCHAR(2) NOT NULL
-)
+);
 
 CREATE TABLE address(
     address_id      SERIAL PRIMARY KEY,
@@ -76,7 +76,7 @@ CREATE TABLE address(
     state_id            INTEGER NOT NULL,
 
     FOREIGN KEY(state_id) REFERENCES state(state_id)
-)
+);
 
 CREATE TABLE client (
     client_id           SERIAL PRIMARY KEY,
@@ -98,5 +98,5 @@ CREATE TABLE request (
     status              request_status NOT NULL,
     rejection_reason    VARCHAR(255) NULL,
     approved_at         TIMESTAMP NULL
-)
+);
 

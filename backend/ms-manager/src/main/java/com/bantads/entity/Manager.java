@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "manager", schema = "manager_db")
+@Table(name = "manager")
 @Getter
 @Setter
 @NoArgsConstructor
