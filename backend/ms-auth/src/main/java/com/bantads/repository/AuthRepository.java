@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface AuthRepository extends MongoRepository<Auth, UUID> 
+public interface AuthRepository extends MongoRepository<Auth, String> 
 {
 
     Optional<Auth> findByLogin(String login);

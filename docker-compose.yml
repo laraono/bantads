@@ -122,7 +122,6 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
-      SPRING_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASS}@mongodb:27017/account_mongo?authSource=admin
     depends_on:
       postgres-db:
         condition: service_healthy
