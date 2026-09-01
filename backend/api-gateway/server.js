@@ -1,14 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-require('ioredis');
+const Redis = require('ioredis');
 require('dotenv').config();
-const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
-const PORT = process.env.REDIS-PORT
+const PORT = process.env.PORT || 3000;
 const redis = new Redis({
-    host: process.env.REDIS-HOST || 'redis-app',
-    port: process.env.REDIS-PORT || 6379
+    host: process.env.REDIS_HOST || 'redis-app',
+    port: Number(process.env.REDIS_PORT) || 6379
 });
 
 redis.on('connect', () => console.log('Conexão ao Redis feita com sucesso'));
@@ -28,4 +27,4 @@ app.post('/reboot', (req, res) => {
 
 
 
-app.listen(PORT, () => console.log('API Gateway rodando na porta ${PORT}'));
+app.listen(PORT, () => console.log(`API Gateway rodando na porta ${PORT}`));

@@ -1,3 +1,6 @@
 spring:
   application:
     name: msmanager
+
+server:
+  port: 8084
