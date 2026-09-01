@@ -15,7 +15,7 @@ public class Auth
 {
 
     @Id
-    private UUID userId;
+    private String userId;
 
     @Field("user_cpf")
     private String cpf;

@@ -9,7 +9,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta';
 
 class AuthService {
     async authenticate(body) {
-        const authResponse = await axios.post(`http://${MS_AUTH_HOST}:${MS_AUTH_PORT}/auth/login`, body);
+        const msBody = { login: body.email, password: body.senha };
+        const authResponse = await axios.post(`http://${MS_AUTH_HOST}:${MS_AUTH_PORT}/auth/login`, msBody);
         const data = authResponse.data;
 
         if (!data || !data.auth) {
@@ -24,18 +25,17 @@ class AuthService {
 
         await redis.set(`sessao:${jti}`, 'ativo', 'EX', 1800);
 
-        return { accessToken: token };
+        return { auth: true, token, tipo: data.tipo, usuario: { cpf: data.cpf, login: data.login } };
     }
 
-    async invalidateSession(authHeader) {
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    async invalidateSession(tokenValue) {
+        if (!tokenValue) {
             const error = new Error('Usuário não autorizado');
             error.status = 401;
             throw error;
         }
 
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.decode(token);
+        const decoded = jwt.decode(tokenValue);
 
         if (decoded && decoded.jti) {
             await redis.del(`sessao:${decoded.jti}`);

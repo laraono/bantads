@@ -1,4 +1,4 @@
-const authService = require('../services/authService');
+const authService = require('../service/authService');
 
 class AuthController {
     async login(req, res) {
@@ -13,9 +13,9 @@ class AuthController {
 
     async logout(req, res) {
         try {
-            const authHeader = req.headers['authorization'];
+            const authHeader = req.headers['x-access-token'];
             await authService.invalidateSession(authHeader);
-            return res.status(200).json({ message: 'Logout realizado com sucesso' });
+            return res.status(204).json({ message: 'Logout realizado com sucesso' });
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro ao realizar logout' });

@@ -1,40 +1,31 @@
-const express = require('express');
 const jwt = require('jsonwebtoken');
-const Redis = require('ioredis');
+const redis = require('../config/redis');
 
-const app = express();
-const JWT_SECRET = process.env.JWT_SECRET; 
-
-const redis = new Redis({
-    host: process.env.REDIS_HOST || 'redis-app',
-    port: Number(process.env.REDIS_PORT) || 6379
-});
+const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta';
 
 function authGatewayFilter(requiredRole = null) {
     return async (req, res, next) => {
-        const authHeader = req.headers['authorization'];
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ message: 'Usuário não autorizado' });
+        const token = req.headers['x-access-token'];
+        if (!token) {
+            return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
         }
-
-        const token = authHeader.split(' ')[1];
 
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
-            
+
             const jti = decoded.jti;
 
             const sessionKey = `sessao:${jti}`;
             const sessionExists = await redis.exists(sessionKey);
 
             if (!sessionExists) {
-                return res.status(401).json({ message: 'Usuário não autorizado' });
+                return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
             }
 
             await redis.expire(sessionKey, 1800);
 
             if (requiredRole && decoded.tipo !== requiredRole) {
-                return res.status(403).json({ message: 'Acesso negado para este perfil' });
+                return res.status(403).json({ auth: false, message: 'Acesso negado para este perfil' });
             }
 
             req.headers['x-user-cpf'] = decoded.cpf;
@@ -42,9 +33,9 @@ function authGatewayFilter(requiredRole = null) {
 
             next();
         } catch (err) {
-            return res.status(403).json({ message: 'Token inválido' });
+            return res.status(401).json({ auth: false, message: 'Token inválido' });
         }
     };
 }
 
-app.listen(3000, () => console.log('Gateway rodando!'));
+module.exports = { authGatewayFilter };

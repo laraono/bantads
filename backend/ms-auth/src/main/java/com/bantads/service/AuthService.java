@@ -42,7 +42,7 @@ public class AuthService {
     }
 
     public Auth create(
-            UUID userId,
+            String userId,
             String cpf,
             String type,
             String login,
@@ -60,7 +60,7 @@ public class AuthService {
         if (userId != null) {
             auth.setUserId(userId);
         } else {
-            auth.setUserId(UUID.randomUUID());
+            auth.setUserId(UUID.randomUUID().toString());
         }
         auth.setCpf(cpf);
         auth.setType(type);
