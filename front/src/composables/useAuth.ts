@@ -1,8 +1,8 @@
 import { ref } from "vue";
 import type { UserRole } from "@/services/authService";
 
-const TOKEN_KEY = 'bantads.token'
-const ROLE_KEY = 'bantads.role'
+const TOKEN_KEY = import.meta.env.VITE_TOKEN_KEY
+const ROLE_KEY = import.meta.env.VITE_ROLE_KEY
 
 const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
 const role = ref<UserRole | null>(localStorage.getItem(ROLE_KEY) as UserRole || null)
