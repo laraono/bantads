@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import TransactionModal from '../components/TransactionModal.vue'
 import Sidebar from '../components/Sidebar.vue'
+
+const router = useRouter()
 
 type ModalTab = 'transferencia' | 'saque' | 'depositar'
 
@@ -44,16 +47,33 @@ const modalOpen = ref(false)
 const modalTab = ref<ModalTab>('transferencia')
 
 function openModal(tab: ModalTab | null) {
-  if (!tab) return
+  if (tab === null) {
+    router.push('/extrato')
+    return
+  }
   modalTab.value = tab
   modalOpen.value = true
 }
 
-function handleTransaction(payload: { tab: ModalTab; amount: number }) {
-  if (payload.tab === 'depositar') {
-    account.balance += payload.amount
-  } else {
-    account.balance -= payload.amount
+const balanceLoading = ref(false)
+
+// Simula a reconsulta do saldo no serviço de leitura (consistência eventual):
+// a operação é aceita de imediato, mas o saldo só é confirmado após reconsultar.
+function fetchBalance(expected: number): Promise<number> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(expected), 900)
+  })
+}
+
+async function handleTransaction(payload: { tab: ModalTab; amount: number }) {
+  const delta = payload.tab === 'depositar' ? payload.amount : -payload.amount
+  const expectedBalance = account.balance + delta
+
+  balanceLoading.value = true
+  try {
+    account.balance = await fetchBalance(expectedBalance)
+  } finally {
+    balanceLoading.value = false
   }
 }
 
@@ -86,7 +106,8 @@ const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-
         <section class="balance-card">
           <div class="balance-top">
             <span class="balance-label">Saldo Atual</span>
-            <span class="balance-value">{{ formattedBalance }}</span>
+            <span class="balance-value" :class="{ 'is-updating': balanceLoading }">{{ formattedBalance }}</span>
+            <span v-if="balanceLoading" class="balance-updating">Atualizando saldo...</span>
           </div>
           <hr class="balance-divider" />
           <div class="balance-bottom">
@@ -257,6 +278,16 @@ const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-
 .balance-value {
   font-size: 36px;
   font-weight: 700;
+  transition: opacity 0.15s;
+}
+
+.balance-value.is-updating {
+  opacity: 0.5;
+}
+
+.balance-updating {
+  font-size: 11px;
+  color: #f0c968;
 }
 
 .balance-divider {
