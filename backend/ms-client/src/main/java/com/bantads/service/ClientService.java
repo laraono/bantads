@@ -27,9 +27,6 @@ public class ClientService {
     
     @Autowired
     private ClientRepository clientRepository;
-     
-    @Autowired
-    private StateRepository stateRepository;
 
     @Autowired
     private RequestService requestService;

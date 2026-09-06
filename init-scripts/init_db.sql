@@ -63,8 +63,13 @@ CREATE TABLE manager (
 
 CREATE TABLE state(
     state_id        SERIAL PRIMARY KEY,
-    uf              VARCHAR(2) NOT NULL
+    uf              VARCHAR(2) NOT NULL UNIQUE
 );
+
+INSERT INTO state (uf) VALUES
+    ('AC'),('AL'),('AP'),('AM'),('BA'),('CE'),('DF'),('ES'),('GO'),('MA'),
+    ('MT'),('MS'),('MG'),('PA'),('PB'),('PE'),('PI'),('PR'),('RJ'),('RN'),
+    ('RS'),('RO'),('RR'),('SC'),('SP'),('SE'),('TO');
 
 CREATE TABLE address(
     address_id      SERIAL PRIMARY KEY,

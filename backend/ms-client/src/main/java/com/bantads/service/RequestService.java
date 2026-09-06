@@ -66,6 +66,7 @@ public class RequestService {
             .state(stateRepository.findByUf(addressDTO.getUf()))
             .city(addressDTO.getCidade())
             .number(addressDTO.getNumero())
+            .street(addressDTO.getLogradouro())
             .build();
         
         Address newAddress = addressRepository.save(addressEntity);
