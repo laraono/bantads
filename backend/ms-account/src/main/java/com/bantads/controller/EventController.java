@@ -28,6 +28,6 @@ public class EventController {
 
     @PostMapping
     Event createAccount(@RequestBody CreateEventDTO event) {
-        return this.eventService.createAccount(event );
+        return this.eventService.createAccount(event);
     }
 }

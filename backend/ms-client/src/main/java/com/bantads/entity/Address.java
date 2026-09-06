@@ -29,7 +29,7 @@ import lombok.Setter;
 @Builder
 public class Address {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "address_id")
     private Long addressId;
     
@@ -43,7 +43,7 @@ public class Address {
     private String street;
 
     @Column(nullable = false)
-    private Integer number;
+    private String number;
 
     @Column(nullable = true, length = 30, name = "additional_info")
     private String additionalInfo;

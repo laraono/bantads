@@ -9,11 +9,12 @@ import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.State;
 import com.bantads.dto.AddressDTO;
-import com.bantads.dto.ClientDTO;
 import com.bantads.repository.ClientRepository;
 import com.bantads.repository.StateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -32,36 +33,6 @@ public class ClientService {
 
     @Autowired
     private RequestService requestService;
-
-    public Client selfRegister(ClientDTO clientDTO) {
-        State state = stateRepository.getReferenceById(clientDTO.getAddress().getStateId());
-
-        AddressDTO addressDTO = clientDTO.getAddress();
-
-        Address address = Address.builder()
-            .additionalInfo(addressDTO.getAdditionalInfo())
-            .cep(addressDTO.getCep())
-            .city(addressDTO.getCity())
-            .state(state)
-            .street(addressDTO.getStreet())
-            .number(addressDTO.getNumber())
-            .build();
-
-        Client clientEntity = Client.builder()
-            .address(address)
-            .cpf(clientDTO.getCpf())
-            .email(clientDTO.getEmail())
-            .name(clientDTO.getName())
-            .phone(clientDTO.getPhone())
-            .salary(clientDTO.getSalary())
-            .build();
-
-        Client newClient = clientRepository.save(clientEntity);
-
-        requestService.associateRequestToClient(clientDTO.getRequestId(), newClient);
-
-        return newClient;
-    }
 
     public List<Client> listClients() {
         return clientRepository.findAll();
