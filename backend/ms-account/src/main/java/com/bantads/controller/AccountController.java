@@ -1,6 +1,8 @@
 package com.bantads.controller;
 
+import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
+import com.bantads.dto.read.ExtractDTO;
 import com.bantads.dto.read.RabbitQueryDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.service.AccountService;
@@ -18,8 +20,18 @@ public class AccountController {
     private AccountService accountService;
 
     @GetMapping("/{accountNumber}")
-    AccountData getAccountData(@PathVariable String accountNumber) {
+    GetAccountDTO getAccountData(@PathVariable String accountNumber) {
         return this.accountService.getAccountData(accountNumber);
+    }
+
+    @GetMapping("/{accountNumber}/extract")
+    ExtractDTO getExtract(
+            @RequestHeader("X-User-CPF") String userCPF,
+            @PathVariable String accountNumber,
+            @RequestParam(value = "inicio", required = false) String start,
+            @RequestParam(value = "fim", required = false) String end
+    ) {
+        return this.accountService.getExtract(accountNumber, start, end, userCPF);
     }
 
     @GetMapping("/{accountNumber}/cpf")
