@@ -5,10 +5,11 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
-@Table(name = "account_history", schema = "request_db")
+@Table(name = "account_history")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,7 +30,7 @@ public class AccountHistory {
     @Column(nullable = false, name = "origin_client_cpf")
     private String originClientCPF;
 
-    @Column(nullable = false, name = "origin_client_name")
+    @Column(nullable = true, name = "origin_client_name")
     private String originClientName;
 
     @Column(nullable = true, name = "destination_client_cpf")
@@ -43,11 +44,11 @@ public class AccountHistory {
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false, name = "manager_cpf")
+    @Column(nullable = true, name = "manager_cpf")
     private String managerCPF;
 
-    @Column(nullable = false, name = "manager_name")
+    @Column(nullable = true, name = "manager_name")
     private String managerName;
 }
