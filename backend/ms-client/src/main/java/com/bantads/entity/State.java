@@ -12,6 +12,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -28,13 +31,14 @@ import lombok.Setter;
 @Builder
 public class State {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "state_id")
     private Long stateId;
     
     @Column(nullable = false, length = 2)
     private String uf;
-    
+
+    @JsonIgnore 
     @OneToMany(mappedBy = "state")
     private List<Address> address;
     

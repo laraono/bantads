@@ -2,12 +2,29 @@ DROP TABLE IF EXISTS request CASCADE;
 DROP TABLE IF EXISTS client CASCADE;
 DROP TABLE IF EXISTS address CASCADE;
 DROP TABLE IF EXISTS state CASCADE;
-DROP TYPE IF EXISTS request_status CASCADE;
+DROP TYPE IF EXISTS approved_status CASCADE;
 
-CREATE TYPE request_status AS ENUM (
-    'pendente',
-    'aprovado',
-    'nao_aprovado'
+CREATE TYPE approved_status AS ENUM (
+    'PENDENTE',
+    'APROVADO',
+    'NAO_APROVADO'
+)
+
+CREATE TABLE state(
+    state_id        SERIAL PRIMARY KEY,
+    uf              VARCHAR(2) NOT NULL
+);
+
+CREATE TABLE address(
+    address_id      SERIAL PRIMARY KEY,
+    cep                 VARCHAR(9) NOT NULL,
+    city                VARCHAR(30) NOT NULL,
+    street              VARCHAR(30) NOT NULL,
+    number              INTEGER NOT NULL,
+    additional_info     VARCHAR(30) NULL,
+    state_id            INTEGER NOT NULL,
+
+    FOREIGN KEY(state_id) REFERENCES state(state_id)
 );
 
 CREATE TABLE state(

@@ -10,15 +10,7 @@ const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware')
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
 app.use(cors());
-
-app.post('/login', (req, res) => authController.login(req, res));
-app.post('/logout', (req, res) => authController.logout(req, res));
-
-app.get('/health', (req, res) => {
-  res.status(200).json({status: 'UP', service: 'API Gateway está estável'})
-});
 
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
@@ -58,5 +50,17 @@ app.use('/jobs', authGatewayFilter(), createProxyMiddleware({
     changeOrigin: true,
     pathRewrite: { '^/': '/jobs' }
 }));
+
+app.use(express.json());
+app.post('/login', (req, res) => authController.login(req, res));
+app.post('/logout', (req, res) => authController.logout(req, res));
+
+app.get('/health', (req, res) => {
+  res.status(200).json({status: 'UP', service: 'API Gateway está estável'})
+});
+
+app.post('/reboot', (req, res) => {
+  res.status(200).json({status: 'OK', message: 'API Gateway foi reiniciado'})
+});
 
 app.listen(PORT, () => console.log(`API Gateway rodando na porta ${PORT}`));

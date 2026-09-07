@@ -24,6 +24,8 @@ import java.util.HashMap;
         basePackages = "com.bantads.repository.read",
         entityManagerFactoryRef = "requestEntityManager",
         transactionManagerRef = "requestTransactionManager"
+        entityManagerFactoryRef = "requestEntityManager",
+        transactionManagerRef = "requestTransactionManager"
 )
 public class PersistenceRequestConfiguration {
 
@@ -52,6 +54,12 @@ public class PersistenceRequestConfiguration {
         return new DataSourceProperties();
     }
 
+    @Bean
+    @ConfigurationProperties("spring.datasource.request")
+    public DataSourceProperties requestDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
     @Primary
     @Bean
     public DataSource requestDataSource() {
@@ -60,8 +68,8 @@ public class PersistenceRequestConfiguration {
                 .build();
     }
 
-    @Primary
     @Bean
+    public PlatformTransactionManager requestTransactionManager() {
     public PlatformTransactionManager requestTransactionManager() {
 
         JpaTransactionManager transactionManager
