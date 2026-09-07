@@ -2,11 +2,12 @@ package com.bantads.service;
 
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
-import com.bantads.error.BadRequestError;
 import com.bantads.repository.read.AccountDataRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -44,7 +45,7 @@ public class AccountDataService {
 
     public AccountData createAccountData(AccountData accountData) {
         if(this.accountDataRepository.existsAccountDataByAccountNumber(accountData.getAccountNumber())) {
-            throw new BadRequestError("account already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "account already exists");
         }
 
         return this.accountDataRepository.save(accountData);
