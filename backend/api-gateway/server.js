@@ -3,6 +3,8 @@ const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 const authController = require('./src/controller/authController');
+const accountRoutes = require('./src/routes/accountRoutes');
+const rebootRoutes = require('./src/routes/rebootRoutes');
 const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
 const app = express();
@@ -18,16 +20,12 @@ app.get('/health', (req, res) => {
   res.status(200).json({status: 'UP', service: 'API Gateway está estável'})
 });
 
-app.post('/reboot', (req, res) => {
-  res.status(200).json({status: 'OK', message: 'API Gateway foi reiniciado'})
-});
-
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
-const MS_ACCOUNT_HOST = process.env.MS_ACCOUNT_HOST || 'ms-account';
-const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || '8083';
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
+
+app.use('', rebootRoutes);
 
 app.use('/clientes', authGatewayFilter(), createProxyMiddleware({
     target: `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}`,
@@ -41,11 +39,7 @@ app.use('/solicitacoes', createProxyMiddleware({
     pathRewrite: { '^/': '/requests' }
 }));
 
-app.use('/contas', authGatewayFilter(), createProxyMiddleware({
-    target: `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/': '/accounts' }
-}));
+app.use('/contas', accountRoutes);
 
 app.use('/gerentes', authGatewayFilter(), createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
