@@ -12,8 +12,6 @@ import java.util.Map;
 @Builder
 public class CreateEventDTO {
 
-    private Map<String, String> payload;
-
-    private EventType eventType;
+    private Map<String, Object> payload;
 
 }

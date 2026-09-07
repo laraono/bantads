@@ -19,7 +19,7 @@ public class RabbitCommandDTO {
 
     private Date timestamp;
 
-    private Map<String, String> payload;
+    private Map<String, Object> payload;
 
     private String accountNumber;
 
