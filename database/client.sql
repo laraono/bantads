@@ -1,11 +1,11 @@
 DROP TABLE IF EXISTS request CASCADE;
 DROP TABLE IF EXISTS client CASCADE;
-DROP TYPE IF EXISTS request_status CASCADE;
+DROP TYPE IF EXISTS approved_status CASCADE;
 
-CREATE TYPE request_status AS ENUM (
-    'pendente',
-    'aprovado',
-    'nao_aprovado'
+CREATE TYPE approved_status AS ENUM (
+    'PENDENTE',
+    'APROVADO',
+    'NAO_APROVADO'
 );
 
 CREATE TABLE client (

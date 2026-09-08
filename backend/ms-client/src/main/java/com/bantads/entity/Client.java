@@ -3,6 +3,9 @@ package com.bantads.entity;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,7 +23,7 @@ public class Client {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "client_id")
-    private Long clientId;
+    public Long clientId;
 
     @Column(nullable = false, length = 50)
     private String name;
@@ -38,9 +41,16 @@ public class Client {
     private BigDecimal salary;
 
     @OneToOne(mappedBy = "client")
+    @JsonIgnore
     private Request request;
     
     @ManyToOne
-    @JoinColumn(name = "endereco_id")
+    @JoinColumn(name = "address_id")
     private Address address;
+    
+    @Builder.Default
+    @Column(name = "approved_status", nullable = false)
+    private String approvedStatus = "PENDENTE";
+    
+    
 }
