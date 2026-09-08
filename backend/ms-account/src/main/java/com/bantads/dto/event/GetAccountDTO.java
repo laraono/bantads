@@ -10,4 +10,5 @@ import lombok.*;
 public class GetAccountDTO {
     private String numero;
     private String cpfCliente;
+    private String saldo;
 }
