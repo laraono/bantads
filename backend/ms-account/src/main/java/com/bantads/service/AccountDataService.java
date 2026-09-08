@@ -20,13 +20,13 @@ public class AccountDataService {
     private AccountDataRepository accountDataRepository;
 
     public String getCPF(String accountNumber) {
-        AccountData account = this.accountDataRepository.getReferenceById(accountNumber);
+        AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
 
         return account.getClientCPF();
     }
 
     public BigDecimal getBalance(String accountNumber) {
-        AccountData account = this.accountDataRepository.getReferenceById(accountNumber);
+        AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
 
         return account.getBalance();
     }
@@ -40,7 +40,7 @@ public class AccountDataService {
     }
 
     public AccountData getAccountData(String accountNumber) {
-        return this.accountDataRepository.getReferenceById(accountNumber);
+        return this.accountDataRepository.findByAccountNumber(accountNumber);
     }
 
     public AccountData createAccountData(AccountData accountData) {
@@ -52,7 +52,7 @@ public class AccountDataService {
     }
 
     public AccountData updateAccountBalance(BigDecimal value, String accountNumber) {
-        AccountData account = this.accountDataRepository.getReferenceById(accountNumber);
+        AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
 
         BigDecimal balance = account.getBalance();
 
@@ -62,7 +62,7 @@ public class AccountDataService {
     }
 
     public AccountData updateAccountManager(String managerCPF, String accountNumber) {
-        AccountData account = this.accountDataRepository.getReferenceById(accountNumber);
+        AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
 
         account.setManagerCPF(managerCPF);
 
