@@ -5,11 +5,8 @@ import Login from '../views/Login.vue'
 import Home from '../views/Home.vue'
 import Cliente from '../views/Cliente.vue'
 import Gerente from '../views/Gerente.vue'
-<<<<<<< Updated upstream
-=======
 import Cadastro from '../views/Cadastro.vue'
 import CadastroEndereco from '../views/CadastroEndereco.vue'
->>>>>>> Stashed changes
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -17,8 +14,6 @@ const routes: Array<RouteRecordRaw> = [
     redirect: '/login'
   },
   {
-<<<<<<< Updated upstream
-=======
     path: '/cadastro',
     meta: { requiresAuth: false },
     children: [
@@ -35,7 +30,6 @@ const routes: Array<RouteRecordRaw> = [
     ]
   },
   {
->>>>>>> Stashed changes
     path: '/login',
     name: 'login',
     component: Login,
