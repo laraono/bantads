@@ -145,6 +145,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      SERVER_PORT: 8083
       SPRING_DATASOURCE_COMMAND_URL: jdbc:postgresql://postgres-db:5432/command_db
       SPRING_DATASOURCE_REQUEST_URL: jdbc:postgresql://postgres-db:5432/request_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
