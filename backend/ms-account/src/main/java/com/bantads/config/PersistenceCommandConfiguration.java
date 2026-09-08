@@ -1,5 +1,7 @@
 package com.bantads.config;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.core.env.Environment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -26,8 +28,6 @@ import java.util.HashMap;
 )
 @EnableTransactionManagement
 public class PersistenceCommandConfiguration {
-    @Autowired
-    private Environment env;
 
     @Bean
     @Primary
@@ -35,33 +35,30 @@ public class PersistenceCommandConfiguration {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
 
         em.setDataSource(commandDataSource());
-        em.setPackagesToScan(new String[] { "com.bantads.entity.event" });
+        em.setPackagesToScan("com.bantads.entity.event");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
-
         em.setJpaVendorAdapter(vendorAdapter);
 
         HashMap<String, Object> properties = new HashMap<>();
-
-        properties.put("hibernate.hbm2ddl.auto", env.getProperty("hibernate.hbm2ddl.auto"));
-        properties.put("hibernate.dialect", env.getProperty("hibernate.dialect"));
+        properties.put("hibernate.hbm2ddl.auto", "update");
         em.setJpaPropertyMap(properties);
 
         return em;
     }
 
+    @Bean
+    @ConfigurationProperties("spring.datasource.command")
+    public DataSourceProperties commandDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
     @Primary
     @Bean
     public DataSource commandDataSource() {
-
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-
-        dataSource.setDriverClassName(env.getProperty("jdbc.driverClassName"));
-        dataSource.setUrl(env.getProperty("command.jdbc.url"));
-        dataSource.setUsername(env.getProperty("jdbc.user"));
-        dataSource.setPassword(env.getProperty("jdbc.pass"));
-
-        return dataSource;
+        return commandDataSourceProperties()
+                .initializeDataSourceBuilder()
+                .build();
     }
 
     @Primary

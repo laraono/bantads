@@ -1,21 +1,27 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
+import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.event.RabbitCommandDTO;
-import com.bantads.dto.read.AccountHistoryDTO;
-import com.bantads.dto.read.AccountsByManagerDTO;
-import com.bantads.dto.read.RabbitQueryDTO;
-import com.bantads.dto.read.Status;
+import com.bantads.dto.read.*;
 import com.bantads.entity.event.EventType;
 import com.bantads.entity.read.AccountData;
 import com.bantads.entity.read.Request;
 import com.bantads.entity.read.TransactionType;
 import com.bantads.repository.read.RequestRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -46,22 +52,43 @@ public class AccountService {
         return this.accountDataService.getAccountsCountByManager();
     }
 
-    public AccountData getAccountData(String accountNumber) {
-        return this.accountDataService.getAccountData(accountNumber);
+    @Transactional()
+    public GetAccountDTO getAccountData(String accountNumber) {
+        try {
+
+            AccountData account = this.accountDataService.getAccountData(accountNumber);
+
+            if (account == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account " + accountNumber + " not found");
+            }
+
+
+            return GetAccountDTO.builder()
+                    .numero(account.getAccountNumber())
+                    .cpfCliente(account.getClientCPF())
+                    .saldo(account.getBalance().toPlainString())
+                    .build();
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            throw e;
+        }
     }
 
     public RabbitQueryDTO createAccountData(RabbitCommandDTO body) {
-        Map<String, String> payload = body.getPayload();
+        Map<String, Object> payload = body.getPayload();
         EventType eventType = body.getType();
 
         RabbitQueryDTO answer = RabbitQueryDTO.builder()
             .type(EventType.CREATED)
             .build();
 
+        String value = (String) payload.get("valor");
+        String clientCpf = (String) payload.get("cpfCliente");
+        String managerCpf = (String) payload.get("cpfGerente");
+
         if(
-            payload.get("accountNumber") == null || payload.get("originClientCPF") == null ||
-            payload.get("value") == null || payload.get("managerCPF") == null ||
-            eventType == null
+            body.getAccountNumber() == null || clientCpf == null ||
+            value == null || managerCpf == null || eventType == null
         ) {
             answer.setError("missing information");
             answer.setStatus(Status.FAILURE);
@@ -79,10 +106,10 @@ public class AccountService {
         }
 
         AccountData accountData =  AccountData.builder()
-            .accountNumber(payload.get("accountNumber"))
-            .clientCPF(payload.get("originClientCPF"))
-            .balance(new BigDecimal(payload.get("value")))
-            .managerCPF(payload.get("managerCPF"))
+            .accountNumber(body.getAccountNumber())
+            .clientCPF(clientCpf)
+            .balance(new BigDecimal(value))
+            .managerCPF(managerCpf)
             .build();
 
         AccountData newAccount = this.accountDataService.createAccountData(accountData);
@@ -96,17 +123,18 @@ public class AccountService {
     }
 
     public RabbitQueryDTO updateAccountBalance(RabbitCommandDTO body) {
-        Map<String, String> payload = body.getPayload();
+        Map<String, Object> payload = body.getPayload();
         EventType eventType = body.getType();
+
         String accountNumber = body.getAccountNumber();
+        String textValue = (String) payload.get("valor");
 
         RabbitQueryDTO answer = RabbitQueryDTO.builder()
             .type(body.getType())
             .build();
 
         if(
-            payload.get("value") == null || eventType == null ||
-            accountNumber.isEmpty() || accountNumber == null
+            textValue == null || eventType == null || accountNumber.isEmpty() || accountNumber == null
         ) {
             answer.setError("missing information");
             answer.setStatus(Status.FAILURE);
@@ -133,7 +161,7 @@ public class AccountService {
             return answer;
         }
 
-        BigDecimal value = new BigDecimal(payload.get("value"));
+        BigDecimal value = new BigDecimal(textValue);
 
         if(eventType == EventType.WITHDRAW || eventType == EventType.ORIGINTRANSFER) value.negate();
 
@@ -147,16 +175,18 @@ public class AccountService {
     }
 
     public RabbitQueryDTO updateAccountManager(RabbitCommandDTO body) {
-        Map<String, String> payload = body.getPayload();
+        Map<String, Object> payload = body.getPayload();
         EventType eventType = body.getType();
+
         String accountNumber = body.getAccountNumber();
+        String managerCpf = (String) payload.get("cpfGerente");
 
         RabbitQueryDTO answer = RabbitQueryDTO.builder()
             .type(body.getType())
             .build();
 
         if(
-            payload.get("managerCPF") == null || eventType == null ||
+            managerCpf == null || eventType == null ||
             accountNumber == null || accountNumber.isEmpty()
         ) {
             answer.setError("missing information");
@@ -174,7 +204,7 @@ public class AccountService {
             return answer;
         }
 
-        AccountData updatedAccount = this.accountDataService.updateAccountManager(payload.get("managerCPF"), accountNumber);
+        AccountData updatedAccount = this.accountDataService.updateAccountManager(managerCpf, accountNumber);
 
         answer.setTimestamp(new Date());
         answer.setStatus(Status.SUCCESS);
@@ -183,8 +213,8 @@ public class AccountService {
         return answer;
     }
 
-    public Map<String, String> toMap(AccountData account) {
-        Map<String, String> map = new HashMap<>();
+    public Map<String, Object> toMap(AccountData account) {
+        Map<String, Object> map = new HashMap<>();
 
         if (account.getAccountNumber() != null) {
             map.put("accountNumber", account.getAccountNumber());
@@ -203,15 +233,28 @@ public class AccountService {
     }
 
     public String createHistory(String accountNumber, RabbitCommandDTO body) {
-        Map<String, String> payload = body.getPayload();
+        Map<String, Object> payload = body.getPayload();
         AccountHistoryDTO ac = new AccountHistoryDTO();
         TransactionType type;
 
+        String managerName = (String) payload.get("nomeGerente");
+        String managerCpf = (String) payload.get("cpfGerente");
+
+        Map<String, String> origin = (Map<String, String>) payload.get("origem");
+        Map<String, String> destination = (Map<String, String>) payload.get("destino");
+
+        String originClientName = origin.get("nome");
+        String originClientCpf = (String) payload.get("clienteCpf");
+        String textValue = origin.get("valor") == null ? origin.get("valor") : (String) payload.get("valor");
+
+        String destinationClientName = destination.get("nome");
+        String destinationClientAccount = destination.get("conta");
+        String destinationClientCpf = destination.get("cpf");
+
+
         if(
-            payload.get("accountNumber") == null || payload.get("originClientCPF") == null ||
-            payload.get("originClientName") == null || payload.get("managerName") == null ||
-            payload.get("value") == null || payload.get("managerCPF") == null ||
-            body.getType() == null
+            accountNumber == null || originClientCpf == null ||
+            textValue == null || body.getType() == null
         ) {
             String error = "information missing";
             return error;
@@ -234,24 +277,39 @@ public class AccountService {
         }
 
         ac.setAccountNumber(accountNumber);
-        ac.setAmount(new BigDecimal(payload.get("value")));
-        ac.setOriginClientCPF(payload.get("originClientCPF"));
-        ac.setOriginClientName(payload.get("originClientName"));
-        ac.setManagerCPF(payload.get("managerCPF"));
-        ac.setManagerName(payload.get("managerName"));
-        ac.setDestinationClientCPF(payload.get("destinationClientCPF"));
-        ac.setDestinationClientName(payload.get("destinationClientName"));
+        ac.setAmount(new BigDecimal(textValue));
+        ac.setOriginClientCPF(originClientCpf);
+        ac.setOriginClientName(originClientName);
+        ac.setManagerCPF(managerCpf);
+        ac.setManagerName(managerName);
+        ac.setDestinationClientCPF(destinationClientCpf);
+        ac.setDestinationClientName(destinationClientName);
+
+        this.accountHistoryService.createAcountHistory(ac);
+
+        ac.setAccountNumber(destinationClientAccount);
+        ac.setManagerName("");
+        ac.setManagerCPF("");
 
         this.accountHistoryService.createAcountHistory(ac);
 
         return "";
     }
 
+
+
+    public ExtractDTO getExtract(String accountNumber, String start, String end, String userCPF) {
+        return this.accountHistoryService.getExtract(accountNumber, start, end, userCPF);
+    }
+
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
     public void handleCommand(RabbitCommandDTO command) {
 
-        UUID eventId = UUID.fromString(command.getPayload().get("eventId"));
-        Long version = Long.parseLong(command.getPayload().get("version"));
+        String textEventId = (String) command.getPayload().get("eventId");
+        String textVersion = (String) command.getPayload().get("version");
+
+        UUID eventId = UUID.fromString(textEventId);
+        Long version = Long.parseLong(textVersion);
 
         boolean alreadyProcessed = requestRepository.existsByVersionAndEventId(version, eventId);
 
@@ -280,4 +338,6 @@ public class AccountService {
 
         requestRepository.save(req);
     }
+
+
 }

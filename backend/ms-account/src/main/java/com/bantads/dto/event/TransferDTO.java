@@ -14,7 +14,7 @@ public class TransferDTO {
 
     private String destinationObjectId;
 
-    private Map<String, String> payload;
+    private Map<String, Object> payload;
 
     private EventType eventType;
 

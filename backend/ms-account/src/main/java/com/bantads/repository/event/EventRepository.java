@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface EventRepository extends JpaRepository<Event, UUID> {
     Event findFirstByObjectIdOrderByCreatedAtDesc(String objectId);
 
+    Event findByObjectIdAndEventType(String objectId, EventType eventType);
+
     List<Event> findAllByObjectIdOrderByVersionAsc(String objectId);
 
     boolean existsByObjectIdAndEventType(String objectId, EventType eventType);

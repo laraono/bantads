@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const authGatewayFilter = require('../middlewares/authGatewayMiddleware');
+const {authGatewayFilter} = require('../middlewares/authGatewayMiddleware');
 
 const router = Router();
 

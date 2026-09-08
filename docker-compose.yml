@@ -20,11 +20,14 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
-      POSTGRES_MULTIPLE_DATABASES: client_db,manager_db,auth_db,request_db,command_db
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts/init_db.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/init_db.sh:/docker-entrypoint-initdb.d/init.sh
+      - ./database/command.sql:/docker-entrypoint-initdb.d/schemas/command.sql
+      - ./database/request.sql:/docker-entrypoint-initdb.d/schemas/request.sql
+      - ./database/manager.sql:/docker-entrypoint-initdb.d/schemas/manager.sql
+      - ./database/client.sql:/docker-entrypoint-initdb.d/schemas/client.sql
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
@@ -142,6 +145,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      SERVER_PORT: 8083
       SPRING_DATASOURCE_COMMAND_URL: jdbc:postgresql://postgres-db:5432/command_db
       SPRING_DATASOURCE_REQUEST_URL: jdbc:postgresql://postgres-db:5432/request_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
