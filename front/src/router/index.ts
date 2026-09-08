@@ -7,6 +7,7 @@ import Home from '../views/Home.vue'
 import Cliente from '../views/Cliente.vue'
 import Gerente from '../views/Gerente.vue'
 import Cadastro from '../views/Cadastro.vue'
+import CadastroEndereco from '../views/CadastroEndereco.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -14,10 +15,20 @@ const routes: Array<RouteRecordRaw> = [
     redirect: '/login'
   },
   {
-    path: '/cadastro/usuario',
-    name: 'cadastro',
-    component: Cadastro,
-    meta: { requiresAuth: false }
+    path: '/cadastro',
+    meta: { requiresAuth: false },
+    children: [
+      {
+        path: '',
+        name: 'cadastro-dados-pessoais',
+        component: Cadastro
+      },
+      {
+        path: 'endereco',
+        name: 'cadastro-endereco-financeiro',
+        component: CadastroEndereco
+      }
+    ]
   },
   {
     path: '/login',
