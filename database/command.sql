@@ -13,7 +13,7 @@ CREATE TYPE event_type AS ENUM (
 CREATE TABLE event (
     event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     object_id VARCHAR(4) NOT NULL,
-    type event_type NOT NULL,
+    event_type event_type NOT NULL,
     payload JSON NOT NULL,
     version BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
