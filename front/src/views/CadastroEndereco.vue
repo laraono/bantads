@@ -1,11 +1,17 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useCadastro } from '../composables/useCadastro';
 import { useRoute, useRouter } from 'vue-router';
 
-const { nome, cpf, telefone, email } = useCadastro()
+const { cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
+const mensagemAlerta = ref(false)
 
 const route = useRoute()
 const router = useRouter()
+
+function envioDados() {
+    mensagemAlerta.value = true
+}
 
 </script>
 
@@ -34,25 +40,59 @@ const router = useRouter()
         </aside>
         <main class="cadastro-panel">
             <div class="cadastro-form">
-                <span class="etapa">Etapa 1 de 2</span>
-                <h2>Dados Pessoais</h2>
-                <p class="subtitle">Informe seus dados pessoais e de contato.</p>
+                <span class="etapa">Etapa 2 de 2</span>
+                <h2>Endereço e Financeiro</h2>
+                <p class="subtitle">Informe seu endereço e renda mensal.</p>
                 <div class="progresso-barra">
                     <div class="progresso"></div>
                 </div>
                 <v-form>
-                    <label class="field-label" for="cadastro-nome">Nome Completo</label>
-                    <v-text-field id="cadastro-nome" v-model="nome" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Carmem Luisa Oliveira" type="text" />
-                    <label class="field-label" for="cadastro-cpf">CPF</label>
-                    <v-text-field id="cadastro-cpf" v-model="cpf" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" />
-                    <label class="field-label" for="cadastro-telefone">Telefone</label>
-                    <v-text-field id="cadastro-telefone" v-model="telefone" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="(41) 99999-9999" type="text" />
-                    <label class="field-label" for="cadastro-email">E-mail</label>
-                    <v-text-field id="cadastro-email" v-model="email" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="seu@email.com" type="email" />
-                    <v-btn type="submit" class="submit-btn" block size="large" to="/cadastro/endereco">
-                        Próximo
-                        <v-icon icon="mdi-arrow-right" end/>
-                    </v-btn>
+                    <div class="container-endereco">
+                        <div class="endereco">
+                            <label class="field-label" for="cadastro-cep">CEP</label>
+                            <v-text-field id="cadastro-cep" v-model="cep" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="00000-000" type="text" />
+                        </div>
+                        <div class="endereco">
+                            <label class="field-label" for="cadastro-numero">Número</label>
+                            <v-text-field id="cadastro-numero" v-model="numero" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="123" type="text" />
+                        </div>
+                    </div>
+                    <div class="label-field">
+                        <label class="field-label" for="cadastro-rua">Rua/Logradouro</label>
+                        <v-text-field id="cadastro-rua" v-model="rua" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Rua Joaquim Theodoro" type="text" />
+                    </div>
+                    <div class="label-field">
+                        <label class="field-label" for="cadastro-complemento">Complemento</label>
+                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" />
+                    </div>
+                    <div class="container-regiao">
+                        <div class="localizacao">
+                            <label class="field-label" for="cadastro-cidade">Cidade</label>
+                            <v-text-field id="cadastro-cidade" v-model="cidade" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Curitiba" type="text" />
+                        </div>
+                        <div class="localizacao">
+                            <label class="field-label" for="cadastro-estado">Estado</label>
+                            <v-select id="cadastro-estado" v-model="estado" class="field-input" variant="solo" flat density="comfortable" :items="['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']" label="Selecione">
+                            </v-select>
+                        </div>
+                    </div>
+                    <div class="label-field">
+                        <label class="field-label" for="cadastro-salario">Salário Mensal</label>
+                        <v-text-field id="cadastro-salario" v-model="salario" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="R$ 0,00" type="text" :rules="[]"/>
+                    </div>
+                    <div class="container-btn">
+                        <v-btn type="button" class="voltar-btn" size="large" to="/cadastro">
+                            <v-icon icon="mdi-arrow-left" start/>
+                            Voltar
+                        </v-btn>
+                        <v-btn type="submit" class="submit-btn" block size="largue" @click="envioDados">
+                            Enviar Cadastro
+                            <v-icon class="separacao" icon="mdi-arrow-right" end/>
+                        </v-btn>
+                        <v-snackbar v-model="mensagemAlerta" color="success" timeout="3000" location="top">
+                            Os dados foram enviados com sucesso.
+                        </v-snackbar>
+                    </div>
                 </v-form>
                 <p class="signin-text">Já tem conta?<a href="/login" class="link-strong">Entrar</a></p>
             </div>
@@ -152,7 +192,7 @@ const router = useRouter()
   right: calc(100% + 15px);
   top: 50%;
   transform: translateY(-50%);
-  background-color: #6366f1;
+  background-color: #22c55e;
   color: #ffffff;
   border-radius: 50%;
   width: 26px;
@@ -164,7 +204,7 @@ const router = useRouter()
 }
 
 .hero-features li:nth-of-type(2)::before {
-  background-color: #334155;
+  background-color: #6366f1;
 }
 
 .dados {
@@ -225,7 +265,7 @@ const router = useRouter()
 }
 
 .progresso-barra {
-    width: 100%;
+    min-width: 128%;
     height: 10px;
     background-color: #eef1f5;
     border-radius: 10px;
@@ -234,7 +274,7 @@ const router = useRouter()
 }
 
 .progresso {
-    width: 50%;
+    width: 100%;
     height: 100%;
     background-color: #ffdc9a;
     border-radius: 999px;
@@ -248,6 +288,10 @@ const router = useRouter()
     margin-bottom: 6px;
 }
 
+.label-field {
+    min-width: 129%;
+}
+
 .field-input :deep(.v-field) {
     background: #f2f2f2;
     border-radius: 8px;
@@ -259,6 +303,32 @@ const router = useRouter()
     font-size: 0.9rem;
 }
 
+.field-input :deep(.v-label) {
+    font-size: 0.9rem;
+}
+
+.container-endereco, .container-regiao {
+    display: flex;
+    gap: 15px;
+}
+
+.endereco, .localizacao {
+    display: flex;
+    flex-direction: column;
+    min-width: 250px;
+}
+
+/* Posiciona os botões horizontalmente, lado a lado, e define um gap (espaço) de 10px entre eles.*/
+.container-btn {
+    display: flex;
+    gap: 10px;
+}
+
+.voltar-btn {
+    border-radius: 8px;
+    letter-spacing: normal;
+}
+
 .submit-btn {
     background: #f4c561 !important;
     color: #101b2d !important;
@@ -266,6 +336,11 @@ const router = useRouter()
     text-transform: none;
     border-radius: 8px;
     letter-spacing: normal;
+}
+
+/* Separação da flecha com o texto */
+.separacao {
+    margin: 0px 10px 0px;
 }
 
 .signin-text {
