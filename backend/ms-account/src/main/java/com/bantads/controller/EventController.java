@@ -13,31 +13,34 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @CrossOrigin
-@RestController("/events")
+@RestController
+@RequestMapping("/events")
 public class EventController {
 
     @Autowired
     private EventService eventService;
 
     @PostMapping("/{objectId}/deposit")
-    ResponseEntity deposit(@RequestHeader("X-User-CPF") String userCPF, @PathVariable String objectId, @RequestBody CreateEventDTO event) {
+    ResponseEntity deposit(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String objectId, @RequestBody CreateEventDTO event) {
         this.eventService.deposit(userCPF, event, objectId);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body("");
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/{objectId}/withdraw")
-    void withdraw(@RequestHeader("X-User-CPF") String userCPF, @PathVariable String objectId, @RequestBody CreateEventDTO event) {
+    ResponseEntity withdraw(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String objectId, @RequestBody CreateEventDTO event) {
         this.eventService.withdraw(userCPF, event, objectId);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/{objectId}/updateManager")
-    void changeManager(@PathVariable String objectId, @RequestBody CreateEventDTO event) {
+    ResponseEntity changeManager(@PathVariable String objectId, @RequestBody CreateEventDTO event) {
         this.eventService.updateManager(event, objectId);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/{objectId}/transfer")
-    ResponseEntity<ReturnTransferDTO> transfer(@RequestHeader("X-User-CPF") String userCPF, @PathVariable String objectId, @RequestBody TransferDTO event) {
+    ResponseEntity<ReturnTransferDTO> transfer(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String objectId, @RequestBody TransferDTO event) {
         ReturnTransferDTO destino = this.eventService.transfer(userCPF, objectId, event);
 
         return ResponseEntity
@@ -46,7 +49,7 @@ public class EventController {
     }
 
     @PostMapping
-    Event createAccount(@RequestHeader("X-User-CPF") String userCPF, @RequestBody CreateEventDTO event) {
+    Event createAccount(@RequestHeader("x-user-cpf") String userCPF, @RequestBody CreateEventDTO event) {
         return this.eventService.createAccount(event );
     }
 }
