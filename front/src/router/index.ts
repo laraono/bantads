@@ -4,6 +4,7 @@ import { useAuth } from '../composables/useAuth'
 
 import Login from '../views/Login.vue'
 import Home from '../views/Home.vue'
+import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
 import Cliente from '../views/Cliente.vue'
 import Gerente from '../views/Gerente.vue'
 import Cadastro from '../views/Cadastro.vue'
@@ -40,6 +41,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/home',
     name: 'home',
     component: Home,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/extrato',
+    name: 'extrato',
+    component: ExtratoDetalhado,
     meta: { requiresAuth: true }
   },
   {
