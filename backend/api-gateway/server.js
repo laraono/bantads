@@ -11,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(express.json());
 
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
@@ -51,7 +52,6 @@ app.use('/jobs', authGatewayFilter(), createProxyMiddleware({
     pathRewrite: { '^/': '/jobs' }
 }));
 
-app.use(express.json());
 app.post('/login', (req, res) => authController.login(req, res));
 app.post('/logout', (req, res) => authController.logout(req, res));
 
