@@ -63,8 +63,13 @@ CREATE TABLE manager (
 
 CREATE TABLE state(
     state_id        SERIAL PRIMARY KEY,
-    uf              VARCHAR(2) NOT NULL
+    uf              VARCHAR(2) NOT NULL UNIQUE
 );
+
+INSERT INTO state (uf) VALUES
+    ('AC'),('AL'),('AP'),('AM'),('BA'),('CE'),('DF'),('ES'),('GO'),('MA'),
+    ('MT'),('MS'),('MG'),('PA'),('PB'),('PE'),('PI'),('PR'),('RJ'),('RN'),
+    ('RS'),('RO'),('RR'),('SC'),('SP'),('SE'),('TO');
 
 CREATE TABLE address(
     address_id      SERIAL PRIMARY KEY,
@@ -90,12 +95,12 @@ CREATE TABLE client (
     FOREIGN KEY(address_id) REFERENCES address(address_id)
 );
 
-CREATE TYPE request_status AS ENUM('pendente', 'aprovado', 'nao_aprovado');
+CREATE TYPE approved_status AS ENUM('PENDENTE', 'APROVADO', 'NAO_APROVADO');
 
 CREATE TABLE request (
     request_id          SERIAL PRIMARY KEY,
     client_id           INTEGER NOT NULL,
-    status              request_status NOT NULL,
+    status              approved_status NOT NULL,
     rejection_reason    VARCHAR(255) NULL,
     approved_at         TIMESTAMP NULL
 );

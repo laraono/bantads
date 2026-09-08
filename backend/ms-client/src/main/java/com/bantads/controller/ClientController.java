@@ -4,14 +4,15 @@
  */
 package com.bantads.controller;
 
-import com.bantads.dto.ClientDTO;
+import com.bantads.assembler.ClientModelAssembler;
 import com.bantads.entity.Request;
 import com.bantads.service.ClientService;
 import com.bantads.entity.Client;
 import java.util.List;
 
-import com.bantads.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -26,25 +27,25 @@ public class ClientController {
     @Autowired
     private ClientService clientService;
 
-    @Autowired
-    private RequestService requestService;
+    @Autowired 
+    private ClientModelAssembler assembler;
 
-    @PostMapping
-    Client selfRegister(@RequestBody ClientDTO client) {
-        return clientService.selfRegister(client);
-    }
-    
     @GetMapping
-    List<Client> listClients() {
-        return clientService.listClients();
+    public
+    CollectionModel<EntityModel<Client>> listClients() {
+        List<Client> clients = clientService.listClients();
+        return assembler.toCollectionModel(clients);
     }
 
     @GetMapping("/{id}")
-    Client getClient(@PathVariable Long id) {
-        return clientService.getClient(id);
+    public 
+    EntityModel<Client> getClient(@PathVariable Long id) {
+        Client client = clientService.getClient(id);
+        return assembler.toModel(client);
     }
 
-    @GetMapping("/{id}/request")
+    @GetMapping("/{id}/solicitacoes")
+    public
     Request getRequest(@PathVariable Long id) {
         return clientService.getRequestByClient(id);
     }
