@@ -12,5 +12,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * @author lenovo
  */
 public interface StateRepository extends JpaRepository<State, Long> {
-    
+    State findByUf(String uf);
 }

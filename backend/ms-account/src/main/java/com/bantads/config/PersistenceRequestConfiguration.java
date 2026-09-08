@@ -20,19 +20,18 @@ import java.util.HashMap;
 @PropertySource({ "classpath:persistence-multiple-db.properties" })
 @EnableJpaRepositories(
         basePackages = "com.bantads.repository.read",
-        entityManagerFactoryRef = "eventEntityManager",
-        transactionManagerRef = "commandTransactionManager"
+        entityManagerFactoryRef = "requestEntityManager",
+        transactionManagerRef = "requestTransactionManager"
 )
 public class PersistenceRequestConfiguration {
     @Autowired
     private Environment env;
 
     @Bean
-    @Primary
-    public LocalContainerEntityManagerFactoryBean commandEntityManager() {
+    public LocalContainerEntityManagerFactoryBean requestEntityManager() {
         LocalContainerEntityManagerFactoryBean em
                 = new LocalContainerEntityManagerFactoryBean();
-        em.setDataSource(commandDataSource());
+        em.setDataSource(requestDataSource());
         em.setPackagesToScan(
                 new String[] { "com.bantads.entity.read" });
 
@@ -49,29 +48,27 @@ public class PersistenceRequestConfiguration {
         return em;
     }
 
-    @Primary
     @Bean
-    public DataSource commandDataSource() {
+    public DataSource requestDataSource() {
 
         DriverManagerDataSource dataSource
                 = new DriverManagerDataSource();
         dataSource.setDriverClassName(
                 env.getProperty("jdbc.driverClassName"));
-        dataSource.setUrl(env.getProperty("user.jdbc.url"));
+        dataSource.setUrl(env.getProperty("request.jdbc.url"));
         dataSource.setUsername(env.getProperty("jdbc.user"));
         dataSource.setPassword(env.getProperty("jdbc.pass"));
 
         return dataSource;
     }
 
-    @Primary
     @Bean
-    public PlatformTransactionManager commandTransactionManager() {
+    public PlatformTransactionManager requestTransactionManager() {
 
         JpaTransactionManager transactionManager
                 = new JpaTransactionManager();
         transactionManager.setEntityManagerFactory(
-                commandEntityManager().getObject());
+                requestEntityManager().getObject());
         return transactionManager;
     }
 }

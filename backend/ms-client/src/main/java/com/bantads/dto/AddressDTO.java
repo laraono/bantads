@@ -4,6 +4,7 @@
  */
 package com.bantads.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,16 +21,21 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class AddressDTO {
+
+    @NotBlank(message = "Logradouro é obrigatório")
+    private String logradouro;
+
+    @NotBlank(message = "Número é obrigatório")
+    private String numero;
+
+    private String complemento;
+
+    @NotBlank(message = "CEP é obrigatório")
     private String cep;
 
-    private String city;
+    @NotBlank(message = "Cidade é obrigatória")
+    private String cidade;
 
-    private String street;
-
-    private Integer number;
-
-    private String additionalInfo;
-    
-    private Long stateId;
-
+    @NotBlank(message = "UF é obrigatória")
+    private String uf;
 }
