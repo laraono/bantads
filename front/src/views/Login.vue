@@ -38,8 +38,6 @@ async function handleSubmit() {
 </script>
 
 <template>
-    <div class="about">
-        <h1>This is a login page</h1>
         <div class="login-page">
             <aside class="login-hero">
                 <div class="brand">
@@ -96,9 +94,7 @@ async function handleSubmit() {
                     <p class="signup-text">Não tem conta?<a href="/cadastro" class="link-strong">Cadastre-se</a></p>
                 </div>
             </main>
-                  <p class="signup-text">Não tem conta?<a href="/cadastro/usuario" class="link-strong">Cadastre-se</a></p>
           </div>
-    </div>
 </template>
 
 <style scoped>
