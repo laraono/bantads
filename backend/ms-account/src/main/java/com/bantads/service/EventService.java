@@ -46,10 +46,11 @@ public class EventService {
     }
 
     public void deposit(String userCPF, CreateEventDTO event, String objectId) {
-        if(!this.doesAccountExists(objectId)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
-        }
+        try {
 
+            if(!this.doesAccountExists(objectId)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+            }
         this.checkUserCPF(userCPF, objectId);
 
         Map<String, Object> payload = event.getPayload();
@@ -64,14 +65,24 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
+
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(event.getPayload())
+                .payload(newPayload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
                 .type(EventType.DEPOSIT)
                 .build();
 
         this.sendCommand(command, userCPF);
+            } catch (Exception e) {
+                e.printStackTrace(); 
+                throw e;
+            }
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {
@@ -91,8 +102,13 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(event.getPayload())
+                .payload(newPayload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
                 .type(EventType.UPDATEMANAGER)
@@ -102,6 +118,8 @@ public class EventService {
     }
 
     public void withdraw(String userCPF, CreateEventDTO event, String objectId) {
+            try {
+
         if(!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
         }
@@ -111,7 +129,6 @@ public class EventService {
         Map<String, Object> payload = event.getPayload();
 
         this.checkBalance(objectId, payload);
-
 
         Event newEvent = Event.builder()
                 .payload(payload)
@@ -123,14 +140,23 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(event.getPayload())
+                .payload(newPayload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
                 .type(EventType.WITHDRAW)
                 .build();
 
         this.sendCommand(command, userCPF);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
     }
 
     public Event createAccount(CreateEventDTO event) {
@@ -147,8 +173,13 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
+        Map<String, Object> payload = newEvent.getPayload();
+
+        payload.putIfAbsent("eventId", newEvent.getEventId());
+        payload.putIfAbsent("version", newEvent.getVersion());
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(event.getPayload())
+                .payload(payload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
                 .type(EventType.CREATED)
@@ -195,16 +226,32 @@ public class EventService {
         while(eventIterator.hasNext()) {
             Event event = eventIterator.next();
             EventType eventType = event.getEventType();
-            String textValue = (String) event.getPayload().get("value");
-            BigDecimal value = new BigDecimal(textValue);
+            if(eventType == EventType.DEPOSIT || eventType == EventType.WITHDRAW) {
+                String textValue = (String) event.getPayload().get("valor");
+                BigDecimal value = new BigDecimal(textValue);
 
-            if(eventType == EventType.DEPOSIT || eventType == EventType.DESTINATIONTRANSFER) {
-                balance = balance.add(value);
+                if(eventType == EventType.DEPOSIT) {
+                    balance = balance.add(value);
+                }
+
+                if(eventType == EventType.WITHDRAW) {
+                    balance = balance.subtract(value);
+                }
+            }
+            if(eventType == EventType.DESTINATIONTRANSFER || eventType == EventType.ORIGINTRANSFER) {
+                Map<String, Object> origem = (Map<String, Object>) event.getPayload().get("origem");
+                String textValue = (String) origem.get("valor");
+                BigDecimal value = new BigDecimal(textValue);
+
+                if(eventType == EventType.DESTINATIONTRANSFER) {
+                    balance = balance.add(value);
+                }
+
+                if(eventType == EventType.ORIGINTRANSFER) {
+                    balance = balance.subtract(value);
+                }
             }
 
-            if(eventType == EventType.WITHDRAW || eventType == EventType.ORIGINTRANSFER) {
-                balance = balance.subtract(value);
-            }
         }
 
         return balance;
@@ -242,8 +289,11 @@ public class EventService {
 
         this.eventRepository.save(destinationTransfer);
 
+        payload.putIfAbsent("eventId", originTransfer.getEventId());
+        payload.putIfAbsent("version", originTransfer.getVersion());
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(transferDto.getPayload())
+                .payload(payload)
                 .accountNumber(originObjectId)
                 .timestamp(new Date())
                 .type(transferDto.getEventType())
@@ -259,10 +309,10 @@ public class EventService {
 
     public void checkBalance(String objectId, Map<String, Object> payload) {
         BigDecimal balance = this.getBalance(objectId);
-        String textValue = (String) payload.get("value");
-        BigDecimal value = new BigDecimal(textValue);
+        Object objectValue = payload.get("valor");
+        BigDecimal value = new BigDecimal(objectValue.toString());
 
-        if(value.compareTo(balance) < 0) {
+        if(value.compareTo(balance) > 0) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Not enough balance");
         }
     }

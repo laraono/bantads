@@ -9,6 +9,7 @@ import com.bantads.entity.read.AccountData;
 import com.bantads.entity.read.Request;
 import com.bantads.entity.read.TransactionType;
 import com.bantads.repository.read.RequestRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,12 +52,26 @@ public class AccountService {
         return this.accountDataService.getAccountsCountByManager();
     }
 
+    @Transactional()
     public GetAccountDTO getAccountData(String accountNumber) {
-        AccountData account = this.accountDataService.getAccountData(accountNumber);
-        return GetAccountDTO.builder()
-                .numero(account.getAccountNumber())
-                .cpfCliente(account.getClientCPF())
-                .build();
+        try {
+
+            AccountData account = this.accountDataService.getAccountData(accountNumber);
+
+            if (account == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account " + accountNumber + " not found");
+            }
+
+
+            return GetAccountDTO.builder()
+                    .numero(account.getAccountNumber())
+                    .cpfCliente(account.getClientCPF())
+                    .saldo(account.getBalance().toPlainString())
+                    .build();
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            throw e;
+        }
     }
 
     public RabbitQueryDTO createAccountData(RabbitCommandDTO body) {
