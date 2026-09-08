@@ -13,8 +13,7 @@ import com.bantads.dto.ClientDTO;
 import com.bantads.repository.ClientRepository;
 import com.bantads.repository.StateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -22,8 +21,7 @@ import java.util.List;
  *
  * @author lenovo
  */
-@CrossOrigin
-@RestController
+@Service
 public class ClientService {
     
     @Autowired
