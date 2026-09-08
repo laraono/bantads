@@ -24,6 +24,7 @@ public class AccountHistory {
     @Column(nullable = false, name = "account_number", length = 4)
     private String accountNumber;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionType type;
 
