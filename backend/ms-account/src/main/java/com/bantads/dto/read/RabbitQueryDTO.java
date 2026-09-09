@@ -3,6 +3,7 @@ package com.bantads.dto.read;
 import com.bantads.entity.event.EventType;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
@@ -12,14 +13,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RabbitQueryDTO {
+public class RabbitQueryDTO implements Serializable {
     private UUID sagaId;
 
     private EventType type;
 
     private Date timestamp;
 
-    private Map<String, String> payload;
+    private Map<String, Object> payload;
 
     private Status status;
 

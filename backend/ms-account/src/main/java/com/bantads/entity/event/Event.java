@@ -12,8 +12,7 @@ import java.util.UUID;
 @Entity
 @Table(
     name = "event",
-    uniqueConstraints = {@UniqueConstraint(columnNames = {"object_id", "version"})},
-    schema = "command_db"
+    uniqueConstraints = {@UniqueConstraint(columnNames = {"object_id", "version"})}
 )
 @Getter
 @Setter
@@ -23,7 +22,7 @@ import java.util.UUID;
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "manager_id")
+    @Column(name = "event_id")
     private UUID eventId;
 
     @Column(nullable = false, name = "object_id", length = 4)
@@ -37,7 +36,7 @@ public class Event {
 
     @Column(nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
-    private  Map<String, String> payload ;
+    private  Map<String, Object> payload ;
 
     @Column(name = "created_at", insertable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdAt;

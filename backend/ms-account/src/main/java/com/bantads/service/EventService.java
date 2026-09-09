@@ -3,15 +3,17 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.event.CreateEventDTO;
 import com.bantads.dto.event.RabbitCommandDTO;
+import com.bantads.dto.event.ReturnTransferDTO;
 import com.bantads.dto.event.TransferDTO;
 import com.bantads.entity.event.Event;
 import com.bantads.entity.event.EventType;
-import com.bantads.error.BadRequestError;
 import com.bantads.repository.event.EventRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -33,38 +35,128 @@ public class EventService {
         return event.getVersion() + 1;
     }
 
-    public Event createEvent(CreateEventDTO event, String objectId) {
-        EventType eventType = event.getEventType();
-        Map<String, String> payload = event.getPayload();
+    public void checkUserCPF(String userCPF, String objectId) {
+        Event event = this.eventRepository.findByObjectIdAndEventType(objectId, EventType.CREATED);
 
-        if(!this.doesAccountExists(objectId)) {
-            throw new BadRequestError("account doesn't exist");
-        }
+        String cpf = (String) event.getPayload().get("cpfCliente");
 
-        if(eventType == EventType.WITHDRAW ) {
-            this.checkBalance(objectId, payload);
+        if(!cpf.equals(userCPF)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your own account");
         }
+    }
+
+    public void deposit(String userCPF, CreateEventDTO event, String objectId) {
+        try {
+
+            if(!this.doesAccountExists(objectId)) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+            }
+        this.checkUserCPF(userCPF, objectId);
+
+        Map<String, Object> payload = event.getPayload();
 
         Event newEvent = Event.builder()
-            .payload(payload)
-            .objectId(objectId)
-            .eventType(eventType)
-            .version(this.getVersion(objectId))
-            .createdAt(new Date())
-            .build();
+                .payload(payload)
+                .objectId(objectId)
+                .eventType(EventType.DEPOSIT)
+                .version(this.getVersion(objectId))
+                .createdAt(new Date())
+                .build();
 
         this.eventRepository.save(newEvent);
 
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
+
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(event.getPayload())
+                .payload(newPayload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
-                .type(event.getEventType())
+                .type(EventType.DEPOSIT)
                 .build();
 
-        this.sendCommand(command);
+        this.sendCommand(command, userCPF);
+            } catch (Exception e) {
+                e.printStackTrace(); 
+                throw e;
+            }
+    }
 
-        return newEvent;
+    public void updateManager(CreateEventDTO event, String objectId) {
+        if(!this.doesAccountExists(objectId)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+        }
+
+        Map<String, Object> payload = event.getPayload();
+
+        Event newEvent = Event.builder()
+                .payload(payload)
+                .objectId(objectId)
+                .eventType(EventType.UPDATEMANAGER)
+                .version(this.getVersion(objectId))
+                .createdAt(new Date())
+                .build();
+
+        this.eventRepository.save(newEvent);
+
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
+
+        RabbitCommandDTO command = RabbitCommandDTO.builder()
+                .payload(newPayload)
+                .accountNumber(objectId)
+                .timestamp(new Date())
+                .type(EventType.UPDATEMANAGER)
+                .build();
+
+        this.sendCommand(command, "");
+    }
+
+    public void withdraw(String userCPF, CreateEventDTO event, String objectId) {
+            try {
+
+        if(!this.doesAccountExists(objectId)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+        }
+
+        this.checkUserCPF(userCPF, objectId);
+
+        Map<String, Object> payload = event.getPayload();
+
+        this.checkBalance(objectId, payload);
+
+        Event newEvent = Event.builder()
+                .payload(payload)
+                .objectId(objectId)
+                .eventType(EventType.WITHDRAW)
+                .version(this.getVersion(objectId))
+                .createdAt(new Date())
+                .build();
+
+        this.eventRepository.save(newEvent);
+
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
+
+        RabbitCommandDTO command = RabbitCommandDTO.builder()
+                .payload(newPayload)
+                .accountNumber(objectId)
+                .timestamp(new Date())
+                .type(EventType.WITHDRAW)
+                .build();
+
+        this.sendCommand(command, userCPF);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
     }
 
     public Event createAccount(CreateEventDTO event) {
@@ -74,21 +166,26 @@ public class EventService {
         Event newEvent = Event.builder()
                 .payload(event.getPayload())
                 .objectId(objectId)
-                .eventType(event.getEventType())
+                .eventType(EventType.CREATED)
                 .version(this.getVersion(objectId))
                 .createdAt(new Date())
                 .build();
 
         this.eventRepository.save(newEvent);
 
+        Map<String, Object> payload = newEvent.getPayload();
+
+        payload.putIfAbsent("eventId", newEvent.getEventId());
+        payload.putIfAbsent("version", newEvent.getVersion());
+
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(event.getPayload())
+                .payload(payload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
-                .type(event.getEventType())
+                .type(EventType.CREATED)
                 .build();
 
-        this.sendCommand(command);
+        this.sendCommand(command, "");
 
         return newEvent;
     }
@@ -116,8 +213,7 @@ public class EventService {
             tries++;
         }
 
-        throw new BadRequestError("");
-
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     public BigDecimal getBalance(String objectId) {
@@ -130,29 +226,46 @@ public class EventService {
         while(eventIterator.hasNext()) {
             Event event = eventIterator.next();
             EventType eventType = event.getEventType();
-            BigDecimal value = new BigDecimal(event.getPayload().get("value"));
+            if(eventType == EventType.DEPOSIT || eventType == EventType.WITHDRAW) {
+                String textValue = (String) event.getPayload().get("valor");
+                BigDecimal value = new BigDecimal(textValue);
 
-            if(eventType == EventType.DEPOSIT || eventType == EventType.DESTINATIONTRANSFER) {
-                balance.add(value);
+                if(eventType == EventType.DEPOSIT) {
+                    balance = balance.add(value);
+                }
+
+                if(eventType == EventType.WITHDRAW) {
+                    balance = balance.subtract(value);
+                }
+            }
+            if(eventType == EventType.DESTINATIONTRANSFER || eventType == EventType.ORIGINTRANSFER) {
+                Map<String, Object> origem = (Map<String, Object>) event.getPayload().get("origem");
+                String textValue = (String) origem.get("valor");
+                BigDecimal value = new BigDecimal(textValue);
+
+                if(eventType == EventType.DESTINATIONTRANSFER) {
+                    balance = balance.add(value);
+                }
+
+                if(eventType == EventType.ORIGINTRANSFER) {
+                    balance = balance.subtract(value);
+                }
             }
 
-            if(eventType == EventType.WITHDRAW || eventType == EventType.ORIGINTRANSFER) {
-                balance.subtract(value);
-            }
         }
 
         return balance;
     }
 
-    public List<Event> transfer(String originObjectId, TransferDTO transferDto) {
-        List<Event> transferEvents = new ArrayList<>();
-
+    public ReturnTransferDTO transfer(String userCPF, String originObjectId, TransferDTO transferDto) {
         String destinationObjectId = transferDto.getDestinationObjectId();
-        Map<String, String> payload = transferDto.getPayload();
+        Map<String, Object> payload = transferDto.getPayload();
 
         if(!this.doesAccountExists(originObjectId) || !this.doesAccountExists(destinationObjectId)) {
-            throw new BadRequestError("account doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
         }
+
+        this.checkUserCPF(userCPF, originObjectId);
 
         this.checkBalance(originObjectId, payload);
 
@@ -176,27 +289,31 @@ public class EventService {
 
         this.eventRepository.save(destinationTransfer);
 
-        transferEvents.add(originTransfer);
-        transferEvents.add(destinationTransfer);
+        payload.putIfAbsent("eventId", originTransfer.getEventId());
+        payload.putIfAbsent("version", originTransfer.getVersion());
 
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(transferDto.getPayload())
+                .payload(payload)
                 .accountNumber(originObjectId)
                 .timestamp(new Date())
                 .type(transferDto.getEventType())
                 .build();
 
-        this.sendCommand(command);
+        this.sendCommand(command, userCPF);
 
-        return transferEvents;
+        Map<String, Object> destino = (Map<String, Object>) payload.get("destino");
+        String nome = (String) destino.get("nome");
+
+        return ReturnTransferDTO.builder().nome(nome).build();
     }
 
-    public void checkBalance(String objectId, Map<String, String> payload) {
+    public void checkBalance(String objectId, Map<String, Object> payload) {
         BigDecimal balance = this.getBalance(objectId);
-        BigDecimal value = new BigDecimal(payload.get("value"));
+        Object objectValue = payload.get("valor");
+        BigDecimal value = new BigDecimal(objectValue.toString());
 
-        if(value.compareTo(balance) < 0) {
-            throw new BadRequestError("not enough balance");
+        if(value.compareTo(balance) > 0) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Not enough balance");
         }
     }
 
@@ -204,7 +321,12 @@ public class EventService {
         return this.eventRepository.existsByObjectIdAndEventType(objectId, EventType.CREATED);
     }
 
-    public void sendCommand(RabbitCommandDTO command) {
+    public void sendCommand(RabbitCommandDTO command, String cpf) {
+        Map<String, Object> payload = command.getPayload();
+
+        payload.put("clienteCpf", cpf);
+        command.setPayload(payload);
+
         rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUE_NAME, command);
     }
 

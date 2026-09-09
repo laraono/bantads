@@ -15,4 +15,6 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     List<AccountsByManagerDTO> getAccountCountByManager();
 
     boolean existsAccountDataByAccountNumber(String accountNumber);
+
+    AccountData findByAccountNumber(String accountNumber);
 }

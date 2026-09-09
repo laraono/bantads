@@ -1,5 +1,7 @@
 package com.bantads.entity.event;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum EventType {
     CREATED("criado"),
     DEPOSIT("deposito"),
@@ -14,6 +16,7 @@ public enum EventType {
         this.label = label;
     }
 
+    @JsonValue
     public String getLabel() {
         return label;
     }

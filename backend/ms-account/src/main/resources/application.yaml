@@ -1,3 +1,14 @@
 spring:
   application:
     name: msaccount
+  datasource:
+    command:
+      url: ${SPRING_DATASOURCE_COMMAND_URL}
+      username: ${SPRING_DATASOURCE_USERNAME}
+      password: ${SPRING_DATASOURCE_PASSWORD}
+      driver-class-name: org.postgresql.Driver
+    request:
+      url: ${SPRING_DATASOURCE_REQUEST_URL}
+      username: ${SPRING_DATASOURCE_USERNAME}
+      password: ${SPRING_DATASOURCE_PASSWORD}
+      driver-class-name: org.postgresql.Driver
