@@ -20,6 +20,10 @@ public class AccountDataService {
     private AccountDataRepository accountDataRepository;
 
     public String getCPF(String accountNumber) {
+        if(!this.accountDataRepository.existsAccountDataByAccountNumber(accountNumber)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account " + accountNumber + " doesn't exist");
+        }
+
         AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
 
         return account.getClientCPF();
@@ -52,6 +56,10 @@ public class AccountDataService {
     }
 
     public AccountData updateAccountBalance(BigDecimal value, String accountNumber) {
+        if(!this.accountDataRepository.existsAccountDataByAccountNumber(accountNumber)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account " + accountNumber + " doesn't exist");
+        }
+
         AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
 
         BigDecimal balance = account.getBalance();
