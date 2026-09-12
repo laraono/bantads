@@ -17,14 +17,13 @@ import java.util.Date;
 @Builder
 public class AccountHistory {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "history_id")
     private Long historyId;
 
     @Column(nullable = false, name = "account_number", length = 4)
     private String accountNumber;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionType type;
 

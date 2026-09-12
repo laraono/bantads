@@ -11,8 +11,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "request",
     indexes = {
-        @Index(name = "idx_event_id", columnList = "eventId", unique = true),
-        @Index(name = "idx_version", columnList = "version", unique = true)
+        @Index(name = "idx_event_id", columnList = "event_id"),
+        @Index(name = "idx_version", columnList = "version")
+    },
+    uniqueConstraints = {
+            @UniqueConstraint(columnNames = {"event_id", "version"}),
     }
 )
 @Getter
@@ -26,7 +29,7 @@ public class Request {
     @Column(name = "request_id")
     private Long requestId;
 
-    @Column(nullable = false, name = "event_Id")
+    @Column(nullable = false, name = "event_id")
     private UUID eventId;
 
     @Column(nullable = false)

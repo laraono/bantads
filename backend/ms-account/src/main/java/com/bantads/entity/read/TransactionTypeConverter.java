@@ -1,13 +1,13 @@
-package com.bantads.entity.event;
+package com.bantads.entity.read;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter(autoApply = true)
-public class EventTypeConverter implements AttributeConverter<EventType, String> {
+public class TransactionTypeConverter implements AttributeConverter<TransactionType, String> {
 
     @Override
-    public String convertToDatabaseColumn(EventType attribute) {
+    public String convertToDatabaseColumn(TransactionType attribute) {
         if (attribute == null) {
             return null;
         }
@@ -15,11 +15,11 @@ public class EventTypeConverter implements AttributeConverter<EventType, String>
     }
 
     @Override
-    public EventType convertToEntityAttribute(String dbData) {
+    public TransactionType convertToEntityAttribute(String dbData) {
         if (dbData == null) {
             return null;
         }
-        for (EventType type : EventType.values()) {
+        for (TransactionType type : TransactionType.values()) {
             if (type.getLabel().equalsIgnoreCase(dbData)) {
                 return type;
             }
