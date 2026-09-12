@@ -4,7 +4,6 @@ import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.event.CreateEventDTO;
 import com.bantads.dto.event.RabbitCommandDTO;
 import com.bantads.dto.event.ReturnTransferDTO;
-import com.bantads.dto.event.TransferDTO;
 import com.bantads.entity.event.Event;
 import com.bantads.entity.event.EventType;
 import com.bantads.repository.event.EventRepository;
@@ -38,7 +37,7 @@ public class EventService {
     public void checkUserCPF(String userCPF, String objectId) {
         Event event = this.eventRepository.findByObjectIdAndEventType(objectId, EventType.CREATED);
 
-        String cpf = (String) event.getPayload().get("cpfCliente");
+        String cpf = String.valueOf(event.getPayload().get("cpfCliente"));
 
         if(!cpf.equals(userCPF)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your own account");
@@ -46,11 +45,10 @@ public class EventService {
     }
 
     public void deposit(String userCPF, CreateEventDTO event, String objectId) {
-        try {
+        if(!this.doesAccountExists(objectId)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+        }
 
-            if(!this.doesAccountExists(objectId)) {
-                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
-            }
         this.checkUserCPF(userCPF, objectId);
 
         Map<String, Object> payload = event.getPayload();
@@ -70,7 +68,6 @@ public class EventService {
         newPayload.putIfAbsent("eventId", newEvent.getEventId());
         newPayload.putIfAbsent("version", newEvent.getVersion());
 
-
         RabbitCommandDTO command = RabbitCommandDTO.builder()
                 .payload(newPayload)
                 .accountNumber(objectId)
@@ -79,10 +76,6 @@ public class EventService {
                 .build();
 
         this.sendCommand(command, userCPF);
-            } catch (Exception e) {
-                e.printStackTrace(); 
-                throw e;
-            }
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {
@@ -118,8 +111,6 @@ public class EventService {
     }
 
     public void withdraw(String userCPF, CreateEventDTO event, String objectId) {
-            try {
-
         if(!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
         }
@@ -153,11 +144,7 @@ public class EventService {
                 .build();
 
         this.sendCommand(command, userCPF);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw e;
-            }
-    }
+}
 
     public Event createAccount(CreateEventDTO event) {
 
@@ -227,7 +214,7 @@ public class EventService {
             Event event = eventIterator.next();
             EventType eventType = event.getEventType();
             if(eventType == EventType.DEPOSIT || eventType == EventType.WITHDRAW) {
-                String textValue = (String) event.getPayload().get("valor");
+                String textValue = String.valueOf(event.getPayload().get("valor"));
                 BigDecimal value = new BigDecimal(textValue);
 
                 if(eventType == EventType.DEPOSIT) {
@@ -240,7 +227,7 @@ public class EventService {
             }
             if(eventType == EventType.DESTINATIONTRANSFER || eventType == EventType.ORIGINTRANSFER) {
                 Map<String, Object> origem = (Map<String, Object>) event.getPayload().get("origem");
-                String textValue = (String) origem.get("valor");
+                String textValue = String.valueOf(origem.get("valor"));
                 BigDecimal value = new BigDecimal(textValue);
 
                 if(eventType == EventType.DESTINATIONTRANSFER) {
@@ -257,9 +244,18 @@ public class EventService {
         return balance;
     }
 
-    public ReturnTransferDTO transfer(String userCPF, String originObjectId, TransferDTO transferDto) {
-        String destinationObjectId = transferDto.getDestinationObjectId();
+    public ReturnTransferDTO transfer(String userCPF, String originObjectId, CreateEventDTO transferDto) {
         Map<String, Object> payload = transferDto.getPayload();
+
+        Map<String, Object> destination = (Map<String, Object>) payload.get("destino");
+        Map<String, Object> origin = (Map<String, Object>) payload.get("origem");
+        
+        String destinationCPF = String.valueOf(destination.get("cpf"));
+        String destinationObjectId = String.valueOf(destination.get("conta"));
+
+        if(userCPF.equals(destinationCPF)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Cannot transfer to your own account");
+        }
 
         if(!this.doesAccountExists(originObjectId) || !this.doesAccountExists(destinationObjectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
@@ -267,7 +263,7 @@ public class EventService {
 
         this.checkUserCPF(userCPF, originObjectId);
 
-        this.checkBalance(originObjectId, payload);
+        this.checkBalance(originObjectId, origin);
 
         Event originTransfer = Event.builder()
             .payload(payload)
@@ -289,20 +285,31 @@ public class EventService {
 
         this.eventRepository.save(destinationTransfer);
 
-        payload.putIfAbsent("eventId", originTransfer.getEventId());
-        payload.putIfAbsent("version", originTransfer.getVersion());
+        origin.put("eventId", originTransfer.getEventId());
+        origin.put("version", originTransfer.getVersion());
 
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(payload)
+                .payload(origin)
                 .accountNumber(originObjectId)
                 .timestamp(new Date())
-                .type(transferDto.getEventType())
+                .type(EventType.ORIGINTRANSFER)
+                .build();
+
+        destination.put("eventId", destinationTransfer.getEventId());
+        destination.put("version", destinationTransfer.getVersion());
+        destination.put("valor", origin.get("valor"));
+
+        RabbitCommandDTO destCommand = RabbitCommandDTO.builder()
+                .payload(destination)
+                .accountNumber(destinationObjectId)
+                .timestamp(new Date())
+                .type(EventType.DESTINATIONTRANSFER)
                 .build();
 
         this.sendCommand(command, userCPF);
+        this.sendCommand(destCommand, destinationCPF);
 
-        Map<String, Object> destino = (Map<String, Object>) payload.get("destino");
-        String nome = (String) destino.get("nome");
+        String nome = String.valueOf(destination.get("nome"));
 
         return ReturnTransferDTO.builder().nome(nome).build();
     }
