@@ -44,7 +44,7 @@ class AccountController {
 
     async getExtract(req, res) {
         try {
-            const result = await accountService.getExtract(req.params.id, req.body, req.headers);
+            const result = await accountService.getExtract(req.params.id, req.query, req.headers);
             return res.status(200).json(result);
         } catch (err) {
             const status = err.status || 500;
