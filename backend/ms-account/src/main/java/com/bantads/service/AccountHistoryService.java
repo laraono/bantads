@@ -46,29 +46,42 @@ public class AccountHistoryService {
         return accountHistoryRepository.save(accountHistory);
     }
 
+    private LocalDateTime parseDateTime(String dateStr, boolean isStart) {
+        if (isStringNull(dateStr)) {
+            return isStart
+                ? LocalDate.now().minusDays(30).atStartOfDay()
+                : LocalDate.now().atTime(LocalTime.MAX);
+        }
+
+        String trimmed = dateStr.trim();
+
+        if (trimmed.length() == 10) {
+            LocalDate localDate = LocalDate.parse(trimmed);
+            return isStart ? localDate.atStartOfDay() : localDate.atTime(LocalTime.MAX);
+        }
+
+        if (trimmed.contains(" ") && !trimmed.contains("T")) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return LocalDateTime.parse(trimmed, formatter);
+        }
+
+        return LocalDateTime.parse(trimmed);
+    }
+
     public ExtractDTO getExtract(String accountNumber, String start, String end, String userCPF) {
-        LocalDateTime startDate = LocalDateTime.parse(start, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        LocalDateTime endDate =
-                isStringNull(end) ?
-                        LocalDateTime.of(LocalDate.now(), LocalTime.of(23, 59, 59)) :
-                        LocalDateTime.parse(end, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        LocalDateTime startDate = parseDateTime(start, true);
+        LocalDateTime endDate = parseDateTime(end, false);
 
         this.checkDate(startDate, endDate);
 
         ExtractDTO extract = new ExtractDTO();
-
         BigDecimal balance = this.getInitialBalance(accountNumber, startDate, userCPF);
-
         extract.setSaldoAbertura(balance.toPlainString());
 
-        List<AccountHistory> history = this.accountHistoryRepository.findAllByAccountNumberAndCreatedAtBetween(
-            accountNumber,
-            startDate,
-            endDate
-        );
+        List<AccountHistory> history = this.accountHistoryRepository
+                .findAllByAccountNumberAndCreatedAtBetween(accountNumber, startDate, endDate);
 
         extract.setMovimentacoes(history);
-
         return extract;
     }
 

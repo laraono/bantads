@@ -24,9 +24,13 @@ public class AccountController {
 
     @GetMapping("/{accountNumber}")
     ResponseEntity<GetAccountDTO> getAccountData(@PathVariable String accountNumber) {
-        GetAccountDTO account = this.accountService.getAccountData(accountNumber);
-
-        return ResponseEntity.status(HttpStatus.OK).body(account);
+        try {
+            GetAccountDTO account = this.accountService.getAccountData(accountNumber);
+            return ResponseEntity.status(HttpStatus.OK).body(account);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/{accountNumber}/extract")
@@ -36,29 +40,53 @@ public class AccountController {
             @RequestParam(value = "inicio", required = false) String start,
             @RequestParam(value = "fim", required = false) String end
     ) {
-        ExtractDTO extract = this.accountService.getExtract(accountNumber, start, end, userCPF);
-
-        return ResponseEntity.status(HttpStatus.OK).body(extract);
+        try {
+            ExtractDTO extract = this.accountService.getExtract(accountNumber, start, end, userCPF);
+            return ResponseEntity.status(HttpStatus.OK).body(extract);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/{accountNumber}/cpf")
     String getCPF(@PathVariable String accountNumber) {
-        return this.accountService.getCPF(accountNumber);
+        try {
+            return this.accountService.getCPF(accountNumber);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/{accountNumber}/balance")
     BigDecimal getBalance(@PathVariable String accountNumber) {
-        return this.accountService.getBalance(accountNumber);
+        try {
+            return this.accountService.getBalance(accountNumber);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/managers/{cpf}/")
     List<AccountData> getAccountsByManager(@PathVariable String cpf) {
-        return this.accountService.getAccountsByManager(cpf);
+        try {
+            return this.accountService.getAccountsByManager(cpf);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/managers")
     List<AccountsByManagerDTO> getAccountsCount() {
-        return this.accountService.getAccountsCountByManager();
+        try {
+            return this.accountService.getAccountsCountByManager();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 }
