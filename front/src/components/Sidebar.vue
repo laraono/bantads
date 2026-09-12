@@ -28,7 +28,7 @@ const router = useRouter()
 
 const navItems: { key: NavKey; label: string; to: string; icon: 'home' | 'chart' | 'gear' }[] = [
   { key: 'home', label: 'Home', to: '/home', icon: 'home' },
-  { key: 'extrato', label: 'Extrato detalhado', to: '', icon: 'chart' },
+  { key: 'extrato', label: 'Extrato detalhado', to: '/extrato', icon: 'chart' },
   { key: 'config', label: 'Configurações', to: '', icon: 'gear' }
 ]
 
