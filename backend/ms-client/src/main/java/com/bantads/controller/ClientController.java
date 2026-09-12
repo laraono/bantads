@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.bantads.controller;
 
 import com.bantads.assembler.ClientModelAssembler;
@@ -13,12 +9,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.CollectionModel;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- *
- * @author lenovo
- */
 @CrossOrigin
 @RestController
 @RequestMapping("/clients")
@@ -42,6 +35,12 @@ public class ClientController {
     EntityModel<Client> getClient(@PathVariable Long id) {
         Client client = clientService.getClient(id);
         return assembler.toModel(client);
+    }
+
+    @GetMapping("/{cpf}/cpf")
+    public ResponseEntity<String> getName(@PathVariable String cpf) {
+        String name = clientService.getName(cpf);
+        return ResponseEntity.ok().body(name);
     }
 
     @GetMapping("/{id}/solicitacoes")
