@@ -6,7 +6,7 @@ class RebootController {
             await rebootService.seedAuth()
             await rebootService.seedPostgres()
 
-            return res.status(200).json({ message: 'Seeder concluído' });
+            return res.status(200).json({ status: 'ok' });
         } catch (err) {
             const status = err.status || 500;
             console.log(err)

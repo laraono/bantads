@@ -28,7 +28,6 @@ import java.util.HashMap;
 public class PersistenceRequestConfiguration {
 
     @Bean
-    @Primary
     public LocalContainerEntityManagerFactoryBean requestEntityManager() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
 
@@ -52,7 +51,6 @@ public class PersistenceRequestConfiguration {
         return new DataSourceProperties();
     }
 
-    @Primary
     @Bean
     public DataSource requestDataSource() {
         return requestDataSourceProperties()

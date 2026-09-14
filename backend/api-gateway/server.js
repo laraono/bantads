@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
+const axios = require('axios');
 const authController = require('./src/controller/authController');
 const accountRoutes = require('./src/routes/accountRoutes');
 const rebootRoutes = require('./src/routes/rebootRoutes');
@@ -34,11 +35,15 @@ app.use('/solicitacoes', createProxyMiddleware({
 
 app.use('/contas', accountRoutes);
 
-app.use('/gerentes', authGatewayFilter(), createProxyMiddleware({
-    target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/': '/managers' }
-}));
+app.get('/gerentes', authGatewayFilter(), async (req, res) => {
+    try {
+        const response = await axios.get(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers`);
+        return res.status(200).json({ gerentes: response.data });
+    } catch (err) {
+        const status = err.response?.status || 500;
+        return res.status(status).json({ error: err.message || 'Falha ao buscar gerentes' });
+    }
+});
 
 app.use('/relatorios', authGatewayFilter(), createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
