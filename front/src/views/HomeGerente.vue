@@ -168,9 +168,6 @@ async function confirmReject(reason: string) {
                       Recusar
                     </button>
                   </div>
-                  <button v-else class="view-btn" aria-label="Ver detalhes">
-                    <svg viewBox="0 0 24 24" class="action-icon"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -432,21 +429,6 @@ async function confirmReject(reason: string) {
 
 .action-btn.reject:hover {
   color: #b91c1c;
-}
-
-.view-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  background: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 0;
-}
-
-.view-btn:hover {
-  color: #4b5563;
 }
 
 .processing {

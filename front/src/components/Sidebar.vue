@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 
 interface SidebarUser {
   fullName: string
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const { logout } = useAuth()
 
 const clientNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
   { key: 'home', label: 'Home', to: '/home', icon: 'home' },
@@ -52,6 +54,7 @@ function go(to: string) {
 }
 
 function handleLogout() {
+  logout()
   emit('logout')
   router.push('/login')
 }

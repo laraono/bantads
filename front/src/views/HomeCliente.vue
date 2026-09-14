@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { DateTime } from 'luxon'
 import TransactionModal from '../components/TransactionModal.vue'
 import Sidebar from '../components/Sidebar.vue'
+import { useAccount, type AccountTransaction } from '../composables/useAccount'
 
 const router = useRouter()
+const { accountNumber, transactions, balance, deposit, withdraw, transfer } = useAccount()
 
 type ModalTab = 'transferencia' | 'saque' | 'depositar'
 
-interface Transaction {
-  id: number
-  name: string
-  date: string
-  amount: number
-  icon: 'bag' | 'coffee' | 'car' | 'home' | 'movie'
-}
+const RECENT_COUNT = 5
 
 const user = {
   name: 'John',
@@ -23,18 +20,29 @@ const user = {
   initials: 'AD'
 }
 
-const account = reactive({
-  balance: 24582.5,
-  number: '•••• 4829'
-})
+function parseTxDateTime(tx: AccountTransaction): DateTime {
+  return DateTime.fromFormat(`${tx.date} ${tx.time}`, 'dd/MM/yyyy HH:mm')
+}
 
-const transactions: Transaction[] = [
-  { id: 1, name: 'Amazon', date: 'Today, 2:30 PM', amount: -89.99, icon: 'bag' },
-  { id: 2, name: 'Starbucks', date: 'Today, 9:15 AM', amount: -5.5, icon: 'coffee' },
-  { id: 3, name: 'Uber', date: 'Yesterday, 6:45 PM', amount: -24.0, icon: 'car' },
-  { id: 4, name: 'Salary Deposit', date: 'Dec 1, 2024', amount: 3500.0, icon: 'home' },
-  { id: 5, name: 'Netflix', date: 'Nov 28, 2024', amount: -15.99, icon: 'movie' }
-]
+const recentTransactions = computed(() =>
+  [...transactions]
+    .sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis())
+    .slice(0, RECENT_COUNT)
+)
+
+function iconFor(operation: AccountTransaction['operation']): 'deposit' | 'withdraw' | 'transfer' {
+  if (operation === 'Depósito') return 'deposit'
+  if (operation === 'Saque') return 'withdraw'
+  return 'transfer'
+}
+
+function formatRelativeLabel(tx: AccountTransaction): string {
+  const dt = parseTxDateTime(tx)
+  const now = DateTime.now()
+  if (dt.hasSame(now, 'day')) return `Hoje, ${dt.toFormat('HH:mm')}`
+  if (dt.hasSame(now.minus({ days: 1 }), 'day')) return `Ontem, ${dt.toFormat('HH:mm')}`
+  return `${tx.date}, ${tx.time}`
+}
 
 const quickActions: { label: string; icon: string; tab: ModalTab | null }[] = [
   { label: 'Transferir', icon: 'send', tab: 'transferencia' },
@@ -57,21 +65,22 @@ function openModal(tab: ModalTab | null) {
 
 const balanceLoading = ref(false)
 
-// Simula a reconsulta do saldo no serviço de leitura (consistência eventual):
-// a operação é aceita de imediato, mas o saldo só é confirmado após reconsultar.
-function fetchBalance(expected: number): Promise<number> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(expected), 900)
-  })
+// Simula o tempo de processamento da saga antes da operação ser confirmada.
+function simulateProcessing(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 900))
 }
 
-async function handleTransaction(payload: { tab: ModalTab; amount: number }) {
-  const delta = payload.tab === 'depositar' ? payload.amount : -payload.amount
-  const expectedBalance = account.balance + delta
-
+async function handleTransaction(payload: { tab: ModalTab; amount: number; account?: string }) {
   balanceLoading.value = true
   try {
-    account.balance = await fetchBalance(expectedBalance)
+    await simulateProcessing()
+    if (payload.tab === 'depositar') {
+      deposit(payload.amount)
+    } else if (payload.tab === 'saque') {
+      withdraw(payload.amount)
+    } else {
+      transfer(payload.account ?? '', payload.amount)
+    }
   } finally {
     balanceLoading.value = false
   }
@@ -82,7 +91,7 @@ function formatCurrency(value: number): string {
   return `${sign}R$${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+const formattedBalance = computed(() => `R$${balance.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
 </script>
 
 <template>
@@ -113,7 +122,7 @@ const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-
           <div class="balance-bottom">
             <div class="balance-account">
               <span class="balance-label">Número da conta</span>
-              <span class="balance-limit">{{ account.number }}</span>
+              <span class="balance-limit">{{ accountNumber }}</span>
             </div>
           </div>
         </section>
@@ -143,17 +152,15 @@ const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-
           </div>
 
           <ul class="transaction-list">
-            <li v-for="tx in transactions" :key="tx.id" class="transaction-row">
+            <li v-for="tx in recentTransactions" :key="tx.id" class="transaction-row">
               <span class="transaction-icon">
-                <svg v-if="tx.icon === 'bag'" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
-                <svg v-else-if="tx.icon === 'coffee'" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 1 1 0 8h-1" /><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><path d="M6 2v2" /><path d="M10 2v2" /><path d="M14 2v2" /></svg>
-                <svg v-else-if="tx.icon === 'car'" viewBox="0 0 24 24"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2" /><circle cx="6.5" cy="16.5" r="2.5" /><circle cx="16.5" cy="16.5" r="2.5" /></svg>
-                <svg v-else-if="tx.icon === 'home'" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" /></svg>
-                <svg v-else viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></svg>
+                <svg v-if="iconFor(tx.operation) === 'deposit'" viewBox="0 0 24 24"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+                <svg v-else-if="iconFor(tx.operation) === 'withdraw'" viewBox="0 0 24 24"><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></svg>
+                <svg v-else viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
               </span>
               <span class="transaction-info">
-                <span class="transaction-name">{{ tx.name }}</span>
-                <span class="transaction-date">{{ tx.date }}</span>
+                <span class="transaction-name">{{ tx.operation }} · {{ tx.party }}</span>
+                <span class="transaction-date">{{ formatRelativeLabel(tx) }}</span>
               </span>
               <span class="transaction-amount" :class="tx.amount > 0 ? 'positive' : 'negative'">
                 {{ tx.amount > 0 ? '+ ' : '' }}{{ formatCurrency(tx.amount) }}
@@ -167,7 +174,7 @@ const formattedBalance = computed(() => `R$${account.balance.toLocaleString('pt-
     <TransactionModal
       :open="modalOpen"
       v-model:tab="modalTab"
-      :balance="account.balance"
+      :balance="balance"
       @close="modalOpen = false"
       @submit="handleTransaction"
     />
