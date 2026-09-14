@@ -121,7 +121,7 @@ public class AccountHistoryService {
         long daysBetween = Duration.between(start, end).toDays();
 
         if(daysBetween > 365) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Timestamp cannot be bigger than 365 days");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Filtro não pode ter diferença maior que 365 dias");
         }
 
     }

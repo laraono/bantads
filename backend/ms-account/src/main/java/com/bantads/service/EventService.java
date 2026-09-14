@@ -40,13 +40,13 @@ public class EventService {
         String cpf = String.valueOf(event.getPayload().get("cpfCliente"));
 
         if(!cpf.equals(userCPF)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your own account");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não é a sua conta");
         }
     }
 
     public void deposit(String userCPF, CreateEventDTO event, String objectId) {
         if(!this.doesAccountExists(objectId)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
         this.checkUserCPF(userCPF, objectId);
@@ -80,7 +80,7 @@ public class EventService {
 
     public void updateManager(CreateEventDTO event, String objectId) {
         if(!this.doesAccountExists(objectId)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
         Map<String, Object> payload = event.getPayload();
@@ -112,7 +112,7 @@ public class EventService {
 
     public void withdraw(String userCPF, CreateEventDTO event, String objectId) {
         if(!this.doesAccountExists(objectId)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
         this.checkUserCPF(userCPF, objectId);
@@ -254,11 +254,11 @@ public class EventService {
         String destinationObjectId = String.valueOf(destination.get("conta"));
 
         if(userCPF.equals(destinationCPF)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Cannot transfer to your own account");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Não pode transferir para sua própria conta");
         }
 
         if(!this.doesAccountExists(originObjectId) || !this.doesAccountExists(destinationObjectId)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
         this.checkUserCPF(userCPF, originObjectId);
@@ -320,7 +320,7 @@ public class EventService {
         BigDecimal value = new BigDecimal(objectValue.toString());
 
         if(value.compareTo(balance) > 0) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Not enough balance");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Sem saldo suficiente");
         }
     }
 

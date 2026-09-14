@@ -52,7 +52,7 @@ public class AccountService {
         AccountData account = this.accountDataService.getAccountData(accountNumber);
 
         if (account == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account " + accountNumber + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta " + accountNumber + " não foi encontrada");
         }
 
         return GetAccountDTO.builder()

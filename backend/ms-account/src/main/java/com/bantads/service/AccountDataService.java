@@ -21,7 +21,7 @@ public class AccountDataService {
 
     public String getCPF(String accountNumber) {
         if(!this.accountDataRepository.existsAccountDataByAccountNumber(accountNumber)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account " + accountNumber + " doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta " + accountNumber + " não existe");
         }
 
         AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
@@ -49,7 +49,7 @@ public class AccountDataService {
 
     public AccountData createAccountData(AccountData accountData) {
         if(this.accountDataRepository.existsAccountDataByAccountNumber(accountData.getAccountNumber())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "account already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Conta já existe");
         }
 
         return this.accountDataRepository.save(accountData);
@@ -57,7 +57,7 @@ public class AccountDataService {
 
     public AccountData updateAccountBalance(BigDecimal value, String accountNumber) {
         if(!this.accountDataRepository.existsAccountDataByAccountNumber(accountNumber)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Account " + accountNumber + " doesn't exist");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta " + accountNumber + " não existe");
         }
 
         AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
