@@ -79,12 +79,12 @@ class AccountService {
     }
 
     async deposit(id, body, headers) {
-        const depositAnswwer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
+        const depositAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
             {payload: body},
             { headers: { 'x-user-cpf': headers['x-user-cpf']} }
         )
 
-        return depositAnswwer.data        
+        return depositAnswer.data        
     }
 
     async getAccount(id, headers) {
