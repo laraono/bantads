@@ -185,6 +185,15 @@ services:
         condition: service_healthy
     restart: always
 
+  ms-email:
+  environment:
+    SPRING_RABBITMQ_HOST: rabbitmq
+    SPRING_RABBITMQ_PORT: 5672
+    SMTP_HOST: smtp.gmail.com
+    SMTP_PORT: "465"
+    SMTP_USER: ${SMTP_USER}
+    SMTP_PASS: ${SMTP_PASS}
+
   api-gateway:
     container_name: api-gateway
     build:
