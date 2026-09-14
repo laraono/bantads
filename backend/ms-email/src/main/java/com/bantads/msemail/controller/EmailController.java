@@ -24,7 +24,8 @@ public class EmailController {
             emailService.sendEmail(request.getTo(), request.getSubject(), request.getMessage());
             return ResponseEntity.ok("Email enviado com sucesso");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Erro ao enviar email");
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Erro ao enviar email: " + e.getMessage());
         }
 
     }

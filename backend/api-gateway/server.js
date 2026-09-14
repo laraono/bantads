@@ -17,6 +17,8 @@ const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
+const MS_EMAIL_HOST = process.env.MS_EMAIL_HOST || 'ms-email';
+const MS_EMAIL_PORT = process.env.MS_EMAIL_PORT || '8086';
 
 app.use('', rebootRoutes);
 
@@ -55,9 +57,11 @@ app.use('/jobs', authGatewayFilter(), createProxyMiddleware({
 app.post('/login', (req, res) => authController.login(req, res));
 app.post('/logout', (req, res) => authController.logout(req, res));
 
-app.get('/health', (req, res) => {
-  res.status(200).json({status: 'UP', service: 'API Gateway está estável'})
-});
+app.use('/email', createProxyMiddleware({
+    target: `http://${MS_EMAIL_HOST}:${MS_EMAIL_PORT}`,
+    changeOrigins: true,
+    pathRewrite: { '^/': '/email' }
+}));
 
 app.post('/reboot', (req, res) => {
   res.status(200).json({status: 'OK', message: 'API Gateway foi reiniciado'})
