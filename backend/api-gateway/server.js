@@ -57,6 +57,11 @@ app.use('/jobs', authGatewayFilter(), createProxyMiddleware({
 app.post('/login', (req, res) => authController.login(req, res));
 app.post('/logout', (req, res) => authController.logout(req, res));
 
+// para testar email:  curl -X POST http://localhost:8086/email/send \
+// -H "Content-Type: application/json" \
+// -d '{"to":"laraono.pro@gmail.com","subject":"test","message":"oi"}'
+
+
 app.use('/email', createProxyMiddleware({
     target: `http://${MS_EMAIL_HOST}:${MS_EMAIL_PORT}`,
     changeOrigins: true,
