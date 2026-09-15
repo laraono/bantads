@@ -4,13 +4,42 @@ import { useCadastro } from '../composables/useCadastro';
 import { useRoute, useRouter } from 'vue-router';
 
 const { cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
+const estados = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
 const mensagemAlerta = ref(false)
 
 const route = useRoute()
 const router = useRouter()
 
+const rules = {
+    required: (v: string) => !!v || 'Campo obrigatório',
+}
+
+const maskSalario = (v: string) => {
+
+        let valor = v.replace(/\D/g, '');
+
+        if (!valor) {
+            salario.value = '';
+            return;
+        }
+
+        valor = valor.padStart(3, '0');
+
+        const centavos = valor.slice(-2);
+        let reais = valor.slice(0, -2);
+
+        reais= reais.replace(/^0+(?=\d)/, '');
+        
+        reais = reais.replace(/\B(?=(\d{3})+(?!\d))/g,
+                '.'
+            );
+
+        salario.value = `${reais},${centavos}`;
+};
+
 function envioDados() {
     mensagemAlerta.value = true
+    salario.value = ''
 }
 
 </script>
@@ -50,35 +79,35 @@ function envioDados() {
                     <div class="container-endereco">
                         <div class="endereco">
                             <label class="field-label" for="cadastro-cep">CEP</label>
-                            <v-text-field id="cadastro-cep" v-model="cep" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="00000-000" type="text" />
+                            <v-mask-input id="cadastro-cep" v-model="cep" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="00000-000" type="text" :rules="[rules.required]" mask="#####-###"/>
                         </div>
                         <div class="endereco">
                             <label class="field-label" for="cadastro-numero">Número</label>
-                            <v-text-field id="cadastro-numero" v-model="numero" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="123" type="text" />
+                            <v-text-field id="cadastro-numero" v-model="numero" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="123" type="text" :rules="[rules.required]"/>
                         </div>
                     </div>
                     <div class="label-field">
                         <label class="field-label" for="cadastro-rua">Rua/Logradouro</label>
-                        <v-text-field id="cadastro-rua" v-model="rua" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Rua Joaquim Theodoro" type="text" />
+                        <v-text-field id="cadastro-rua" v-model="rua" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Rua Joaquim Theodoro" type="text" :rules="[rules.required]"/>
                     </div>
                     <div class="label-field">
                         <label class="field-label" for="cadastro-complemento">Complemento</label>
-                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" />
+                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" :rules="[rules.required]"/>
                     </div>
                     <div class="container-regiao">
                         <div class="localizacao">
                             <label class="field-label" for="cadastro-cidade">Cidade</label>
-                            <v-text-field id="cadastro-cidade" v-model="cidade" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Curitiba" type="text" />
+                            <v-text-field id="cadastro-cidade" v-model="cidade" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Curitiba" type="text" :rules="[rules.required]"/>
                         </div>
                         <div class="localizacao">
                             <label class="field-label" for="cadastro-estado">Estado</label>
-                            <v-select id="cadastro-estado" v-model="estado" class="field-input" variant="solo" flat density="comfortable" :items="['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']" label="Selecione">
+                            <v-select id="cadastro-estado" v-model="estado" class="field-input" variant="solo" flat density="comfortable" :items="estados" label="Selecione" :rules="[rules.required]">
                             </v-select>
                         </div>
                     </div>
                     <div class="label-field">
                         <label class="field-label" for="cadastro-salario">Salário Mensal</label>
-                        <v-text-field id="cadastro-salario" v-model="salario" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="R$ 0,00" type="text" :rules="[]"/>
+                        <v-text-field id="cadastro-salario" :model-value="salario" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="0,00" prefix="R$" type="text" autocomplete="off" :rules="[rules.required]" @update:model-value="maskSalario"/>
                     </div>
                     <div class="container-btn">
                         <v-btn type="button" class="voltar-btn" size="large" to="/cadastro">

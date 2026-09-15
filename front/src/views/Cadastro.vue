@@ -7,6 +7,13 @@ const { nome, cpf, telefone, email } = useCadastro()
 const route = useRoute()
 const router = useRouter()
 
+const rules = {
+    required: (v: string) => !!v || 'Campo obrigatório',
+    nome: (v: string) => v && v.length >= 8 || 'Mínimo de 8 letras',
+    telefone: (v: string) => v.replace(/\D/g, '').length === 11 || 'Telefone inválido',
+    email: (v: string) => /.+@.+\..+/.test(v) || 'E-mail inválido',
+}
+
 </script>
 
 <template>
@@ -42,13 +49,13 @@ const router = useRouter()
                 </div>
                 <v-form>
                     <label class="field-label" for="cadastro-nome">Nome Completo</label>
-                    <v-text-field id="cadastro-nome" v-model="nome" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Carmem Luisa Oliveira" type="text" />
+                    <v-text-field id="cadastro-nome" v-model="nome" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Carmem Luisa Oliveira" type="text" :rules="[rules.required, rules.nome]"/>
                     <label class="field-label" for="cadastro-cpf">CPF</label>
-                    <v-text-field id="cadastro-cpf" v-model="cpf" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" />
+                    <v-mask-input id="cadastro-cpf" v-model="cpf" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" :rules="[rules.required]" mask="###.###.###-##"/>
                     <label class="field-label" for="cadastro-telefone">Telefone</label>
-                    <v-text-field id="cadastro-telefone" v-model="telefone" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="(41) 99999-9999" type="text" />
+                    <v-mask-input id="cadastro-telefone" v-model="telefone" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="(41) 99999-9999" type="text" :rules="[rules.required, rules.telefone]" mask='(##) #####-####'/>
                     <label class="field-label" for="cadastro-email">E-mail</label>
-                    <v-text-field id="cadastro-email" v-model="email" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="seu@email.com" type="email" />
+                    <v-text-field id="cadastro-email" v-model="email" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="seu@email.com" type="email" :rules="[rules.required, rules.email]"/>
                     <v-btn type="submit" class="submit-btn" block size="large" to="/cadastro/endereco">
                         Próximo
                         <v-icon icon="mdi-arrow-right" end/>
