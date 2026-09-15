@@ -3,10 +3,9 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 import Login from '../views/Login.vue'
-import Home from '../views/Home.vue'
+import HomeCliente from '../views/HomeCliente.vue'
 import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
-import Cliente from '../views/Cliente.vue'
-import Gerente from '../views/Gerente.vue'
+import HomeGerente from '../views/HomeGerente.vue'
 import Cadastro from '../views/Cadastro.vue'
 import CadastroEndereco from '../views/CadastroEndereco.vue'
 
@@ -40,8 +39,8 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/home',
     name: 'home',
-    component: Home,
-    meta: { requiresAuth: true }
+    component: HomeCliente,
+    meta: { requiresAuth: true, role: 'cliente' } // Somente clientes têm acesso
   },
   {
     path: '/extrato',
@@ -50,15 +49,9 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/clientes',
-    name: 'cliente',
-    component: Cliente,
-    meta: { requiresAuth: true, role: 'cliente'} // Somente clientes têm acesso
-  },
-  {
     path: '/gerentes',
     name: 'gerente',
-    component: Gerente,
+    component: HomeGerente,
     meta: { requiresAuth: true, role: 'gerente'} // Somente gerentes têm acesso
   },
   {
@@ -82,16 +75,14 @@ router.beforeEach((to) => {
     return { name: 'login'}
   }
 
+  const homeRoute = userRole === 'gerente' ? 'gerente' : 'home'
+
   if (to.name === 'login' && isAuthenticated) {
-    if (userRole === 'cliente') {
-      return { name: 'cliente'}
-    }
+    return { name: homeRoute }
+  }
 
-    if (userRole === 'gerente') {
-      return { name: 'gerente'}
-    }
-
-    return { name: 'home'}
+  if (to.meta.role && to.meta.role !== userRole) {
+    return { name: homeRoute }
   }
 })
 

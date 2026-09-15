@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.bantads.service;
 
 import com.bantads.entity.Address;
@@ -18,10 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-/**
- *
- * @author lenovo
- */
 @Service
 public class ClientService {
     
@@ -37,6 +29,12 @@ public class ClientService {
 
     public Client getClient(Long id) {
         return clientRepository.getReferenceById(id);
+    }
+
+    public String getName(String cpf) {
+        Client c = clientRepository.findByCpf(cpf);
+
+        return c.getName();
     }
 
     public Request getRequestByClient(Long id) {

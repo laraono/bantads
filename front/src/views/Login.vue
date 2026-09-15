@@ -14,7 +14,7 @@ const errorMessage = ref('')
 
 const route = useRoute()
 const router = useRouter()
-const { setToken } = useAuth()
+const { setToken, setRole } = useAuth()
 
 const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',
@@ -27,7 +27,9 @@ async function handleSubmit() {
     try {
         const { token } = await login({ email: email.value, password: password.value, role: role.value})
         setToken(token)
-        const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
+        setRole(role.value)
+        const fallback = role.value === 'gerente' ? '/gerentes' : '/home'
+        const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : fallback
         router.push(redirect)
     } catch {
        errorMessage.value = 'E-mail ou senha inválidos.'

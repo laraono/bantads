@@ -2,15 +2,9 @@
 import { computed, ref } from 'vue'
 import { DateTime } from 'luxon'
 import Sidebar from '../components/Sidebar.vue'
+import { useAccount, OPENING_BALANCE, type AccountTransaction } from '../composables/useAccount'
 
-interface Transaction {
-  id: number
-  date: string
-  time: string
-  operation: 'Depósito' | 'Transferência' | 'Saque'
-  party: string
-  amount: number
-}
+type Transaction = AccountTransaction
 
 const user = {
   fullName: 'John Doe',
@@ -20,53 +14,36 @@ const user = {
 
 const DEFAULT_RANGE_DAYS = 30
 const MAX_RANGE_DAYS = 365
-const OPENING_BALANCE = 8000
 
 const today = DateTime.now().startOf('day')
 
-function daysAgo(days: number, hour: number, minute: number): { date: string; time: string } {
-  const dt = today.minus({ days }).set({ hour, minute })
-  return { date: dt.toFormat('dd/MM/yyyy'), time: dt.toFormat('HH:mm') }
-}
-
-const transactions: Transaction[] = [
-  { id: 1, ...daysAgo(12, 8, 12), operation: 'Depósito', party: 'Ana Silva', amount: 2500.75 },
-  { id: 2, ...daysAgo(12, 9, 47), operation: 'Transferência', party: 'Helena Rocha', amount: 450.0 },
-  { id: 3, ...daysAgo(12, 10, 5), operation: 'Transferência', party: 'Juliana Ferreira', amount: 1200.0 },
-  { id: 4, ...daysAgo(10, 10, 33), operation: 'Saque', party: 'Fernanda Lima', amount: -800.0 },
-  { id: 5, ...daysAgo(10, 11, 2), operation: 'Depósito', party: 'Carlos Mendes', amount: 300.0 },
-  { id: 6, ...daysAgo(10, 11, 18), operation: 'Transferência', party: 'Carlos Mendes', amount: -150.0 },
-  { id: 7, ...daysAgo(8, 12, 40), operation: 'Transferência', party: 'Helena Rocha', amount: 340.2 },
-  { id: 8, ...daysAgo(8, 13, 15), operation: 'Transferência', party: 'Juliana Ferreira', amount: 0.0 },
-  { id: 9, ...daysAgo(8, 13, 52), operation: 'Transferência', party: 'Ana Silva', amount: 780.5 },
-  { id: 10, ...daysAgo(5, 14, 9), operation: 'Transferência', party: 'Ana Silva', amount: 150.0 },
-  { id: 11, ...daysAgo(5, 14, 47), operation: 'Transferência', party: 'Carlos Mendes', amount: 900.0 },
-  { id: 12, ...daysAgo(5, 15, 21), operation: 'Transferência', party: 'Beatriz Santos', amount: -250.5 },
-  { id: 13, ...daysAgo(3, 15, 58), operation: 'Transferência', party: 'Beatriz Santos', amount: 450.0 },
-  { id: 14, ...daysAgo(3, 16, 14), operation: 'Transferência', party: 'Fernanda Lima', amount: 690.0 },
-  { id: 15, ...daysAgo(3, 16, 39), operation: 'Transferência', party: 'Helena Rocha', amount: 120.0 },
-  { id: 16, ...daysAgo(1, 17, 3), operation: 'Transferência', party: 'Juliana Ferreira', amount: 1800.0 },
-  { id: 17, ...daysAgo(1, 17, 26), operation: 'Transferência', party: 'Carlos Mendes', amount: -350.0 },
-  { id: 18, ...daysAgo(0, 8, 2), operation: 'Transferência', party: 'Ana Silva', amount: 1200.0 },
-  { id: 19, ...daysAgo(0, 9, 47), operation: 'Transferência', party: 'Beatriz Santos', amount: 50.0 },
-  { id: 20, ...daysAgo(0, 10, 30), operation: 'Transferência', party: 'Fernanda Lima', amount: -300.0 }
-]
+const { transactions } = useAccount()
 
 function parseTxDateTime(tx: Transaction): DateTime {
   return DateTime.fromFormat(`${tx.date} ${tx.time}`, 'dd/MM/yyyy HH:mm')
 }
 
-// Running balance computed chronologically over the whole history, independent of the active filter.
-const runningBalanceById = (() => {
+// Saldo consolidado ao final de cada dia, calculado cronologicamente sobre todo o histórico
+// (independe do filtro ativo) — equivalente ao que o MS Conta devolveria pronto.
+const balanceByIsoDay = computed(() => {
   const chronological = [...transactions].sort((a, b) => parseTxDateTime(a).toMillis() - parseTxDateTime(b).toMillis())
-  const map = new Map<number, number>()
+  const map = new Map<string, number>()
   let running = OPENING_BALANCE
   for (const tx of chronological) {
     running += tx.amount
-    map.set(tx.id, running)
+    map.set(toIsoDate(tx.date), running)
   }
   return map
-})()
+})
+
+function balanceAtEndOfDay(iso: string): number {
+  let result = OPENING_BALANCE
+  for (const [day, running] of balanceByIsoDay.value) {
+    if (day <= iso) result = running
+    else break
+  }
+  return result
+}
 
 const startDate = ref(today.minus({ days: DEFAULT_RANGE_DAYS }).toISODate() ?? '')
 const endDate = ref(today.toISODate() ?? '')
@@ -90,35 +67,42 @@ const filteredTransactions = computed(() => {
     .sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis())
 })
 
-// Consolidated (running) balance per day via Luxon, most recent day first.
+// Uma linha por dia do período (com ou sem movimentação), do mais recente para o mais antigo,
+// com o saldo consolidado do dia — igual ao que o MS Conta devolveria pronto.
 const groupedByDay = computed(() => {
-  const groups = new Map<string, { label: string; sortKey: number; items: Transaction[] }>()
+  if (!appliedStart.value || !appliedEnd.value) return []
 
+  const byDay = new Map<string, Transaction[]>()
   for (const tx of filteredTransactions.value) {
-    const dt = DateTime.fromFormat(tx.date, 'dd/MM/yyyy')
-    const key = dt.toISODate() ?? tx.date
-    if (!groups.has(key)) {
-      groups.set(key, { label: dt.setLocale('pt-BR').toFormat("dd 'de' LLLL"), sortKey: dt.toMillis(), items: [] })
-    }
-    groups.get(key)!.items.push(tx)
+    const key = toIsoDate(tx.date)
+    if (!byDay.has(key)) byDay.set(key, [])
+    byDay.get(key)!.push(tx)
   }
 
-  return Array.from(groups.entries())
-    .map(([key, group]) => {
-      // group.items[0] is the day's latest transaction (filteredTransactions is sorted most-recent-first),
-      // so its running balance is the correct end-of-day consolidated balance.
-      const consolidated = runningBalanceById.get(group.items[0]?.id ?? -1) ?? 0
-      return { key, ...group, consolidatedBalance: consolidated }
+  const days: { key: string; label: string; sortKey: number; items: Transaction[]; consolidatedBalance: number }[] = []
+  const end = DateTime.fromISO(appliedEnd.value)
+  let cursor = DateTime.fromISO(appliedStart.value)
+
+  while (cursor <= end) {
+    const key = cursor.toISODate()!
+    days.push({
+      key,
+      label: cursor.setLocale('pt-BR').toFormat("dd 'de' LLLL"),
+      sortKey: cursor.toMillis(),
+      items: byDay.get(key) ?? [],
+      consolidatedBalance: balanceAtEndOfDay(key)
     })
-    .sort((a, b) => b.sortKey - a.sortKey)
+    cursor = cursor.plus({ days: 1 })
+  }
+
+  return days.sort((a, b) => b.sortKey - a.sortKey)
 })
 
 function handleSearch() {
   rangeError.value = ''
 
   if (!startDate.value || !endDate.value) {
-    appliedStart.value = startDate.value
-    appliedEnd.value = endDate.value
+    rangeError.value = 'Informe a data de início e a data de fim.'
     return
   }
 
@@ -188,6 +172,9 @@ function formatCurrency(value: number): string {
               <td class="align-right day-balance">
                 Saldo do dia: {{ formatCurrency(group.consolidatedBalance) }}
               </td>
+            </tr>
+            <tr v-if="group.items.length === 0" class="empty-row">
+              <td colspan="4">Nenhuma movimentação</td>
             </tr>
             <tr v-for="tx in group.items" :key="tx.id">
               <td class="cell-date">
@@ -411,6 +398,12 @@ function formatCurrency(value: number): string {
 .table tbody td.negative {
   color: #dc2626;
   font-weight: 500;
+}
+
+.empty-row td {
+  color: #9ca3af;
+  font-style: italic;
+  white-space: nowrap;
 }
 
 .table-footer {

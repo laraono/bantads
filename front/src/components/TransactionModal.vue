@@ -12,7 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   'update:tab': [tab: TabKey]
-  submit: [payload: { tab: TabKey; amount: number }]
+  submit: [payload: { tab: TabKey; amount: number; account?: string }]
 }>()
 
 const tabs: { key: TabKey; label: string; action: string }[] = [
@@ -96,7 +96,7 @@ function submit() {
   }
 
   errorMsg.value = ''
-  emit('submit', { tab: props.tab, amount })
+  emit('submit', { tab: props.tab, amount, account: props.tab === 'transferencia' ? transferAccount.value.trim() : undefined })
   emit('close')
 }
 </script>
