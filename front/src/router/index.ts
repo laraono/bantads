@@ -40,7 +40,7 @@ const routes: Array<RouteRecordRaw> = [
     path: '/home',
     name: 'home',
     component: HomeCliente,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'cliente' } // Somente clientes têm acesso
   },
   {
     path: '/extrato',
@@ -75,12 +75,14 @@ router.beforeEach((to) => {
     return { name: 'login'}
   }
 
-  if (to.name === 'login' && isAuthenticated) {
-    if (userRole === 'gerente') {
-      return { name: 'gerente'}
-    }
+  const homeRoute = userRole === 'gerente' ? 'gerente' : 'home'
 
-    return { name: 'home'}
+  if (to.name === 'login' && isAuthenticated) {
+    return { name: homeRoute }
+  }
+
+  if (to.meta.role && to.meta.role !== userRole) {
+    return { name: homeRoute }
   }
 })
 
