@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 
 interface SidebarUser {
   fullName: string
@@ -7,15 +9,20 @@ interface SidebarUser {
   initials: string
 }
 
-type NavKey = 'home' | 'extrato' | 'config'
+type ClientNavKey = 'home' | 'extrato' | 'config'
+type ManagerNavKey = 'aprovacoes' | 'clientes' | 'relatorio' | 'gerentes'
+type NavKey = ClientNavKey | ManagerNavKey
+type NavIcon = 'home' | 'chart' | 'gear' | 'clock' | 'users' | 'report' | 'shield-user'
 
 const props = withDefaults(
   defineProps<{
     active?: NavKey
+    role?: 'cliente' | 'gerente'
     user?: SidebarUser
   }>(),
   {
     active: 'home',
+    role: 'cliente',
     user: () => ({ fullName: 'John Doe', email: 'john@example.com', initials: 'AD' })
   }
 )
@@ -25,18 +32,29 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const { logout } = useAuth()
 
-const navItems: { key: NavKey; label: string; to: string; icon: 'home' | 'chart' | 'gear' }[] = [
+const clientNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
   { key: 'home', label: 'Home', to: '/home', icon: 'home' },
   { key: 'extrato', label: 'Extrato detalhado', to: '/extrato', icon: 'chart' },
   { key: 'config', label: 'Configurações', to: '', icon: 'gear' }
 ]
+
+const managerNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
+  { key: 'aprovacoes', label: 'Aprovações pendentes', to: '/gerentes', icon: 'clock' },
+  { key: 'clientes', label: 'Clientes', to: '/clientes', icon: 'users' },
+  { key: 'relatorio', label: 'Relatório de Cliente', to: '', icon: 'report' },
+  { key: 'gerentes', label: 'Gerentes', to: '', icon: 'shield-user' }
+]
+
+const navItems = computed(() => (props.role === 'gerente' ? managerNavItems : clientNavItems))
 
 function go(to: string) {
   if (to) router.push(to)
 }
 
 function handleLogout() {
+  logout()
   emit('logout')
   router.push('/login')
 }
@@ -59,6 +77,10 @@ function handleLogout() {
       >
         <svg v-if="item.icon === 'home'" viewBox="0 0 24 24" class="nav-icon"><path d="M3 11.5 12 4l9 7.5" /><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" /></svg>
         <svg v-else-if="item.icon === 'chart'" viewBox="0 0 24 24" class="nav-icon"><path d="m3 17 5-5 4 4 8-8" /><path d="M15 8h5v5" /></svg>
+        <svg v-else-if="item.icon === 'clock'" viewBox="0 0 24 24" class="nav-icon"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
+        <svg v-else-if="item.icon === 'users'" viewBox="0 0 24 24" class="nav-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+        <svg v-else-if="item.icon === 'report'" viewBox="0 0 24 24" class="nav-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M9 15v2" /><path d="M12 12v5" /><path d="M15 9v8" /></svg>
+        <svg v-else-if="item.icon === 'shield-user'" viewBox="0 0 24 24" class="nav-icon"><path d="M12 2 4 5v6c0 5 3.4 8.9 8 10 4.6-1.1 8-5 8-10V5l-8-3Z" /><circle cx="12" cy="10" r="2.2" /><path d="M8.5 16a3.5 3.5 0 0 1 7 0" /></svg>
         <svg v-else viewBox="0 0 24 24" class="nav-icon"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z" /></svg>
         <span>{{ item.label }}</span>
       </a>

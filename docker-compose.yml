@@ -185,6 +185,27 @@ services:
         condition: service_healthy
     restart: always
 
+  ms-email:
+    container_name: ms-email
+    build:
+      context: ./backend/ms-email
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "465"
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
   api-gateway:
     container_name: api-gateway
     build:
