@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-
 import Login from '../views/Login.vue'
 import HomeCliente from '../views/HomeCliente.vue'
 import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
 import HomeGerente from '../views/HomeGerente.vue'
 import Cadastro from '../views/Cadastro.vue'
 import CadastroEndereco from '../views/CadastroEndereco.vue'
+import ClienteConfig from '@/views/ClienteConfig.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -54,6 +54,13 @@ const routes: Array<RouteRecordRaw> = [
     component: HomeGerente,
     meta: { requiresAuth: true, role: 'gerente'} // Somente gerentes têm acesso
   },
+  {
+    path: '/clienteconfig',
+    name: 'clienteconfig',
+    component: ClienteConfig,
+    meta: { requiresAuth: false }
+  },
+
   {
     path: '/:pathMatch(.*)*', // Qualquer rota que não exista, redireciona para /login
     redirect: '/login'

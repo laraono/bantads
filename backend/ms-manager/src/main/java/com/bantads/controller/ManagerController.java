@@ -41,4 +41,10 @@ public class ManagerController {
     void deleteManager(@PathVariable Long id) {
         managerService.deleteManager(id);
     }
+
+    @GetMapping("/cpf/{cpf}")
+    Manager getManagerByCpf(@PathVariable String cpf) {
+    return managerService.getManagerByCpf(cpf);
+    }
+    
 }
