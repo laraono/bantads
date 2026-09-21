@@ -45,6 +45,10 @@ public class ManagerService {
             managerRepository.save(manager);
         }
     }
+    
+    public Manager getManagerByCpf(String cpf) {
+        return managerRepository.findByCpf(cpf);
+    }
 
     public void updateManager(Long id, UpdateManagerDTO updateManagerDTO) {
         Manager manager = this.getManager(id);

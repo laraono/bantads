@@ -43,4 +43,10 @@ public class ClientService {
         return requestService.getRequestByClient(client);
     }
 
+    public Client getClientByCpf(String cpf) {
+        Client client = clientRepository.findByCpf(cpf);
+        return client;
+    }
+
+    
 }
