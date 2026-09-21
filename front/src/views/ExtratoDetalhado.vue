@@ -83,7 +83,6 @@ function loadRange() {
 const groupedByDay = computed(() => {
   if (!appliedStart.value || !appliedEnd.value) return []
 
-  // Single pass over the full history to build daily deltas
   const allHistory = accountHistoryService.findByAccountNumber(session.accountNumber)
   const deltaByDay = new Map<string, number>()
   for (const h of allHistory) {
@@ -114,8 +113,11 @@ const groupedByDay = computed(() => {
   }
 
   const days: {
-    key: string; label: string; sortKey: number;
-    items: AccountTransaction[]; consolidatedBalance: number
+    key: string; 
+    label: string; 
+    sortKey: number;
+    items: AccountTransaction[]; 
+    consolidatedBalance: number
   }[] = []
 
   let running = beforeWindow

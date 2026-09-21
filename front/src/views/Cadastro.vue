@@ -1,66 +1,11 @@
 <script setup lang="ts">
-import { clientService, requestService } from '@/services';
-import { resetCadastro, useCadastro } from '../composables/useCadastro';
+import { useCadastro } from '../composables/useCadastro';
 import { useRoute, useRouter } from 'vue-router';
 import { ref } from 'vue';
 
-const route = useRoute()
-const router = useRouter()
-
-const form = ref()
-const submitting = ref(false)
-const submitError = ref('')
-
 const {
   nome, cpf, telefone, email,
-  cep, numero, rua, complemento, cidade, estado, salario,
 } = useCadastro()
-
-async function submit() {
-  submitError.value = ''
-  const { valid } = await form.value.validate()
-  if (!valid) return
-
-  submitting.value = true
-  try {
-    clientService.insert({
-        id: 0,
-        name: nome.value,
-        cpf: cpf.value.replace(/\D/g, ''),
-        email: email.value,
-        salary: Number(salario.value),
-        address: {
-            street: rua.value,
-            number: Number(numero.value),
-            city: cidade.value,
-            state: estado.value ?? '',
-            cep: cep.value,
-        },
-        deleted: false
-    })
-
-    const request = requestService.createFromForm({
-      name: nome.value,
-      cpf: cpf.value.replace(/\D/g, ''),
-      email: email.value,
-      cep: cep.value,
-      street: rua.value,
-      number: numero.value,
-      complement: complemento.value,
-      city: cidade.value,
-      state: estado.value ?? '',
-      salary: Number(salario.value),
-    })
-
-    resetCadastro()
-
-    router.push({ path: '/cadastro/sucesso', query: { request: String(request.id) } })
-  } catch (e) {
-    submitError.value = e instanceof Error ? e.message : 'Erro ao enviar solicitação'
-  } finally {
-    submitting.value = false
-  }
-}
 
 const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',

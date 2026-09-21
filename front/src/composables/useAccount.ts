@@ -35,15 +35,6 @@ function resolveParty(h: AccountHistory, userCPF: string): string {
     : (h.originClientName ?? 'Transferência recebida')
 }
 
-function resolveAmount(h: AccountHistory, userCPF: string): number {
-  const value = Number(h.amount)
-  if (h.type === 'deposito') return value
-  if (h.type === 'saque') return -value
-  if (h.destinationClientCpf === userCPF) return value
-  if (h.originClientCpf === userCPF) return -value
-  return 0
-}
-
 export function refreshAccount() {
   if (!session.accountNumber || !session.userCPF) {
     transactions.splice(0, transactions.length)
@@ -71,7 +62,7 @@ export function refreshAccount() {
         time: dt.toFormat('HH:mm'),
         operation: mapOperation(h.type),
         party: resolveParty(h, session.userCPF),
-        amount: resolveAmount(h, session.userCPF),
+        amount: h.amount
       })
     }
   } finally {

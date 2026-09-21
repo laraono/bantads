@@ -183,7 +183,7 @@ export class EventService {
         this.accountService.updateAccountBalance({
             accountNumber: objectId,
             type: 'saque',
-            amount: -Number(payload.valor),
+            amount: - Number(payload.valor),
             originClientCpf: userCPF,
             originClientName: String(payload.nome ?? ''),
             managerCpf: payload.cpfGerente != null ? String(payload.cpfGerente) : null,
@@ -254,7 +254,7 @@ export class EventService {
         this.accountService.updateAccountBalance({
             accountNumber: originObjectId,
             type: 'transferencia',
-            amount: -amount,
+            amount: - amount,
             originClientCpf: userCPF,
             originClientName: String(origin.nome ?? ''),
             destinationClientCpf: destinationCPF,

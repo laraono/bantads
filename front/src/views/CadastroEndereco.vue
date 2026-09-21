@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useCadastro } from '../composables/useCadastro';
-import { useRoute, useRouter } from 'vue-router';
+import { clientService, requestService } from '@/services';
+import { resetCadastro, useCadastro } from '../composables/useCadastro';
+import { ref } from 'vue';import { useRoute, useRouter } from 'vue-router';
 
-const { cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
+const {
+  nome, cpf, telefone, email,
+  cep, numero, rua, complemento, cidade, estado, salario,
+} = useCadastro()
 const estados = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
 const mensagemAlerta = ref(false)
 
@@ -14,30 +17,79 @@ const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',
 }
 
+const form = ref()
+const submitting = ref(false)
+const submitError = ref('')
+
 const maskSalario = (v: string) => {
 
-        let valor = v.replace(/\D/g, '');
+    let valor = v.replace(/\D/g, '');
 
-        if (!valor) {
-            salario.value = '';
-            return;
-        }
+    if (!valor) {
+        salario.value = '';
+        return;
+    }
 
-        valor = valor.padStart(3, '0');
+    valor = valor.padStart(3, '0');
 
-        const centavos = valor.slice(-2);
-        let reais = valor.slice(0, -2);
+    const centavos = valor.slice(-2);
+    let reais = valor.slice(0, -2);
 
-        reais= reais.replace(/^0+(?=\d)/, '');
-        
-        reais = reais.replace(/\B(?=(\d{3})+(?!\d))/g,
-                '.'
-            );
+    reais= reais.replace(/^0+(?=\d)/, '');
+    
+    reais = reais.replace(/\B(?=(\d{3})+(?!\d))/g,
+        '.'
+    );
 
-        salario.value = `${reais},${centavos}`;
+    salario.value = `${reais},${centavos}`;
 };
 
+async function submit() {
+  submitError.value = ''
+
+  submitting.value = true
+  try {
+    clientService.insert({
+        id: 0,
+        name: nome.value,
+        cpf: cpf.value.replace(/\D/g, ''),
+        email: email.value,
+        salary: Number(salario.value),
+        address: {
+            street: rua.value,
+            number: Number(numero.value),
+            city: cidade.value,
+            state: estado.value ?? '',
+            cep: cep.value,
+        },
+        deleted: false
+    })
+
+    const request = requestService.createFromForm({
+      name: nome.value,
+      cpf: cpf.value.replace(/\D/g, ''),
+      email: email.value,
+      cep: cep.value,
+      street: rua.value,
+      number: numero.value,
+      complement: complemento.value,
+      city: cidade.value,
+      state: estado.value ?? '',
+      salary: Number(salario.value),
+    })
+
+    resetCadastro()
+
+    router.push({ path: '/cadastro/sucesso', query: { request: String(request.id) } })
+  } catch (e) {
+    submitError.value = e instanceof Error ? e.message : 'Erro ao enviar solicitação'
+  } finally {
+    submitting.value = false
+  }
+}
+
 function envioDados() {
+    submit()
     mensagemAlerta.value = true
     salario.value = ''
 }
@@ -92,7 +144,7 @@ function envioDados() {
                     </div>
                     <div class="label-field">
                         <label class="field-label" for="cadastro-complemento">Complemento</label>
-                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" :rules="[rules.required]"/>
+                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" />
                     </div>
                     <div class="container-regiao">
                         <div class="localizacao">

@@ -31,6 +31,8 @@ const recentTransactions = computed(() =>
     .slice(0, RECENT_COUNT)
 )
 
+console.log('transactions', transactions)
+
 function iconFor(operation: AccountTransaction['operation']): 'deposit' | 'withdraw' | 'transfer' {
   if (operation === 'Depósito') return 'deposit'
   if (operation === 'Saque') return 'withdraw'
