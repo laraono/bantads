@@ -1,88 +1,124 @@
-import { computed, reactive } from 'vue'
+// src/composables/useAccount.ts
+import { reactive, ref, computed, watch } from 'vue'
 import { DateTime } from 'luxon'
+import { eventService, accountService, accountHistoryService } from '@/services'
+import { session } from '@/store/session'
+import type { AccountHistory } from '@/models/AccountHistory'
 
 export type OperationType = 'Depósito' | 'Transferência' | 'Saque'
 
 export interface AccountTransaction {
   id: number
-  date: string // dd/MM/yyyy
-  time: string // HH:mm
+  date: string
+  time: string
   operation: OperationType
   party: string
-  amount: number // positivo = entrada, negativo = saída
+  amount: number
 }
 
-const ACCOUNT_NUMBER = '•••• 4829'
-export const OPENING_BALANCE = 8000
+// ---- module-level singleton state ----
+const transactions = reactive<AccountTransaction[]>([])
+const balance = ref(0)
+const loading = ref(false)
 
-const today = DateTime.now().startOf('day')
-
-function daysAgo(days: number, hour: number, minute: number): { date: string; time: string } {
-  const dt = today.minus({ days }).set({ hour, minute })
-  return { date: dt.toFormat('dd/MM/yyyy'), time: dt.toFormat('HH:mm') }
+function mapOperation(type: string): OperationType {
+  if (type === 'deposito') return 'Depósito'
+  if (type === 'saque') return 'Saque'
+  return 'Transferência'
 }
 
-// Histórico mockado (fará o papel do MS Conta enquanto o back-end não está integrado).
-const transactions = reactive<AccountTransaction[]>([
-  { id: 1, ...daysAgo(12, 8, 12), operation: 'Depósito', party: 'Ana Silva', amount: 2500.75 },
-  { id: 2, ...daysAgo(12, 9, 47), operation: 'Transferência', party: 'Helena Rocha', amount: 450.0 },
-  { id: 3, ...daysAgo(12, 10, 5), operation: 'Transferência', party: 'Juliana Ferreira', amount: 1200.0 },
-  { id: 4, ...daysAgo(10, 10, 33), operation: 'Saque', party: 'Fernanda Lima', amount: -800.0 },
-  { id: 5, ...daysAgo(10, 11, 2), operation: 'Depósito', party: 'Carlos Mendes', amount: 300.0 },
-  { id: 6, ...daysAgo(10, 11, 18), operation: 'Transferência', party: 'Carlos Mendes', amount: -150.0 },
-  { id: 7, ...daysAgo(8, 12, 40), operation: 'Transferência', party: 'Helena Rocha', amount: 340.2 },
-  { id: 8, ...daysAgo(8, 13, 15), operation: 'Transferência', party: 'Juliana Ferreira', amount: 0.0 },
-  { id: 9, ...daysAgo(8, 13, 52), operation: 'Transferência', party: 'Ana Silva', amount: 780.5 },
-  { id: 10, ...daysAgo(5, 14, 9), operation: 'Transferência', party: 'Ana Silva', amount: 150.0 },
-  { id: 11, ...daysAgo(5, 14, 47), operation: 'Transferência', party: 'Carlos Mendes', amount: 900.0 },
-  { id: 12, ...daysAgo(5, 15, 21), operation: 'Transferência', party: 'Beatriz Santos', amount: -250.5 },
-  { id: 13, ...daysAgo(3, 15, 58), operation: 'Transferência', party: 'Beatriz Santos', amount: 450.0 },
-  { id: 14, ...daysAgo(3, 16, 14), operation: 'Transferência', party: 'Fernanda Lima', amount: 690.0 },
-  { id: 15, ...daysAgo(3, 16, 39), operation: 'Transferência', party: 'Helena Rocha', amount: 120.0 },
-  { id: 16, ...daysAgo(1, 17, 3), operation: 'Transferência', party: 'Juliana Ferreira', amount: 1800.0 },
-  { id: 17, ...daysAgo(1, 17, 26), operation: 'Transferência', party: 'Carlos Mendes', amount: -350.0 },
-  { id: 18, ...daysAgo(0, 8, 2), operation: 'Transferência', party: 'Ana Silva', amount: 1200.0 },
-  { id: 19, ...daysAgo(0, 9, 47), operation: 'Transferência', party: 'Beatriz Santos', amount: 50.0 },
-  { id: 20, ...daysAgo(0, 10, 30), operation: 'Transferência', party: 'Fernanda Lima', amount: -300.0 }
-])
-
-let nextId = transactions.length + 1
-
-const balance = computed(() => transactions.reduce((sum, tx) => sum + tx.amount, OPENING_BALANCE))
-
-function registerTransaction(operation: OperationType, party: string, amount: number) {
-  const now = DateTime.now()
-  transactions.unshift({
-    id: nextId++,
-    date: now.toFormat('dd/MM/yyyy'),
-    time: now.toFormat('HH:mm'),
-    operation,
-    party,
-    amount
-  })
+function resolveParty(h: AccountHistory, userCPF: string): string {
+  if (h.type === 'deposito') return h.originClientName || 'Depósito em conta'
+  if (h.type === 'saque') return h.originClientName || 'Saque em caixa'
+  return h.originClientCpf === userCPF
+    ? (h.destinationClientName ?? 'Transferência enviada')
+    : (h.originClientName ?? 'Transferência recebida')
 }
 
-function deposit(amount: number) {
-  registerTransaction('Depósito', 'Depósito em conta', amount)
+function resolveAmount(h: AccountHistory, userCPF: string): number {
+  const value = Number(h.amount)
+  if (h.type === 'deposito') return value
+  if (h.type === 'saque') return -value
+  if (h.destinationClientCpf === userCPF) return value
+  if (h.originClientCpf === userCPF) return -value
+  return 0
 }
 
-function withdraw(amount: number) {
-  if (amount > balance.value) throw new Error('Saldo insuficiente')
-  registerTransaction('Saque', 'Saque em caixa eletrônico', -amount)
+export function refreshAccount() {
+  if (!session.accountNumber || !session.userCPF) {
+    transactions.splice(0, transactions.length)
+    balance.value = 0
+    return
+  }
+
+  loading.value = true
+  try {
+    balance.value = accountService.getBalance(session.accountNumber)
+
+    const extract = accountHistoryService.getExtract(
+      session.accountNumber,
+      null,
+      null,
+      session.userCPF
+    )
+
+    transactions.splice(0, transactions.length)
+    for (const h of extract.movimentacoes) {
+      const dt = DateTime.fromJSDate(new Date(h.createdAt))
+      transactions.push({
+        id: h.id,
+        date: dt.toFormat('dd/MM/yyyy'),
+        time: dt.toFormat('HH:mm'),
+        operation: mapOperation(h.type),
+        party: resolveParty(h, session.userCPF),
+        amount: resolveAmount(h, session.userCPF),
+      })
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
-function transfer(destinationAccount: string, amount: number) {
-  if (amount > balance.value) throw new Error('Saldo insuficiente')
-  registerTransaction('Transferência', `Conta ${destinationAccount}`, -amount)
-}
+// React to login/logout/account switch
+watch(() => session.accountNumber, refreshAccount, { immediate: true })
 
+// ---- public API ----
 export function useAccount() {
+  function deposit(amount: number) {
+    eventService.deposit(
+      session.userCPF,
+      { valor: amount.toFixed(2), nome: session.userName },
+      session.accountNumber
+    )
+    refreshAccount()
+  }
+
+  function withdraw(amount: number) {
+    eventService.withdraw(
+      session.userCPF,
+      { valor: amount.toFixed(2), nome: session.userName },
+      session.accountNumber
+    )
+    refreshAccount()
+  }
+
+  function transfer(destinationAccount: string, amount: number) {
+    const destData = accountService.getAccountData(destinationAccount)
+    eventService.transfer(session.userCPF, session.accountNumber, {
+      destino: { conta: destinationAccount, cpf: destData.cpfCliente, nome: destData.cpfCliente },
+      origem: { nome: session.userName, valor: amount.toFixed(2), cpf: session.userCPF },
+    })
+    refreshAccount()
+  }
+
   return {
-    accountNumber: ACCOUNT_NUMBER,
+    accountNumber: computed(() => `•••• ${session.accountNumber.slice(-4)}`),
     transactions,
-    balance,
+    balance: computed(() => balance.value),
+    loading,
     deposit,
     withdraw,
-    transfer
+    transfer,
+    refresh: refreshAccount,
   }
 }

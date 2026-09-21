@@ -5,6 +5,7 @@ import { DateTime } from 'luxon'
 import TransactionModal from '../components/TransactionModal.vue'
 import Sidebar from '../components/Sidebar.vue'
 import { useAccount, type AccountTransaction } from '../composables/useAccount'
+import { session, setSession } from '@/store/session.ts'
 
 const router = useRouter()
 const { accountNumber, transactions, balance, deposit, withdraw, transfer } = useAccount()
@@ -14,9 +15,9 @@ type ModalTab = 'transferencia' | 'saque' | 'depositar'
 const RECENT_COUNT = 5
 
 const user = {
-  name: 'John',
-  fullName: 'John Doe',
-  email: 'john@example.com',
+  name: session.userName,
+  fullName: session.userName,
+  email: session.email,
   initials: 'AD'
 }
 
@@ -70,17 +71,19 @@ function simulateProcessing(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 900))
 }
 
+const txError = ref('')
+
 async function handleTransaction(payload: { tab: ModalTab; amount: number; account?: string }) {
+  txError.value = ''
   balanceLoading.value = true
   try {
     await simulateProcessing()
-    if (payload.tab === 'depositar') {
-      deposit(payload.amount)
-    } else if (payload.tab === 'saque') {
-      withdraw(payload.amount)
-    } else {
-      transfer(payload.account ?? '', payload.amount)
-    }
+    if (payload.tab === 'depositar') deposit(payload.amount)
+    else if (payload.tab === 'saque') withdraw(payload.amount)
+    else transfer(payload.account ?? '', payload.amount)
+    modalOpen.value = false
+  } catch (e) {
+    txError.value = e instanceof Error ? e.message : 'Erro ao processar transação'
   } finally {
     balanceLoading.value = false
   }
@@ -163,7 +166,7 @@ const formattedBalance = computed(() => `R$${balance.value.toLocaleString('pt-BR
                 <span class="transaction-date">{{ formatRelativeLabel(tx) }}</span>
               </span>
               <span class="transaction-amount" :class="tx.amount > 0 ? 'positive' : 'negative'">
-                {{ tx.amount > 0 ? '+ ' : '' }}{{ formatCurrency(tx.amount) }}
+                {{tx.amount > 0 ? '+ ' : ' - ' }}{{ formatCurrency(tx.amount) }}
               </span>
             </li>
           </ul>

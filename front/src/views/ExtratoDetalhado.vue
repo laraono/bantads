@@ -1,48 +1,55 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { DateTime } from 'luxon'
 import Sidebar from '../components/Sidebar.vue'
-import { useAccount, OPENING_BALANCE, type AccountTransaction } from '../composables/useAccount'
-
-type Transaction = AccountTransaction
-
-const user = {
-  fullName: 'John Doe',
-  email: 'john@example.com',
-  initials: 'AD'
-}
+import { useAccount, type AccountTransaction } from '../composables/useAccount'
+import { session } from '@/store/session.ts'
+import { accountHistoryService } from '@/services/index.ts'
+import type { AccountHistory } from '@/models/AccountHistory'
 
 const DEFAULT_RANGE_DAYS = 30
 const MAX_RANGE_DAYS = 365
 
+const user = computed(() => ({
+  fullName: session.userName,
+  email: session.email,
+  initials: session.userName.split(' ')
+    .map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'AD',
+}))
+
 const today = DateTime.now().startOf('day')
 
-const { transactions } = useAccount()
-
-function parseTxDateTime(tx: Transaction): DateTime {
+function parseTxDateTime(tx: AccountTransaction): DateTime {
   return DateTime.fromFormat(`${tx.date} ${tx.time}`, 'dd/MM/yyyy HH:mm')
 }
 
-// Saldo consolidado ao final de cada dia, calculado cronologicamente sobre todo o histórico
-// (independe do filtro ativo) — equivalente ao que o MS Conta devolveria pronto.
-const balanceByIsoDay = computed(() => {
-  const chronological = [...transactions].sort((a, b) => parseTxDateTime(a).toMillis() - parseTxDateTime(b).toMillis())
-  const map = new Map<string, number>()
-  let running = OPENING_BALANCE
-  for (const tx of chronological) {
-    running += tx.amount
-    map.set(toIsoDate(tx.date), running)
-  }
-  return map
-})
+function toIsoDate(brDate: string): string {
+  const [day, month, year] = brDate.split('/')
+  return `${year}-${month}-${day}`
+}
 
-function balanceAtEndOfDay(iso: string): number {
-  let result = OPENING_BALANCE
-  for (const [day, running] of balanceByIsoDay.value) {
-    if (day <= iso) result = running
-    else break
+function mapHistoryToTx(h: AccountHistory, userCPF: string): AccountTransaction {
+  const dt = DateTime.fromJSDate(new Date(h.createdAt))
+  const amount = Number(h.amount)
+  const operation =
+    h.type === 'deposito' ? 'Depósito' :
+    h.type === 'saque'    ? 'Saque'    : 'Transferência'
+
+  const party =
+    h.type === 'deposito' ? (h.originClientName || 'Depósito em conta') :
+    h.type === 'saque'    ? (h.originClientName || 'Saque em caixa') :
+    h.originClientCpf === userCPF
+      ? (h.destinationClientName ?? 'Transferência enviada')
+      : (h.originClientName ?? 'Transferência recebida')
+
+  return {
+    id: h.id,
+    date: dt.toFormat('dd/MM/yyyy'),
+    time: dt.toFormat('HH:mm'),
+    operation,
+    party,
+    amount,
   }
-  return result
 }
 
 const startDate = ref(today.minus({ days: DEFAULT_RANGE_DAYS }).toISODate() ?? '')
@@ -50,47 +57,80 @@ const endDate = ref(today.toISODate() ?? '')
 const appliedStart = ref(startDate.value)
 const appliedEnd = ref(endDate.value)
 const rangeError = ref('')
+const rangeTransactions = ref<AccountTransaction[]>([])
 
-function toIsoDate(brDate: string): string {
-  const [day, month, year] = brDate.split('/')
-  return `${year}-${month}-${day}`
+function loadRange() {
+  if (!appliedStart.value || !appliedEnd.value) {
+    rangeTransactions.value = []
+    return
+  }
+  try {
+    const extract = accountHistoryService.getExtract(
+      session.accountNumber,
+      appliedStart.value,
+      appliedEnd.value,
+      session.userCPF
+    )
+    rangeTransactions.value = extract.movimentacoes
+      .map(h => mapHistoryToTx(h, session.userCPF))
+      .sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis())
+  } catch (e) {
+    rangeError.value = e instanceof Error ? e.message : 'Erro ao consultar extrato'
+    rangeTransactions.value = []
+  }
 }
 
-const filteredTransactions = computed(() => {
-  return transactions
-    .filter((tx) => {
-      const iso = toIsoDate(tx.date)
-      if (appliedStart.value && iso < appliedStart.value) return false
-      if (appliedEnd.value && iso > appliedEnd.value) return false
-      return true
-    })
-    .sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis())
-})
-
-// Uma linha por dia do período (com ou sem movimentação), do mais recente para o mais antigo,
-// com o saldo consolidado do dia — igual ao que o MS Conta devolveria pronto.
 const groupedByDay = computed(() => {
   if (!appliedStart.value || !appliedEnd.value) return []
 
-  const byDay = new Map<string, Transaction[]>()
-  for (const tx of filteredTransactions.value) {
-    const key = toIsoDate(tx.date)
-    if (!byDay.has(key)) byDay.set(key, [])
-    byDay.get(key)!.push(tx)
+  // Single pass over the full history to build daily deltas
+  const allHistory = accountHistoryService.findByAccountNumber(session.accountNumber)
+  const deltaByDay = new Map<string, number>()
+  for (const h of allHistory) {
+    const day = DateTime.fromJSDate(new Date(h.createdAt)).toISODate()
+    if (!day) continue
+    const value = Number(h.amount)
+    let delta = 0
+    if (h.type === 'deposito') delta = value
+    else if (h.type === 'saque') delta = -value
+    else if (h.type === 'transferencia') {
+      if (h.destinationClientCpf === session.userCPF) delta += value
+      if (h.originClientCpf === session.userCPF) delta -= value
+    }
+    deltaByDay.set(day, (deltaByDay.get(day) ?? 0) + delta)
   }
 
-  const days: { key: string; label: string; sortKey: number; items: Transaction[]; consolidatedBalance: number }[] = []
-  const end = DateTime.fromISO(appliedEnd.value)
+  const beforeWindow = accountHistoryService.getInitialBalance(
+    session.accountNumber,
+    DateTime.fromISO(appliedStart.value).startOf('day').toJSDate(),
+    session.userCPF
+  )
+
+  const byDayTx = new Map<string, AccountTransaction[]>()
+  for (const tx of rangeTransactions.value) {
+    const key = toIsoDate(tx.date)
+    if (!byDayTx.has(key)) byDayTx.set(key, [])
+    byDayTx.get(key)!.push(tx)
+  }
+
+  const days: {
+    key: string; label: string; sortKey: number;
+    items: AccountTransaction[]; consolidatedBalance: number
+  }[] = []
+
+  let running = beforeWindow
   let cursor = DateTime.fromISO(appliedStart.value)
+  const end = DateTime.fromISO(appliedEnd.value)
 
   while (cursor <= end) {
     const key = cursor.toISODate()!
+    running += deltaByDay.get(key) ?? 0
     days.push({
       key,
       label: cursor.setLocale('pt-BR').toFormat("dd 'de' LLLL"),
       sortKey: cursor.toMillis(),
-      items: byDay.get(key) ?? [],
-      consolidatedBalance: balanceAtEndOfDay(key)
+      items: byDayTx.get(key) ?? [],
+      consolidatedBalance: running,
     })
     cursor = cursor.plus({ days: 1 })
   }
@@ -123,6 +163,9 @@ function handleSearch() {
   appliedStart.value = startDate.value
   appliedEnd.value = endDate.value
 }
+
+// Load initially and whenever the applied range changes
+watch([appliedStart, appliedEnd], loadRange, { immediate: true })
 
 function openPicker(event: MouseEvent) {
   const input = event.currentTarget as HTMLInputElement & { showPicker?: () => void }
@@ -193,7 +236,7 @@ function formatCurrency(value: number): string {
         </table>
 
         <div class="table-footer">
-          <span class="footer-count">Showing {{ filteredTransactions.length }} clients</span>
+          <span class="footer-count">Showing {{ rangeTransactions.length }} clients</span>
           <div class="pagination">
             <button class="page-btn" disabled>
               <svg viewBox="0 0 24 24" class="page-icon"><path d="m15 18-6-6 6-6" /></svg>
