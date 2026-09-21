@@ -22,6 +22,16 @@ export class ManagerService {
         return parsedManagers.filter(manager => manager.isActive)
     }
 
+    list(): Manager[] {
+        const managersList = localStorage[LS_KEY];
+
+        if (!managersList) {
+            localStorage.setItem(LS_KEY, JSON.stringify(managers))
+        }
+      
+        return managersList ? JSON.parse(managersList) : managers;
+    }
+
     findActiveManagerWithLeastClients(excludeManagerCpf?: string): Manager | undefined {
         const activeManagers = this.listAll().filter(m => m.cpf !== excludeManagerCpf);
         if (activeManagers.length === 0) {
@@ -63,7 +73,7 @@ export class ManagerService {
 
 
     insert(manager: Manager): void {
-        const managers = this.listAll();
+        const managers = this.list();
         manager.id = new Date().getTime();
         managers.push(manager);
         localStorage[LS_KEY] = JSON.stringify(managers);
@@ -77,7 +87,7 @@ export class ManagerService {
     }
 
     update(manager: Manager): void {
-        const managers = this.listAll();
+        const managers = this.list();
         managers.forEach( (obj, index, objs) => {
             if (manager.id === obj.id) {
             objs[index] = manager
@@ -87,7 +97,7 @@ export class ManagerService {
     }
 
     remove(id: number): void {
-        const managers = this.listAll();
+        const managers = this.list();
         const managerToRemove = managers.find(m => m.id === id);
 
         if (!managerToRemove) {

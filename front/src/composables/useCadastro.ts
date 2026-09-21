@@ -12,6 +12,20 @@ const cidade = ref('')
 const estado = ref(null)
 const salario = ref('')
 
+export function resetCadastro() {
+  nome.value = ''
+  cpf.value = ''
+  telefone.value = ''
+  email.value = ''
+  cep.value = ''
+  numero.value = ''
+  rua.value = ''
+  complemento.value = ''
+  cidade.value = ''
+  estado.value = null
+  salario.value = ''
+}
+
 
 export function useCadastro() {
     return {

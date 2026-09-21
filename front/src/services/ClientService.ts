@@ -14,7 +14,7 @@ export class ClientService {
 
     listAll(): Client[] {
         const clientsList = localStorage[LS_KEY];
-        
+
         if (!clientsList) {
             localStorage.setItem(LS_KEY, JSON.stringify(clients))
         }
@@ -24,13 +24,21 @@ export class ClientService {
         return parsedClients.filter(client => !client.deleted)
     }
 
+    list(): Client[] {
+        const clientsList = localStorage[LS_KEY];
+
+        if (!clientsList) {
+            localStorage.setItem(LS_KEY, JSON.stringify(clients))
+        }
+              
+        return clientsList ? JSON.parse(clientsList) : clients;
+    }
+
     insert(client: Client): void {
-        const clients = this.listAll();
+        const clients = this.list();
         client.id = new Date().getTime();
         clients.push(client);
         localStorage[LS_KEY] = JSON.stringify(clients);
-
-        MOCK_USERS[client.email] = { password: 'tads', role: 'cliente' }
     }
 
     findById(id: number): Client | undefined {
@@ -44,7 +52,7 @@ export class ClientService {
     }
 
     update(client: Client): void {
-        const clients = this.listAll();
+        const clients = this.list();
         clients.forEach( (obj, index, objs) => {
             if (client.id === obj.id) {
             objs[index] = client
@@ -54,7 +62,7 @@ export class ClientService {
     }
 
     remove(id: number): void {
-        const clients = this.listAll();
+        const clients = this.list();
         clients.forEach( (obj) => {
             if (obj.id === id) {
                 obj.deleted = true

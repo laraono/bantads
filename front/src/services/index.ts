@@ -5,6 +5,7 @@ import { AccountService } from './AccountService'
 import { ClientService } from './ClientService'
 import { EventService } from './EventService'
 import { ManagerService } from './ManagerService'
+import { RequestService } from './RequestService'
 
 const accountDataService = new AccountDataService()
 const accountHistoryService = new AccountHistoryService()
@@ -12,5 +13,6 @@ const accountService = new AccountService(accountDataService, accountHistoryServ
 const eventService = new EventService(accountService)
 const managerService = new ManagerService(eventService)
 const clientService = new ClientService(managerService, eventService)
+const requestService = new RequestService()
 
-export { eventService, accountService, accountDataService, accountHistoryService, managerService, clientService }
+export { eventService, accountService, accountDataService, accountHistoryService, managerService, clientService, requestService }

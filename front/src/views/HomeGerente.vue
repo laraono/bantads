@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import Sidebar from '../components/Sidebar.vue'
 import RejectRequestModal from '../components/RejectRequestModal.vue'
+import { requestService, eventService, managerService } from '@/services'
+import type { Request as ApiRequest } from '@/models/Request'
 
-type RequestStatus = 'pendente' | 'aprovado' | 'recusado'
+type RequestStatus = 'pendente' | 'aprovado' | 'rejeitado'
 
 interface ApprovalRequest {
   id: number
   cpf: string
   name: string
   salary: number
-  requestDate: string
-  requestTime: string
   status: RequestStatus
   reason?: string
   decisionDate?: string
@@ -19,33 +19,64 @@ interface ApprovalRequest {
   processing: boolean
 }
 
+const STATUS_LABEL: Record<RequestStatus, string> = {
+  pendente: 'Pendente',
+  aprovado: 'Aprovado',
+  rejeitado: 'Recusado',
+}
+
 const user = {
   fullName: 'Gerente',
   email: 'gerente@bantads.com.br',
-  initials: 'GE'
+  initials: 'GE',
 }
 
-const requests = reactive<ApprovalRequest[]>([
-  { id: 1, cpf: '123.456.789-00', name: 'Ana Silva Santos', salary: 3500.0, requestDate: '14 Oct 2023', requestTime: '10:30', status: 'pendente', processing: false },
-  { id: 2, cpf: '234.567.890-11', name: 'Carlos Eduardo Oliveira', salary: 5200.0, requestDate: '14 Oct 2023', requestTime: '11:15', status: 'pendente', processing: false },
-  { id: 3, cpf: '345.678.901-22', name: 'Mariana Costa Ferreira', salary: 2800.0, requestDate: '13 Oct 2023', requestTime: '18:45', status: 'aprovado', decisionDate: '14 Oct 2023', decisionTime: '09:10', processing: false },
-  { id: 4, cpf: '456.789.012-33', name: 'Roberto Almeida Lima', salary: 7500.0, requestDate: '13 Oct 2023', requestTime: '14:20', status: 'recusado', reason: 'Score de crédito insuficiente', decisionDate: '13 Oct 2023', decisionTime: '16:05', processing: false },
-  { id: 5, cpf: '567.890.123-44', name: 'Juliana Pereira Souza', salary: 4100.0, requestDate: '13 Oct 2023', requestTime: '11:30', status: 'pendente', processing: false }
-])
+const requests = ref<ApprovalRequest[]>([])
 
-function formatNow(): { date: string; time: string } {
-  const now = new Date()
-  const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  return { date, time }
+function formatDateParts(d: Date | string): { date: string; time: string } {
+  const dt = new Date(d)
+  return {
+    date: dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    time: dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  }
+}
+
+function formatCpf(cpf: string): string {
+  const digits = cpf.replace(/\D/g, '')
+  if (digits.length !== 11) return cpf
+  return `${digits.slice(0,3)}.${digits.slice(3,6)}.${digits.slice(6,9)}-${digits.slice(9)}`
 }
 
 function formatSalary(value: number): string {
   return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-// Simula o back-end aceitando a decisão de forma assíncrona (202 Accepted + jobId da saga)
-// e o front reconsultando o status do job até a saga terminar de processar.
+function mapRequest(r: ApiRequest): ApprovalRequest {
+  const decision = r.status !== 'pendente' ? (r.approvedAt) : undefined
+  const decisionParts = decision ? formatDateParts(decision) : undefined
+
+  return {
+    id: r.id,
+    cpf: formatCpf(r.client.cpf),
+    name: r.client.name,
+    salary: r.client.salary ?? 0,
+    status: r.status,
+    reason: r.rejectReason,
+    decisionDate: decisionParts?.date,
+    decisionTime: decisionParts?.time,
+    processing: false,
+  }
+}
+
+function loadRequests() {
+  requests.value = requestService
+    .listAll()
+    .map(mapRequest)
+    .sort((a, b) => b.id - a.id)
+}
+
+onMounted(loadRequests)
+
 function acceptDecision(): Promise<{ jobId: string }> {
   return new Promise((resolve) => {
     setTimeout(() => resolve({ jobId: `saga-${Math.random().toString(36).slice(2, 10)}` }), 300)
@@ -67,20 +98,47 @@ async function pollUntilDone(jobId: string): Promise<void> {
   }
 }
 
-async function handleDecision(request: ApprovalRequest, decision: 'aprovado' | 'recusado', reason?: string) {
-  if (request.processing) return
-
-  request.processing = true
+async function handleDecision(
+  view: ApprovalRequest,
+  decision: 'aprovado' | 'rejeitado',
+  reason?: string,
+) {
+  if (view.processing) return
+  view.processing = true
   try {
-    const { jobId } = await acceptDecision() // 202 Accepted { jobId: sagaId }
+    const current = requestService.findById(view.id)
+    if (!current) throw new Error('Solicitação não encontrada')
+    if (current.status !== 'pendente') throw new Error('Solicitação já foi processada')
+
+    const { jobId } = await acceptDecision()
     await pollUntilDone(jobId)
-    request.status = decision
-    request.reason = decision === 'recusado' ? reason : undefined
-    const { date, time } = formatNow()
-    request.decisionDate = date
-    request.decisionTime = time
+
+    if (decision === 'aprovado') {
+      const manager = managerService.findActiveManagerWithLeastClients()
+      if (!manager) throw new Error('Nenhum gerente disponível')
+
+      requestService.update({ ...current, status: 'aprovado', approvedAt: new Date() })
+
+      eventService.createAccount({
+        nome: current.client.name,
+        cpfCliente: current.client.cpf,
+        cpfGerente: manager.cpf,
+        valor: 0,
+      })
+    } else {
+      requestService.update({
+        ...current,
+        status: 'rejeitado',
+        rejectReason: reason ?? 'Sem motivo informado',
+      })
+    }
+
+    loadRequests()
+  } catch (e) {
+    console.error(e)
+    alert(e instanceof Error ? e.message : 'Erro ao processar solicitação')
   } finally {
-    request.processing = false
+    view.processing = false
   }
 }
 
@@ -93,9 +151,13 @@ function openRejectModal(request: ApprovalRequest) {
 }
 
 async function confirmReject(reason: string) {
-  if (rejectTarget.value) {
-    await handleDecision(rejectTarget.value, 'recusado', reason)
+  const trimmed = reason.trim()
+  if (!rejectTarget.value) return
+  if (trimmed.length === 0) {
+    alert('Informe o motivo da recusa')
+    return
   }
+  await handleDecision(rejectTarget.value, 'rejeitado', trimmed)
   rejectModalOpen.value = false
   rejectTarget.value = null
 }
@@ -130,7 +192,6 @@ async function confirmReject(reason: string) {
                 <th>CPF</th>
                 <th>Nome</th>
                 <th class="align-right">Salário</th>
-                <th>Data/Hora Solicitação</th>
                 <th>Status / Motivo</th>
                 <th class="align-right">Ações</th>
               </tr>
@@ -140,7 +201,6 @@ async function confirmReject(reason: string) {
                 <td class="cell-muted">{{ req.cpf }}</td>
                 <td class="cell-name">{{ req.name }}</td>
                 <td class="align-right cell-muted">{{ formatSalary(req.salary) }}</td>
-                <td class="cell-muted">{{ req.requestDate }}, {{ req.requestTime }}</td>
                 <td>
                   <span class="status" :class="`status-${req.status}`">
                     <svg v-if="req.status === 'pendente'" viewBox="0 0 24 24" class="status-icon"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>
