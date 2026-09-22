@@ -44,15 +44,15 @@ const filtroSelecionado = ref('all')
                 <div class="filtros">
                     <div class="filtroEstatus">
                         <v-btn-toggle v-model="filtroSelecionado" class="estatus">
-                            <v-btn class="botonEstatus" value="all">
+                            <v-btn class="buttonStatus" value="all">
                                 <span>All</span>
                                 <span class="quantidade">10</span>
                             </v-btn>
-                            <v-btn class="botonEstatus" value="active">
+                            <v-btn class="buttonStatus" value="active">
                                 <span>Active</span>
                                 <span class="quantidade">9</span>
                             </v-btn>
-                            <v-btn class="botonEstatus" value="inactive">
+                            <v-btn class="buttonStatus" value="inactive">
                                 <span>Inactive</span>
                                 <span class="quantidade">1</span>
                             </v-btn>
@@ -194,7 +194,7 @@ const filtroSelecionado = ref('all')
     gap: 8px;
 }
 
-.botonEstatus {
+.buttonStatus {
     flex: 1;
     height: 64px !important;
     border-radius: 15px !important;
@@ -207,7 +207,7 @@ const filtroSelecionado = ref('all')
     box-shadow: none !important;
 }
 
-.botonEstatus.v-btn--active {
+.buttonStatus.v-btn--active {
     background-color: #f1f5f9 !important;
     color: #172033 !important;
 }
@@ -226,7 +226,7 @@ const filtroSelecionado = ref('all')
     font-weight: 500;
 }
 
-.botonEstatus.v-btn--active .quantidade {
+.buttonStatus.v-btn--active .quantidade {
     background-color: white;
     color: #172033;
 }
