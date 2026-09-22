@@ -11,6 +11,7 @@ public class RabbitMQConfig {
 
     public static final String SAGA_CMD = "saga.cmd";
     public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
+    public static final String ORQUESTRADOR_TIMEOUT = "orquestrador.timeout";
 
     public static final String MS_CLIENTE_CMD = "ms.cliente.cmd";
     public static final String MS_CONTA_CMD = "ms.conta.cmd";
@@ -18,7 +19,7 @@ public class RabbitMQConfig {
     public static final String MS_AUTH_CMD = "ms.auth.cmd";
     public static final String MS_EMAIL_CMD = "ms.email.cmd";
 
-    private static final long RETRY_DELAY_MS = 5000L;
+    private static final long RETRY_DELAY_MS = 30000L;
 
     // filas sem retry/DLQ 
 
@@ -32,6 +33,10 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(ORQUESTRADOR_REPLY).build();
     }
 
+    @Bean
+    public Queue orquestradorTimeoutQueue() {
+        return QueueBuilder.durable(ORQUESTRADOR_TIMEOUT).build();
+    }
     @Bean
     public Queue msEmailCmdQueue() {
         // fire-and-forget: MS Email nao responde na SAGA, logo nao tem DLQ de compensacao.
@@ -105,7 +110,7 @@ public class RabbitMQConfig {
     private static Queue commandQueue(String name) {
         return QueueBuilder.durable(name)
                 .withArgument("x-dead-letter-exchange", "")
-                .withArgument("x-dead-letter-routing-key", name + ".wait")
+                .withArgument("x-dead-letter-routing-key", name + ".dlq")
                 .build();
     }
 
@@ -113,11 +118,12 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(name + ".wait")
                 .withArgument("x-message-ttl", RETRY_DELAY_MS)
                 .withArgument("x-dead-letter-exchange", "")
-                .withArgument("x-dead-letter-routing-key", name)
+                .withArgument("x-dead-letter-routing-key", ORQUESTRADOR_TIMEOUT)
                 .build();
     }
 
     private static Queue dlq(String name) {
         return QueueBuilder.durable(name + ".dlq").build();
     }
+
 }
