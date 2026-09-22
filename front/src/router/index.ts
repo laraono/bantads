@@ -6,9 +6,9 @@ import Login from '../views/Login.vue'
 import HomeCliente from '../views/HomeCliente.vue'
 import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
 import HomeGerente from '../views/HomeGerente.vue'
-import RelatorioClientes from '../views/RelatorioClientes.vue'
 import Cadastro from '../views/Cadastro.vue'
 import CadastroEndereco from '../views/CadastroEndereco.vue'
+import ListagemGerente from '@/views/ListagemGerente.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -56,10 +56,10 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, role: 'gerente'} // Somente gerentes têm acesso
   },
   {
-    path: '/relatorio-clientes',
-    name: 'relatorio-clientes',
-    component: RelatorioClientes,
-    meta: { requiresAuth: true, role: 'gerente' } // Somente gerentes têm acesso
+    path: '/listagem',
+    name: 'listagem-gerentes',
+    component: ListagemGerente,
+    meta: { requiresAuth: true }
   },
   {
     path: '/:pathMatch(.*)*', // Qualquer rota que não exista, redireciona para /login

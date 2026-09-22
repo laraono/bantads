@@ -39,6 +39,12 @@ const maskSalario = (v: string) => {
 
 function envioDados() {
     mensagemAlerta.value = true
+    cep.value = ''
+    numero.value = ''
+    rua.value = ''
+    complemento.value = ''
+    cidade.value = ''
+    estado.value = null
     salario.value = ''
 }
 
