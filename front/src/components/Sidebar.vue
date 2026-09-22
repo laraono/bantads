@@ -43,7 +43,7 @@ const clientNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[
 const managerNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
   { key: 'aprovacoes', label: 'Aprovações pendentes', to: '/gerentes', icon: 'clock' },
   { key: 'clientes', label: 'Clientes', to: '/clientes', icon: 'users' },
-  { key: 'relatorio', label: 'Relatório de Cliente', to: '/relatorio-clientes', icon: 'report' },
+  { key: 'relatorio', label: 'Relatório de Cliente', to: '', icon: 'report' },
   { key: 'gerentes', label: 'Gerentes', to: '/listagem', icon: 'shield-user' }
 ]
 
