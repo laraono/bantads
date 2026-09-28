@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,7 +68,9 @@ public class AuthService {
         auth.setLogin(login);
         auth.setActive(active);
 
-        String hash = Password.hash(rawPassword).withArgon2().getResult();
+        String password = rawPassword.isEmpty() ? generateRandomPassword() : rawPassword;
+
+        String hash = Password.hash(password).withArgon2().getResult();
 
         auth.setPassword(hash);
 
@@ -77,5 +80,20 @@ public class AuthService {
     public List<Auth> findAll() 
     {
         return authRepository.findAll();
+    }
+
+    public static String generateRandomPassword() {
+        final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < 6; i++)
+        {
+            int randomIndex = random.nextInt(chars.length());
+            sb.append(chars.charAt(randomIndex));
+        }
+
+        return sb.toString();
     }
 }

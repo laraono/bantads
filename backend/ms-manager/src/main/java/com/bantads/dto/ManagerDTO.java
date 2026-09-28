@@ -7,7 +7,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateManagerDTO {
+public class ManagerDTO {
+    private Long id;
     private String nome;
+    private String email;
+    private String cpf;
     private String telefone;
+    private boolean ativo;
 }

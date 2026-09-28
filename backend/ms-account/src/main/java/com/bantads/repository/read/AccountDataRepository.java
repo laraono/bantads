@@ -11,8 +11,11 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
 
     List<AccountData> findAllByManagerCPF(String managerCPF);
 
-    @Query("SELECT managerCPF, COUNT(accountNumber) FROM AccountData GROUP BY managerCPF")
-    List<AccountsByManagerDTO> getAccountCountByManager();
+    @Query("SELECT manager_cpf as managerCPF, COUNT(account_number) as totalAccounts, SUM(balance) as totalBalance FROM account_data GROUP BY managerCPF")
+    List<AccountsByManagerDTO> getAccountCountGroupByManager();
+
+    @Query("SELECT manager_cpf as managerCPF, COUNT(account_number) as totalAccounts, SUM(balance) as totalBalance FROM account_data WHERE manager_cpf = :cpf GROUP BY manager_cpf")
+    AccountsByManagerDTO getAccountCountByManager(String cpf);
 
     boolean existsAccountDataByAccountNumber(String accountNumber);
 

@@ -7,24 +7,22 @@ import com.bantads.orchestration.config.RabbitMQConfig;
 public enum SagaSteps {
     // em ordem de execução de cada fluxo completo
     CRIACAO_CONTA(List.of(
-        RabbitMQConfig.MS_CLIENTE_CMD,
-        RabbitMQConfig.MS_GERENTE_CMD,
-        RabbitMQConfig.MS_CONTA_CMD,
-        RabbitMQConfig.MS_CLIENTE_CMD,
-        RabbitMQConfig.MS_AUTH_CMD,
-        RabbitMQConfig.MS_CONTA_CMD,
-        RabbitMQConfig.MS_EMAIL_CMD
+            new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.aprovar-solicitacao"),
+            new StepDefinition(RabbitMQConfig.MS_GERENTE_CMD, "gerente.listar-gerentes"),
+            new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.decidir-gerente"),
+            new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.criar-client"),
+            new StepDefinition(RabbitMQConfig.MS_AUTH_CMD, "auth.criar-auth"),
+            new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.criar-conta"),
+            new StepDefinition(RabbitMQConfig.MS_EMAIL_CMD, "email.enviar-senha")
     ));
-    
-    List<String> steps;
 
-    private SagaSteps(List<String> steps) {
+    private final List<StepDefinition> steps;
+
+    SagaSteps(List<StepDefinition> steps) {
         this.steps = steps;
     }
 
-    public List<String> getSteps() {
-        return steps;
-    }
+    public List<StepDefinition> getSteps() { return steps; }
 
     public int getStepsSize() {
         return steps.size();

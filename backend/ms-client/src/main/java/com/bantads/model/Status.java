@@ -1,4 +1,4 @@
-package com.bantads.dto.read;
+package com.bantads.model;
 
 public enum Status {
     SUCESSO,

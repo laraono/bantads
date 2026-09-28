@@ -1,4 +1,4 @@
-package com.bantads.entity.read;
+package com.bantads.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,36 +9,26 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "request",
-    indexes = {
-        @Index(name = "idx_event_id", columnList = "event_id"),
-        @Index(name = "idx_version", columnList = "version")
-    },
-    uniqueConstraints = {
-            @UniqueConstraint(columnNames = {"event_id", "version"}),
-    }
+@Table(name = "rabbit_request",
+        indexes = {
+                @Index(name = "idx_version", columnList = "version")
+        }
 )
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Request {
+public class Rabbit {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "request_id")
     private Long requestId;
 
-    @Column(nullable = true, name = "event_id")
-    private UUID eventId;
-
-    @Column(nullable = true)
-    private long version;
-
-    @Column(nullable = true)
+    @Column(nullable = false)
     private String type;
 
-    @Column(nullable = true, name = "saga_id")
+    @Column(nullable = false, name = "saga_id")
     private UUID sagaId;
 
     @CreationTimestamp

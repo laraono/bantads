@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.bantads.orchestration.model.StepDefinition;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +49,7 @@ public class OrchestrationService {
         Map<String, Object> cmd = new HashMap<>(sagaStates.getPayload());
         cmd.put("sagaId", sagaStates.getSagaId()); 
         cmd.put("stepIndex", sagaStates.getStepIndex());
-        cmd.put("type", "EXECUTE");
+        cmd.put("type", sagaStates.getType());
 
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);
@@ -132,7 +133,9 @@ public class OrchestrationService {
     private void compensateSingleStep(SagaStates sagaStates, int stepIndex) {
         if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size()) return;
 
-        String queue = sagaStates.getStep().getSteps().get(stepIndex);
+        StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
+        String queue = step.getQueue();
+
         Map<String, Object> comp = new HashMap<>();
         comp.put("sagaId", sagaStates.getSagaId());
         comp.put("stepIndex", stepIndex);
@@ -140,5 +143,9 @@ public class OrchestrationService {
         comp.put("payload", sagaStates.getPayload());
 
         rabbitTemplate.convertAndSend(queue, comp);
+    }
+
+    public void approveClient() {
+
     }
 }

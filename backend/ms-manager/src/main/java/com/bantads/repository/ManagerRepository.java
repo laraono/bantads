@@ -11,4 +11,7 @@ public interface ManagerRepository extends JpaRepository<Manager, Long> {
     List<Manager> findAllByIsActive(boolean isActive);
 
     Manager findDistinctByManagerIdAndIsActive(Long id, boolean isActive);
+
+    Manager findByCpf(String cpf);
+
 }

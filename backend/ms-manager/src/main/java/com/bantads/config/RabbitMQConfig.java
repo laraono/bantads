@@ -10,14 +10,8 @@ import org.springframework.amqp.support.converter.MessageConverter;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String EVENT_QUEUE = "ms.conta.events";
     public static final String ACCOUNT_QUEUE = "ms.conta.cmd";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply ";
-
-    @Bean
-    public Queue readModelQueue() {
-        return QueueBuilder.durable(EVENT_QUEUE).build();
-    }
 
     @Bean
     public Queue accountQueue() {
