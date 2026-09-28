@@ -1,16 +1,10 @@
 package com.bantads.service;
 
-import com.bantads.entity.Address;
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
-import com.bantads.entity.State;
-import com.bantads.dto.AddressDTO;
 import com.bantads.repository.ClientRepository;
-import com.bantads.repository.StateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -23,18 +17,16 @@ public class ClientService {
     @Autowired
     private RequestService requestService;
 
-    public List<Client> listClients() {
-        return clientRepository.findAll();
+    public List<Client> listClients(String busca) {
+        if (busca == null || busca.isBlank()) {
+            return clientRepository.findAll();
+        }
+
+        return clientRepository.search(busca);
     }
 
-    public Client getClient(Long id) {
-        return clientRepository.getReferenceById(id);
-    }
-
-    public String getName(String cpf) {
-        Client c = clientRepository.findByCpf(cpf);
-
-        return c.getName();
+    public Client getClient(String cpf) {
+        return clientRepository.findByCpf(cpf);
     }
 
     public Request getRequestByClient(Long id) {

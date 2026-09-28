@@ -8,7 +8,7 @@ class RebootController {
             await rebootService.seedPostgres()
 
             return res.status(200).json({ 
-                message: 'Seeder concluído',
+                message: 'ok',
                 status: 'ok'
             });
         } catch (err) {

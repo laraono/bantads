@@ -52,6 +52,26 @@ class AccountController {
         }
     }
 
+    async listAccounts(cpf) {
+        try {
+            const result = await accountService.listAccounts(cpf);
+            return res.status(200).json(result);
+        } catch (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ error: err.message || 'Falha no servidor' });
+        }
+    }
+
+    async getAccountByCpf(cpf) {
+        try {
+            const account = await accountService.getAccountByCpf(cpf);
+
+            return res.status(200).json(account);
+        } catch (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ error: err.message || 'Falha no servidor' });
+        }
+    }
 
 }
 
