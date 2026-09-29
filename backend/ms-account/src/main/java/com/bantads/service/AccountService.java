@@ -75,16 +75,14 @@ public class AccountService {
                 .type(EventType.CREATED)
                 .build();
 
-            String value = String.valueOf(payload.get("valor"));
             String clientCpf = String.valueOf(payload.get("cpfCliente"));
             String managerCpf = String.valueOf(payload.get("cpfGerente"));
 
             if(
-                body.getAccountNumber() == null || clientCpf == null ||
-                value == null || managerCpf == null || eventType == null
+                body.getAccountNumber() == null || clientCpf == null || managerCpf == null || eventType == null
             ) {
                 answer.setError("missing information");
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -92,7 +90,7 @@ public class AccountService {
 
             if(eventType != EventType.CREATED) {
                 answer.setError("wrong request");
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -101,7 +99,7 @@ public class AccountService {
             AccountData accountData =  AccountData.builder()
                 .accountNumber(body.getAccountNumber())
                 .clientCPF(clientCpf)
-                .balance(new BigDecimal(value))
+                .balance(new BigDecimal(0))
                 .managerCPF(managerCpf)
                 .build();
 
@@ -109,7 +107,7 @@ public class AccountService {
 
 
             answer.setTimestamp(new Date());
-            answer.setStatus(Status.SUCCESS);
+            answer.setStatus(Status.SUCESSO);
             answer.setPayload(this.toMap(newAccount));
 
             return answer;
@@ -135,7 +133,7 @@ public class AccountService {
                 textValue == null || eventType == null || accountNumber.isEmpty() || accountNumber == null
             ) {
                 answer.setError("missing information");
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -143,7 +141,7 @@ public class AccountService {
 
             if (eventType == EventType.CREATED || eventType == EventType.UPDATEMANAGER) {
                 answer.setError("wrong request");
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -153,7 +151,7 @@ public class AccountService {
 
             if (!error.isEmpty()) {
                 answer.setError(error);
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -166,7 +164,7 @@ public class AccountService {
             AccountData updatedAccount = this.accountDataService.updateAccountBalance(value, accountNumber);
 
             answer.setTimestamp(new Date());
-            answer.setStatus(Status.SUCCESS);
+            answer.setStatus(Status.SUCESSO);
             answer.setPayload(this.toMap(updatedAccount));
 
             return answer;
@@ -193,7 +191,7 @@ public class AccountService {
                 accountNumber == null || accountNumber.isEmpty()
             ) {
                 answer.setError("missing information");
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -201,7 +199,7 @@ public class AccountService {
 
             if(eventType == EventType.UPDATEMANAGER) {
                 answer.setError("wrong request");
-                answer.setStatus(Status.FAILURE);
+                answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
 
                 return answer;
@@ -210,7 +208,7 @@ public class AccountService {
             AccountData updatedAccount = this.accountDataService.updateAccountManager(managerCpf, accountNumber);
 
             answer.setTimestamp(new Date());
-            answer.setStatus(Status.SUCCESS);
+            answer.setStatus(Status.SUCESSO);
             answer.setPayload(this.toMap(updatedAccount));
 
             return answer;
@@ -311,8 +309,8 @@ public class AccountService {
         return this.accountHistoryService.getExtract(accountNumber, start, end, userCPF);
     }
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME)
-    public void handleCommand(RabbitCommandDTO command) {
+    @RabbitListener(queues = RabbitMQConfig.EVENT_QUEUE)
+    public void handleReadModelCommand(RabbitCommandDTO command) {
 
         String textEventId = String.valueOf(command.getPayload().get("eventId"));
         String textVersion = String.valueOf(command.getPayload().get("version"));
@@ -355,6 +353,10 @@ public class AccountService {
             .cpfCliente(account.getClientCPF())
             .saldo(account.getBalance().toPlainString())
             .build();
+    }
+    public String findManager(Map<String, Object> payload) {
+        List<String> managersCPF = (List<String>) payload.get("gerentes");
+        return this.accountDataService.getManagerWithLowestAccount(managersCPF);
     }
 
 
