@@ -1,13 +1,24 @@
 package com.bantads.service;
 
+import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.CreateManagerDTO;
+import com.bantads.dto.ManagerDTO;
 import com.bantads.dto.UpdateManagerDTO;
 import com.bantads.entity.Manager;
+import com.bantads.entity.Request;
+import com.bantads.model.RabbitAnswer;
+import com.bantads.model.RabbitRequest;
+import com.bantads.model.Status;
 import com.bantads.repository.ManagerRepository;
+import com.bantads.repository.RequestRepository;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ManagerService {
@@ -15,43 +26,143 @@ public class ManagerService {
     @Autowired
     private ManagerRepository managerRepository;
 
+    @Autowired
+    private RequestRepository requestRepository;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
     public Manager createManager(CreateManagerDTO createManagerDTO) {
         Manager manager = Manager.builder()
                 .cpf(createManagerDTO.getCpf())
                 .email(createManagerDTO.getEmail())
-                .name(createManagerDTO.getName())
-                .phone(createManagerDTO.getPhone())
+                .name(createManagerDTO.getNome())
+                .phone(createManagerDTO.getTelefone())
                 .build();
 
         return managerRepository.save(manager);
     }
 
-    public List<Manager> listManagers() {
-        return managerRepository.findAllByIsActive(true);
-    }
+    public Map<String, Object> listManagers() {
+        List<Manager> managers = managerRepository.findAllByIsActiveOrderByNameAsc(true);
+        Iterator<Manager> managerIterator = managers.iterator();
 
-    public Manager getManager(Long id) {
-        return managerRepository.findDistinctByManagerIdAndIsActive(id, true);
-    }
+        List<ManagerDTO> managerList = new ArrayList<>();
 
-    public void deleteManager(Long id) {
-        List<Manager> managers = managerRepository.findByManagerIdNotAndIsActive(id, true);
+        while(managerIterator.hasNext()) {
+            Manager manager = managerIterator.next();
+            ManagerDTO dto = ManagerDTO.builder()
+                    .id(manager.getManagerId())
+                    .ativo(manager.isActive())
+                    .cpf(manager.getCpf())
+                    .email(manager.getEmail())
+                    .nome(manager.getName())
+                    .telefone(manager.getPhone())
+                    .build();
 
-        if(!managers.isEmpty()) {
-            Manager manager = this.getManager(id);
-
-            manager.setActive(false);
-
-            managerRepository.save(manager);
+            managerList.add(dto);
         }
+
+        Map<String, Object> gerentes = new HashMap<>();
+        gerentes.put("gerentes", managerList);
+
+        return gerentes;
     }
 
-    public void updateManager(Long id, UpdateManagerDTO updateManagerDTO) {
-        Manager manager = this.getManager(id);
+    public List<ManagerDTO> list() {
+        List<Manager> managers = managerRepository.findAllByIsActiveOrderByNameAsc(true);
+        Iterator<Manager> managerIterator = managers.iterator();
 
-        manager.setName(updateManagerDTO.getName());
-        manager.setPhone(updateManagerDTO.getPhone());
+        List<ManagerDTO> managerList = new ArrayList<>();
+
+        while(managerIterator.hasNext()) {
+            Manager manager = managerIterator.next();
+            ManagerDTO dto = ManagerDTO.builder()
+                    .id(manager.getManagerId())
+                    .ativo(manager.isActive())
+                    .cpf(manager.getCpf())
+                    .email(manager.getEmail())
+                    .nome(manager.getName())
+                    .telefone(manager.getPhone())
+                    .build();
+
+            managerList.add(dto);
+        }
+
+        return managerList;
+    }
+
+    public Manager getManager(String cpf) {
+        return managerRepository.findByCpfAndIsActive(cpf, true);
+    }
+
+    public void deleteManager(String managerCPF, String userCPF) {
+         Manager manager = this.getManager(managerCPF);
+
+        if(manager.getCpf().equals(userCPF)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível deletar a si mesmo");
+        }
+
+        manager.setActive(false);
 
         managerRepository.save(manager);
+
+    }
+
+    public void updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
+        Manager manager = this.getManager(managerCPF);
+
+        manager.setName(updateManagerDTO.getNome());
+        manager.setPhone(updateManagerDTO.getTelefone());
+
+        managerRepository.save(manager);
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
+    public void handleAccountCommand(RabbitRequest command) {
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+
+        if (alreadyProcessed) {
+            return;
+        }
+
+        RabbitAnswer answer = RabbitAnswer.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .status(Status.SUCESSO)
+                .build();
+
+        Request req = Request.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .build();
+
+        String type = String.valueOf(command.getType());
+
+        Map<String, Object> payload = new HashMap<>();
+
+        if(type.contains("listar-gerentes")) {
+            try {
+                List<ManagerDTO> gerentes = this.list();
+                payload.put("gerentes", gerentes);
+
+            } catch (Exception e) {
+                answer.setStatus(Status.FALHA);
+                answer.setTimestamp(new Date());
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        answer.setPayload(payload);
+        answer.setTimestamp(new Date());
+
+        this.sendReadModelCommand(answer);
+        requestRepository.save(req);
+    }
+
+    public void sendReadModelCommand(RabbitAnswer answer) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

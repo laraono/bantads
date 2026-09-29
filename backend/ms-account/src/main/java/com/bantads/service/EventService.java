@@ -75,7 +75,7 @@ public class EventService {
                 .type(EventType.DEPOSIT)
                 .build();
 
-        this.sendCommand(command, userCPF);
+        this.sendReadModelCommand(command, userCPF);
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {
@@ -107,7 +107,7 @@ public class EventService {
                 .type(EventType.UPDATEMANAGER)
                 .build();
 
-        this.sendCommand(command, "");
+        this.sendReadModelCommand(command, "");
     }
 
     public void withdraw(String userCPF, CreateEventDTO event, String objectId) {
@@ -143,24 +143,22 @@ public class EventService {
                 .type(EventType.WITHDRAW)
                 .build();
 
-        this.sendCommand(command, userCPF);
+        this.sendReadModelCommand(command, userCPF);
 }
 
-    public Event createAccount(CreateEventDTO event) {
+    public Event createAccount(Map<String, Object> payload) {
 
         String objectId = this.createObjectId();
 
         Event newEvent = Event.builder()
-                .payload(event.getPayload())
+                .payload(payload)
                 .objectId(objectId)
                 .eventType(EventType.CREATED)
-                .version(this.getVersion(objectId))
+                .version(0)
                 .createdAt(new Date())
                 .build();
 
         this.eventRepository.save(newEvent);
-
-        Map<String, Object> payload = newEvent.getPayload();
 
         payload.putIfAbsent("eventId", newEvent.getEventId());
         payload.putIfAbsent("version", newEvent.getVersion());
@@ -172,7 +170,7 @@ public class EventService {
                 .type(EventType.CREATED)
                 .build();
 
-        this.sendCommand(command, "");
+        this.sendReadModelCommand(command, "");
 
         return newEvent;
     }
@@ -306,8 +304,8 @@ public class EventService {
                 .type(EventType.DESTINATIONTRANSFER)
                 .build();
 
-        this.sendCommand(command, userCPF);
-        this.sendCommand(destCommand, destinationCPF);
+        this.sendReadModelCommand(command, userCPF);
+        this.sendReadModelCommand(destCommand, destinationCPF);
 
         String nome = String.valueOf(destination.get("nome"));
 
@@ -328,13 +326,13 @@ public class EventService {
         return this.eventRepository.existsByObjectIdAndEventType(objectId, EventType.CREATED);
     }
 
-    public void sendCommand(RabbitCommandDTO command, String cpf) {
+    public void sendReadModelCommand(RabbitCommandDTO command, String cpf) {
         Map<String, Object> payload = command.getPayload();
 
         payload.put("clienteCpf", cpf);
         command.setPayload(payload);
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUE_NAME, command);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EVENT_QUEUE, command);
     }
 
 }

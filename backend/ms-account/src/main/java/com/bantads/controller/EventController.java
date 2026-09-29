@@ -69,14 +69,4 @@ public class EventController {
             throw e;
         }
     }
-
-    @PostMapping
-    Event createAccount(@RequestHeader("x-user-cpf") String userCPF, @RequestBody CreateEventDTO event) {
-        try {
-            return this.eventService.createAccount(event );
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
 }

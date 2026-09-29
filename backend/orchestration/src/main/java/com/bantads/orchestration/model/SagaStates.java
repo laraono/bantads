@@ -32,7 +32,11 @@ public class SagaStates implements Serializable{
     }
 
     public String currentStep() {
-        return step.getSteps().get(stepIndex);
+        return step.getSteps().get(stepIndex).getQueue();
+    }
+
+    public String getType() {
+        return step.getSteps().get(stepIndex).getActionType();
     }
 
     public String compensationKey(){

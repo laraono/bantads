@@ -1,9 +1,7 @@
 package com.bantads.controller;
 
 import com.bantads.dto.event.GetAccountDTO;
-import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.dto.read.ExtractDTO;
-import com.bantads.dto.read.RabbitQueryDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,15 +76,4 @@ public class AccountController {
             throw e;
         }
     }
-
-    @GetMapping("/managers")
-    List<AccountsByManagerDTO> getAccountsCount() {
-        try {
-            return this.accountService.getAccountsCountByManager();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
 }

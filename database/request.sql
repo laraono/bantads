@@ -34,10 +34,13 @@ CREATE TABLE account_history (
 
 CREATE TABLE request(
     request_id SERIAL PRIMARY KEY,
-    event_id UUID NOT NULL,
-    version BIGINT NOT NULL,
+    event_id UUID NULL,
+    version BIGINT NULL,
+    saga_id UUID NULL,
+    type VARCHAR(50) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    UNIQUE(event_id, version)
+    UNIQUE(event_id, version),
+    UNIQUE(saga_id, type)
 );
 
