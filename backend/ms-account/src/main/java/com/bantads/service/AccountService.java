@@ -43,7 +43,6 @@ public class AccountService {
         return this.accountDataService.getAccountsByManager(managerCPF);
     }
 
-
     public List<AccountData> listAccounts(List<String> cpf) {
         return this.accountDataService.listAccounts(cpf);
     }
