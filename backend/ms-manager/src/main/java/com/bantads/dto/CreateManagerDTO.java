@@ -8,8 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CreateManagerDTO {
-    private String name;
+    private String nome;
     private String email;
     private String cpf;
-    private String phone;
+    private String telefone;
 }

@@ -8,6 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class UpdateManagerDTO {
-    private String name;
-    private String phone;
+    private String nome;
+    private String telefone;
 }

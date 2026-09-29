@@ -68,11 +68,16 @@ public class RequestService {
             .number(addressDTO.getNumero())
             .street(addressDTO.getLogradouro())
             .build();
-        
-        Address newAddress = addressRepository.save(addressEntity);
 
-        Client clientEntity = Client.builder()
-            .address(newAddress)
+        Request requestEntity = Request.builder()
+            .status(RequestStatus.PENDING.getLabel())
+            .additionalInfo(addressDTO.getComplemento())
+            .cep(addressDTO.getCep())
+            .city(addressDTO.getCidade())
+            .state(stateRepository.findByUf(addressDTO.getUf()))
+            .city(addressDTO.getCidade())
+            .number(addressDTO.getNumero())
+            .street(addressDTO.getLogradouro())
             .cpf(requestDTO.getCpf())
             .email(requestDTO.getEmail())
             .name(requestDTO.getNome())
@@ -80,16 +85,7 @@ public class RequestService {
             .salary(requestDTO.getSalario())
             .build();
 
-        clientRepository.save(clientEntity);
-        
-        Request requestEntity = Request.builder()
-            .client(clientEntity)
-            .status(RequestStatus.PENDING.getLabel())
-            .build();
-
         requestRepository.save(requestEntity);
-
-        associateRequestToClient(requestEntity.getRequestId(), clientEntity);
 
         return requestEntity;
     }
