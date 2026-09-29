@@ -16,9 +16,9 @@ public class ClientModelAssembler implements RepresentationModelAssembler<Client
     @Override
     public EntityModel<Client> toModel(Client client) {
         EntityModel<Client> model = EntityModel.of(client);
-        model.add(linkTo(methodOn(ClientController.class).getClient(client.getClientId())).withSelfRel());
+        model.add(linkTo(methodOn(ClientController.class).getClient(client.getCpf())).withSelfRel());
         model.add(linkTo(methodOn(ClientController.class).getRequest(client.getClientId())).withRel("request"));
-        model.add(linkTo(methodOn(ClientController.class).listClients()).withRel("clients"));
+        model.add(linkTo(methodOn(ClientController.class).listClients(null)).withRel("clients"));
         return model;
     }
     

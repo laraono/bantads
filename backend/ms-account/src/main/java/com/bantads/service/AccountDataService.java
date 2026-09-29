@@ -1,5 +1,6 @@
 package com.bantads.service;
 
+import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.repository.read.AccountDataRepository;
@@ -109,5 +110,15 @@ public class AccountDataService {
         return this.accountDataRepository.save(account);
     }
 
+    public List<AccountData> listAccounts(List<String> clientCPFs) {
+        if (clientCPFs == null || clientCPFs.isEmpty()) {
+            return this.accountDataRepository.findAll();
+        }
+        return this.accountDataRepository.findAllByClientCPFIn(clientCPFs);
+    }
+
+    public AccountData getAccountDataByCpf(String cpf) {
+        return this.accountDataRepository.findByClientCPF(cpf);
+    }
 
 }
