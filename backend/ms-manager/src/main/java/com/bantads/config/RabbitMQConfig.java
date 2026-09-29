@@ -10,12 +10,12 @@ import org.springframework.amqp.support.converter.MessageConverter;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String ACCOUNT_QUEUE = "ms.conta.cmd";
+    public static final String MANAGER_QUEUE = "ms.gerente.cmd";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply ";
 
     @Bean
-    public Queue accountQueue() {
-        return QueueBuilder.durable(ACCOUNT_QUEUE).build();
+    public Queue managerQueue() {
+        return QueueBuilder.durable(MANAGER_QUEUE).build();
     }
 
     @Bean

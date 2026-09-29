@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -32,9 +33,9 @@ public class ManagerController {
     }
 
     @GetMapping()
-    public ResponseEntity<List<ManagerDTO>> listManagers() {
+    public ResponseEntity<Map<String, Object>> listManagers() {
         try{
-            List<ManagerDTO> gerentes =  managerService.listManagers();
+            Map<String, Object> gerentes =  managerService.listManagers();
             return ResponseEntity.status(HttpStatus.CREATED).body(gerentes);
         } catch (Exception e) {
             e.printStackTrace();
@@ -42,10 +43,10 @@ public class ManagerController {
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Object> updateManager(@PathVariable Long id, @RequestBody UpdateManagerDTO manager) {
+    @PutMapping("/{cpf}")
+    public ResponseEntity<Object> updateManager(@PathVariable String managerCPF, @RequestBody UpdateManagerDTO manager) {
         try {
-            managerService.updateManager(id, manager);
+            managerService.updateManager(managerCPF, manager);
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,10 +54,10 @@ public class ManagerController {
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Object> deleteManager(@RequestHeader("x-user-cpf") String userCPF, @PathVariable Long id) {
+    @DeleteMapping("/{cpf}")
+    public ResponseEntity<Object> deleteManager(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String managerCPF) {
         try {
-            this.managerService.deleteManager(id, userCPF);;
+            this.managerService.deleteManager(managerCPF, userCPF);;
             return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (Exception e) {
             e.printStackTrace();
@@ -67,7 +68,7 @@ public class ManagerController {
     @GetMapping("/{cpf}")
     public ResponseEntity<Manager> getManagerByCpf(@PathVariable String cpf) {
         try{
-            Manager gerente = managerService.getManagerByCpf(cpf);
+            Manager gerente = managerService.getManager(cpf);
             return ResponseEntity.status(HttpStatus.CREATED).body(gerente);
         } catch (Exception e) {
             e.printStackTrace();
