@@ -4,6 +4,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 const authController = require('./src/controller/authController');
 const accountRoutes = require('./src/routes/accountRoutes');
+const managerRoutes = require('./src/routes/managerRoutes');
 const rebootRoutes = require('./src/routes/rebootRoutes');
 const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
@@ -36,11 +37,7 @@ app.use('/solicitacoes', createProxyMiddleware({
 
 app.use('/contas', accountRoutes);
 
-app.use('/gerentes', authGatewayFilter(), createProxyMiddleware({
-    target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/': '/managers' }
-}));
+app.use('/gerentes', managerRoutes);
 
 app.use('/relatorios', authGatewayFilter(), createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,

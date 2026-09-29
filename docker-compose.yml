@@ -226,31 +226,6 @@ services:
       - ms-auth
     restart: always
 
-  api-composition:
-    container_name: api-composition
-    build:
-      context: ./backend/api-composition
-      dockerfile: Dockerfile
-    networks:
-      - backend-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    ports:
-      - "3001:3001"
-    depends_on:
-      ms-auth:
-        condition: service_started
-      ms-client:
-        condition: service_started
-      ms-account:
-        condition: service_started
-      ms-manager:
-        condition: service_started
-    restart: always
-
   front:
     container_name: front
     build:

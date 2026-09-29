@@ -44,7 +44,7 @@ const managerNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }
   { key: 'aprovacoes', label: 'Aprovações pendentes', to: '/gerentes', icon: 'clock' },
   { key: 'clientes', label: 'Clientes', to: '/clientes', icon: 'users' },
   { key: 'relatorio', label: 'Relatório de Cliente', to: '', icon: 'report' },
-  { key: 'gerentes', label: 'Gerentes', to: '', icon: 'shield-user' }
+  { key: 'gerentes', label: 'Gerentes', to: '/listagem', icon: 'shield-user' }
 ]
 
 const navItems = computed(() => (props.role === 'gerente' ? managerNavItems : clientNavItems))

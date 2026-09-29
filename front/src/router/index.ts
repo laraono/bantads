@@ -6,9 +6,11 @@ import HomeCliente from '../views/HomeCliente.vue'
 import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
 import HomeGerente from '../views/HomeGerente.vue'
 import Cadastro from '../views/Cadastro.vue'
+
 import CadastroEndereco from '../views/CadastroEndereco.vue'
 import ClienteConfig from '@/views/ClienteConfig.vue'
 import ClienteList from '@/views/ClienteList.vue'
+import ListagemGerente from '@/views/ListagemGerente.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -66,7 +68,14 @@ const routes: Array<RouteRecordRaw> = [
     path: '/clientelist',
     name: 'clientelist',
     component: ClienteList,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: true, role: 'gerente'} 
+  },
+
+  {
+    path: '/listagem',
+    name: 'listagem-gerentes',
+    component: ListagemGerente,
+    meta: { requiresAuth: true }
   },
 
   {

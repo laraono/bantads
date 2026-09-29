@@ -7,7 +7,9 @@ import com.bantads.service.ManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -23,8 +25,13 @@ public class ManagerController {
     }
 
     @GetMapping()
-    List<Manager> listManagers() {
-        return managerService.listManagers();
+    Map<String, List<Manager>> listManagers() {
+        Map<String, List<Manager>> gerentes = new HashMap<>();
+        List<Manager> managers = managerService.listManagers();
+
+        gerentes.put("gerentes", managers);
+
+        return gerentes;
     }
 
     @GetMapping("/{id}")
