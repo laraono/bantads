@@ -23,7 +23,7 @@ public class AccountController {
     private AccountService accountService;
 
     @GetMapping
-    ResponseEntity<List<AccountData>> listAccounts(@RequestBody List<String> cpf) {
+    ResponseEntity<List<AccountData>> listAccounts(@RequestParam(name = "cpf", required = false) List<String> cpf) {
         try {
             List<AccountData> accounts = this.accountService.listAccounts(cpf);
             return ResponseEntity.status(HttpStatus.OK).body(accounts);
