@@ -3,6 +3,7 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Rabbit;
+import com.bantads.entity.Request;
 import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
@@ -57,8 +58,8 @@ public class SagaService {
 
         if(type.contains("criar-cliente")) {
             try {
-                RequestDTO requestDTO = (RequestDTO) command.getPayload();
-                this.clientService.createClient(requestDTO);
+                Request request = (Request) command.getPayload().get("requisicao");
+                this.clientService.createClient(request);
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -71,6 +72,8 @@ public class SagaService {
             try {
                 Long id = (Long) command.getPayload().get("idSolicitacao");
                 this.requestService.approveRequest(id);
+                Request request = this.requestService.getRequestById(id);
+                payload.put("cpfCliente", request.getCpf());
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());

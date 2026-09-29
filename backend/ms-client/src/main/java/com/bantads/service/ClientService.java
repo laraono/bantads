@@ -58,32 +58,29 @@ public class ClientService {
         return requestService.getRequestByClient(client);
     }
 
-    public Client createClient(RequestDTO requestDTO) {
-        if(stateRepository.findByUf(requestDTO.getEndereco().getUf()) == null) {
+    public Client createClient(Request req) {
+        if(stateRepository.findByUf(req.getState().getUf()) == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
         }
 
-        AddressDTO addressDTO = requestDTO.getEndereco();
-
         Address addressEntity = Address.builder()
-                .additionalInfo(addressDTO.getComplemento())
-                .cep(addressDTO.getCep())
-                .city(addressDTO.getCidade())
-                .state(stateRepository.findByUf(addressDTO.getUf()))
-                .city(addressDTO.getCidade())
-                .number(addressDTO.getNumero())
-                .street(addressDTO.getLogradouro())
+                .additionalInfo(req.getAdditionalInfo())
+                .cep(req.getCep())
+                .city(req.getCity())
+                .state(req.getState())
+                .number(req.getNumber())
+                .street(req.getStreet())
                 .build();
 
         Address address = addressRepository.save(addressEntity);
 
         Client client = Client.builder()
                 .address(address)
-                .cpf(requestDTO.getCpf())
-                .email(requestDTO.getEmail())
-                .name(requestDTO.getNome())
-                .phone(requestDTO.getTelefone())
-                .salary(requestDTO.getSalario())
+                .cpf(req.getCpf())
+                .email(req.getEmail())
+                .name(req.getName())
+                .phone(req.getPhone())
+                .salary(req.getSalary())
                 .build();
 
         return clientRepository.save(client);

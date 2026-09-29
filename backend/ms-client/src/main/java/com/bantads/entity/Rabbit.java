@@ -9,11 +9,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "rabbit_request",
-        indexes = {
-                @Index(name = "idx_version", columnList = "version")
-        }
-)
+@Table(name = "rabbit_request")
 @Getter
 @Setter
 @NoArgsConstructor
