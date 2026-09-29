@@ -68,6 +68,10 @@ public class ManagerService {
 
         return gerentes;
     }
+    
+    public Manager getManagerByCpf(String cpf) {
+        return managerRepository.findByCpf(cpf);
+    }
 
     public List<ManagerDTO> list() {
         List<Manager> managers = managerRepository.findAllByIsActiveOrderByNameAsc(true);
