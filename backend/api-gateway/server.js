@@ -39,16 +39,16 @@ app.use('/contas', accountRoutes);
 
 app.use('/gerentes', managerRoutes);
 
-app.use('/relatorios', authGatewayFilter(), createProxyMiddleware({
+app.use('/relatorios', authGatewayFilter('GERENTE'), createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
     changeOrigin: true,
-    pathRewrite: { '^/': '/relatorios' }
+    pathRewrite: { '^/': '/relatorios/' }
 }));
 
 app.use('/jobs', authGatewayFilter(), createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
     changeOrigin: true,
-    pathRewrite: { '^/': '/jobs' }
+    pathRewrite: { '^/': '/jobs/' }
 }));
 
 app.post('/login', (req, res) => authController.login(req, res));
