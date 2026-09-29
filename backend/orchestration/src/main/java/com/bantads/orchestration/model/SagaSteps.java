@@ -10,7 +10,7 @@ public enum SagaSteps {
             new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.aprovar-solicitacao"),
             new StepDefinition(RabbitMQConfig.MS_GERENTE_CMD, "gerente.listar-gerentes"),
             new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.decidir-gerente"),
-            new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.criar-client"),
+            new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.criar-cliente"),
             new StepDefinition(RabbitMQConfig.MS_AUTH_CMD, "auth.criar-auth"),
             new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.criar-conta"),
             new StepDefinition(RabbitMQConfig.MS_EMAIL_CMD, "email.enviar-senha")

@@ -145,7 +145,4 @@ public class OrchestrationService {
         rabbitTemplate.convertAndSend(queue, comp);
     }
 
-    public void approveClient() {
-
-    }
 }
