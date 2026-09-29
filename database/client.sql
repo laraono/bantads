@@ -56,3 +56,12 @@ CREATE TABLE request (
 
     FOREIGN KEY(client_id) REFERENCES client(client_id)
 );
+
+CREATE TABLE rabbit_request(
+    request_id SERIAL PRIMARY KEY,
+    saga_id UUID NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    UNIQUE(saga_id, type)
+);

@@ -10,6 +10,27 @@ class ManagerController {
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
     }
+
+    async getManager(req, res) {
+        try {
+            const result = await managerService.getManager(req.params.id);
+            return res.status(200).json(result);
+        } catch (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ error: err.message || 'Erro no servidor' });
+        }
+    }
+
+    async updateManager(req, res) {
+        try {
+            await managerService.updateManager(req.params.id, req.body, req.headers);
+            return res.sendStatus(200);
+        } catch (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ error: err.message || 'Erro no servidor' });
+        }
+    }
+
 }
 
 module.exports = new ManagerController();

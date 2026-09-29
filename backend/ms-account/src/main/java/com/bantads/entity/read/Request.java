@@ -29,11 +29,17 @@ public class Request {
     @Column(name = "request_id")
     private Long requestId;
 
-    @Column(nullable = false, name = "event_id")
+    @Column(nullable = true, name = "event_id")
     private UUID eventId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private long version;
+
+    @Column(nullable = true)
+    private String type;
+
+    @Column(nullable = true, name = "saga_id")
+    private UUID sagaId;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

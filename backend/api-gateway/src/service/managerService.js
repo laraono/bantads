@@ -6,9 +6,22 @@ const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
 class MangerService {
     async list() {
         const managers = await axios.get(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers`)
-
         return managers.data
     }
+
+    async getManager(id) {
+        const managerAnswer = await axios.get(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`)
+
+        return managerAnswer.data
+    }
+
+    async updateManager(id, body, headers) {
+        await axios.put(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
+            {payload: body},
+            { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+        )
+    }
+    
 }
 
 module.exports = new MangerService();
