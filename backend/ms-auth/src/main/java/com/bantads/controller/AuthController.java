@@ -46,10 +46,9 @@ public class AuthController
     }
 
     @PostMapping
-    public Auth createAuth(@RequestBody Auth auth) 
+    public void createAuth(@RequestBody Auth auth)
     {
-
-        return authService.create(
+        authService.create(
                 auth.getUserId(),
                 auth.getCpf(),
                 auth.getType(),

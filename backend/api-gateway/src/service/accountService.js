@@ -6,6 +6,15 @@ const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
 
 class AccountService {
+
+    async listAccounts(cpf) {
+        const params = new URLSearchParams()
+        if (cpf) params.append('cpf', cpf)
+        const query = params.toString() ? `?${params}` : ''
+        const accounts = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts${query}`);
+        return accounts.data
+    }
+
     async transfer(id, body, headers) {
         const msBody = { contaDestino: body.contaDestino, valor: body.valor };
 
@@ -91,6 +100,24 @@ class AccountService {
         const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`, {
             headers: { 'x-user-cpf': headers['x-user-cpf']}
         })
+
+        if(!accountAnswer.data) {
+            const error = new Error('Conta não encontrado');
+            error.status = 404;
+            throw error;
+        }
+
+        if(!accountAnswer.data.numero || !accountAnswer.data.saldo || !accountAnswer.data.cpfCliente) {
+            const error = new Error('Erro no servidor');
+            error.status = 500;
+            throw error;
+        }
+
+        return accountAnswer.data        
+    }
+
+    async getAccountByCpf(cpf) {
+        const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`)
 
         if(!accountAnswer.data) {
             const error = new Error('Conta não encontrado');

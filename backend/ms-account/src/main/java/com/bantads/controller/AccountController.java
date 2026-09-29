@@ -1,9 +1,7 @@
 package com.bantads.controller;
 
 import com.bantads.dto.event.GetAccountDTO;
-import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.dto.read.ExtractDTO;
-import com.bantads.dto.read.RabbitQueryDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +19,28 @@ public class AccountController {
 
     @Autowired
     private AccountService accountService;
+
+    @GetMapping
+    ResponseEntity<List<AccountData>> listAccounts(@RequestParam(name = "cpf", required = false) List<String> cpf) {
+        try {
+            List<AccountData> accounts = this.accountService.listAccounts(cpf);
+            return ResponseEntity.status(HttpStatus.OK).body(accounts);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @GetMapping("/cpf/{cpf}")
+    ResponseEntity<GetAccountDTO> getAccountDataByCpf(@PathVariable String cpf) {
+        try {
+            GetAccountDTO account = this.accountService.getAccountDataByCpf(cpf);
+            return ResponseEntity.status(HttpStatus.OK).body(account);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
 
     @GetMapping("/{accountNumber}")
     ResponseEntity<GetAccountDTO> getAccountData(@PathVariable String accountNumber) {
@@ -78,15 +98,4 @@ public class AccountController {
             throw e;
         }
     }
-
-    @GetMapping("/managers")
-    List<AccountsByManagerDTO> getAccountsCount() {
-        try {
-            return this.accountService.getAccountsCountByManager();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
 }

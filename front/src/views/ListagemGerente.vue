@@ -23,6 +23,22 @@ const gerentes = ref([
 
 const filtroSelecionado = ref('all')
 
+const novoGerente = ref(false)
+
+const nome = ref('')
+const cpf = ref('')
+const telefone = ref('')
+const email = ref('')
+const senha = ref('')
+const gerente_senha = ref('')
+
+const rules = {
+    required: (v: string) => !!v || 'Campo obrigatório',
+    nome: (v: string) => v && v.length >= 8 || 'Mínimo de 8 letras',
+    telefone: (v: string) => v.replace(/\D/g, '').length === 11 || 'Telefone inválido',
+    email: (v: string) => /.+@.+\..+/.test(v) || 'E-mail inválido',
+}
+
 </script>
 
 <template>
@@ -34,12 +50,73 @@ const filtroSelecionado = ref('all')
                     <h1 class="title">Gerentes</h1>
                 </div>
                 <div class="btn-novo">
-                    <v-btn type= "button" class="novo-btn" to="">
+                    <v-btn type= "button" class="novo-btn" @click="novoGerente = true">
                         <v-icon icon="mdi-plus" start/>
                         Novo Gerente
                     </v-btn>
                 </div>
             </header>
+
+            <!-- Componente novo gerente -->
+            <div class="novo-gerente">
+                <v-dialog v-model="novoGerente" max-width="500">
+                    <v-card>
+                        <div class="header">
+                            <div class="titulo">
+                                <v-card-title class="text-h5">
+                                    Cadastrar Gerente
+                                </v-card-title>
+                            </div>
+                            <div class="icono-fechar">
+                                <v-icon icon="mdi-window-close" @click="novoGerente = false"/>
+                            </div>
+                        </div>
+
+                        <v-divider />
+
+                        <v-card-text>
+                            <v-form>
+                                <label class="field-label" for="cadastro-nome">Nome Completo</label>
+                                <v-text-field id="cadastro-nome" v-model="nome" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="João da Silva" type="text" :rules="[rules.required, rules.nome]"/>
+                                <div class="primeiro-bloco">
+                                    <div class="gerente-cpf">
+                                        <label class="field-label" for="cadastro-cpf">CPF</label>
+                                        <v-mask-input id="cadastro-cpf" v-model="cpf" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" :rules="[rules.required]" mask="###.###.###-##"/>
+                                    </div>
+                                    <div class="gerente-telefone">
+                                        <label class="field-label" for="cadastro-telefone">Telefone</label>
+                                        <v-mask-input id="cadastro-telefone" v-model="telefone" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="(00) 00000-0000" type="text" :rules="[rules.required, rules.telefone]" mask='(##) #####-####'/>
+                                    </div>
+                                </div>
+                                <label class="field-label" for="cadastro-email">E-mail (Campo Único)</label>
+                                <v-text-field id="cadastro-email" v-model="email" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="email@bantads.com" type="email" :rules="[rules.required, rules.email]"/>
+                                <div class="segundo-bloco">
+                                    <div class="gerente-senha">
+                                        <label class="field-label" for="password">Senha</label>
+                                        <v-text-field id="gerente-password" v-model="senha" class="field-input" variant="outlined" flat single-line density="comfortable" type="password" :rules="[rules.required]"/>
+                                    </div>
+                                    <div class="gerente-conferir-senha">
+                                        <label class="field-label" for="password">Confirmar Senha</label>
+                                        <v-text-field id="confirmar-password" v-model="gerente_senha" class="field-input" variant="outlined" flat single-line density="comfortable" type="password" :rules="[rules.required]"/>
+                                    </div>
+                                </div>
+                            </v-form>
+                        </v-card-text>
+
+                        <v-divider class="divider"/>
+                            
+                        <v-card-actions class="acoes">
+                            <v-btn class="cancelar-btn" variant="elevated" @click="novoGerente = false">
+                                Cancelar
+                            </v-btn>
+                            <v-btn class="salvar-btn" variant="elevated">
+                                Salvar Gerente
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </div>
+
             <main class="content">
                 <div class="filtros">
                     <div class="filtroEstatus">
@@ -124,6 +201,7 @@ const filtroSelecionado = ref('all')
 </template>
 
 <style scoped>
+
 * {
   box-sizing: border-box;
 }
@@ -314,4 +392,70 @@ const filtroSelecionado = ref('all')
     transform: rotate(360deg);
   }
 }
+
+/* CSS modal insertar novo gerente */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 10px 0px;
+}
+
+.field-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.field-input :deep(.v-field) {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+.field-input :deep(.v-field__input) {
+    min-height: 44px;
+    font-size: 0.9rem;
+}
+
+.primeiro-bloco, .segundo-bloco {
+    display: flex;
+    gap: 15px;
+}
+
+.gerente-cpf, .gerente-telefone, .gerente-senha, .gerente-conferir-senha {
+    display: flex;
+    flex-direction: column;
+    min-width: 219px;
+}
+
+.salvar-btn {
+    background: #0b1c34;
+    color: #ffffff;
+    border-radius: 8px;
+    letter-spacing: normal;
+    font-weight: 500;
+    text-transform: none;
+}
+
+.cancelar-btn {
+    background-color: #ffffff;
+    color: #1f2937;
+    border-radius: 8px;
+    letter-spacing: normal;
+    font-weight: 500;
+    text-transform: none;
+}
+
+.acoes {
+    padding: 0px 20px 0px;
+    background-color: #f8fafc;
+}
+
+.icono-fechar {
+    margin-right: 9px;
+}
+
 </style>

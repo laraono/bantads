@@ -1,5 +1,6 @@
 package com.bantads.service;
 
+import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.repository.read.AccountDataRepository;
@@ -10,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 @Service
@@ -39,9 +43,38 @@ public class AccountDataService {
         return this.accountDataRepository.findAllByManagerCPF(managerCPF);
     }
 
-    public List<AccountsByManagerDTO> getAccountsCountByManager() {
-        return this.accountDataRepository.getAccountCountByManager();
+    public AccountsByManagerDTO getAccountsCountByManager(String cpf) {
+        return this.accountDataRepository.getAccountCountByManager(cpf);
     }
+
+    public String getManagerWithLowestAccount(List<String> managerCPFs) {
+
+        Iterator<String> cpfIterator = managerCPFs.iterator();
+        String firstCPF = managerCPFs.get(0);
+        AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
+
+        int lowestAccountAmount = first.getTotalAccounts();
+        BigDecimal lowestTotalBalance = first.getTotalBalance();
+        int index = 0;
+        int i = 1;
+
+        while(cpfIterator.hasNext()) {
+            AccountsByManagerDTO current = this.getAccountsCountByManager(cpfIterator.next());
+            if (current.getTotalAccounts() < lowestAccountAmount) {
+                lowestAccountAmount = current.getTotalAccounts();
+                lowestTotalBalance = current.getTotalBalance();
+                index = i;
+            } else if (current.getTotalAccounts() == lowestAccountAmount && current.getTotalBalance().compareTo(lowestTotalBalance) < 0) {
+                lowestAccountAmount = current.getTotalAccounts();
+                lowestTotalBalance = current.getTotalBalance();
+                index = i;
+            }
+            i++;
+        }
+
+        return managerCPFs.get(index);
+    }
+
 
     public AccountData getAccountData(String accountNumber) {
         return this.accountDataRepository.findByAccountNumber(accountNumber);
@@ -77,5 +110,15 @@ public class AccountDataService {
         return this.accountDataRepository.save(account);
     }
 
+    public List<AccountData> listAccounts(List<String> clientCPFs) {
+        if (clientCPFs == null || clientCPFs.isEmpty()) {
+            return this.accountDataRepository.findAll();
+        }
+        return this.accountDataRepository.findAllByClientCPFIn(clientCPFs);
+    }
+
+    public AccountData getAccountDataByCpf(String cpf) {
+        return this.accountDataRepository.findByClientCPF(cpf);
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.bantads.report;
 
+import com.bantads.dto.ClienteRelatorioDTO;
 import com.bantads.entity.Manager;
 import com.bantads.job.JobService;
 import com.bantads.repository.ManagerRepository;
@@ -11,13 +12,12 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class ClienteReportService {
@@ -42,51 +42,44 @@ public class ClienteReportService {
     @Async
     public void gerarRelatorioClientes(String jobId) {
         try {
-            List<Map<String, Object>> clientes = montarRelatorio();
+            List<ClienteRelatorioDTO> clientes = montarRelatorio();
             jobService.complete(jobId, Map.of("clientes", clientes));
         } catch (Exception e) {
             jobService.fail(jobId, e.getMessage());
         }
     }
 
-    private List<Map<String, Object>> montarRelatorio() {
-        Map<String, Manager> gerentesPorCpf = new HashMap<>();
-        for (Manager gerente : managerRepository.findAllByIsActive(true)) {
-            gerentesPorCpf.put(gerente.getCpf(), gerente);
-        }
+    private List<ClienteRelatorioDTO> montarRelatorio() {
+        Map<String, Manager> gerentesPorCpf = managerRepository.findAll().stream()
+                .collect(Collectors.toMap(Manager::getCpf, Function.identity()));
 
-        Map<String, Map<String, Object>> contasPorCpfCliente = new HashMap<>();
-        for (String cpfGerente : gerentesPorCpf.keySet()) {
-            for (Map<String, Object> conta : buscarContasDoGerente(cpfGerente)) {
-                contasPorCpfCliente.put((String) conta.get("clientCPF"), conta);
-            }
-        }
+        Map<String, Map<String, Object>> contasPorCpfCliente = buscarTodasContas().stream()
+                .collect(Collectors.toMap(conta -> (String) conta.get("clientCPF"), Function.identity()));
 
-        List<Map<String, Object>> linhas = new ArrayList<>();
-        for (Map<String, Object> cliente : buscarClientes()) {
-            String cpfCliente = (String) cliente.get("cpf");
-            Map<String, Object> conta = contasPorCpfCliente.get(cpfCliente);
-            if (conta == null) {
-                continue; // cliente sem conta aberta ainda não entra no relatório
-            }
+        // só entram no relatório clientes com conta aberta (cpf em contasPorCpfCliente)
+        return buscarClientes().stream()
+                .filter(cliente -> contasPorCpfCliente.containsKey((String) cliente.get("cpf")))
+                .map(cliente -> montarLinha(cliente, contasPorCpfCliente.get((String) cliente.get("cpf")), gerentesPorCpf))
+                .sorted(Comparator.comparing(linha -> chaveOrdenacao(linha.getNome())))
+                .collect(Collectors.toList());
+    }
 
-            String cpfGerente = (String) conta.get("managerCPF");
-            Manager gerente = gerentesPorCpf.get(cpfGerente);
+    private ClienteRelatorioDTO montarLinha(Map<String, Object> cliente,
+                                             Map<String, Object> conta,
+                                             Map<String, Manager> gerentesPorCpf) {
+        String cpfGerente = (String) conta.get("managerCPF");
+        Manager gerente = gerentesPorCpf.get(cpfGerente);
 
-            Map<String, Object> linha = new LinkedHashMap<>();
-            linha.put("cpf", cpfCliente);
-            linha.put("nome", cliente.get("name"));
-            linha.put("email", cliente.get("email"));
-            linha.put("salario", paraBigDecimal(cliente.get("salary")));
-            linha.put("numeroConta", conta.get("accountNumber"));
-            linha.put("saldo", paraBigDecimal(conta.get("balance")));
-            linha.put("cpfGerente", cpfGerente);
-            linha.put("nomeGerente", gerente != null ? gerente.getName() : null);
-            linhas.add(linha);
-        }
-
-        linhas.sort(Comparator.comparing(linha -> chaveOrdenacao((String) linha.get("nome"))));
-        return linhas;
+        return ClienteRelatorioDTO.builder()
+                .cpf((String) cliente.get("cpf"))
+                .nome((String) cliente.get("name"))
+                .email((String) cliente.get("email"))
+                .salario(paraBigDecimal(cliente.get("salary")))
+                .numeroConta((String) conta.get("accountNumber"))
+                .saldo(paraBigDecimal(conta.get("balance")))
+                .cpfGerente(cpfGerente)
+                .nomeGerente(gerente != null ? gerente.getName() : null)
+                .build();
     }
 
     @SuppressWarnings("unchecked")
@@ -96,9 +89,8 @@ public class ClienteReportService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> buscarContasDoGerente(String cpfGerente) {
-        List<Map<String, Object>> contas = restTemplate.getForObject(
-                msAccountBaseUrl + "/accounts/managers/{cpf}/", List.class, cpfGerente);
+    private List<Map<String, Object>> buscarTodasContas() {
+        List<Map<String, Object>> contas = restTemplate.getForObject(msAccountBaseUrl + "/accounts", List.class);
         return contas != null ? contas : List.of();
     }
 
