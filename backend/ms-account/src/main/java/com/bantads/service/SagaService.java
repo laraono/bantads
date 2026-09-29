@@ -56,7 +56,7 @@ public class SagaService {
         if(type.contains("decidir-gerente")) {
             try {
                 String cpf = this.accountService.findManager(command.getPayload());
-                payload.put("cpf-gerente", cpf);
+                payload.put("cpfGerente", cpf);
 
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);
@@ -68,7 +68,15 @@ public class SagaService {
 
         if(type.contains("criar-conta")) {
             try {
-                this.eventService.createAccount(command.getPayload());
+                Map<String, Object> commandPayload = command.getPayload();
+                String cpfGerente = String.valueOf(commandPayload.get("cpfGerente"));
+                String cpfCliente = String.valueOf(commandPayload.get("cpf"));
+
+                Map<String, Object> eventPayload = new HashMap<>();
+                eventPayload.put("cpfGerente", cpfGerente);
+                eventPayload.put("cpfCliente", cpfCliente);
+
+                this.eventService.createAccount(eventPayload);
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());

@@ -67,13 +67,11 @@ public class AccountService {
                 .type(EventType.CREATED)
                 .build();
 
-            String value = String.valueOf(payload.get("valor"));
             String clientCpf = String.valueOf(payload.get("cpfCliente"));
             String managerCpf = String.valueOf(payload.get("cpfGerente"));
 
             if(
-                body.getAccountNumber() == null || clientCpf == null ||
-                value == null || managerCpf == null || eventType == null
+                body.getAccountNumber() == null || clientCpf == null || managerCpf == null || eventType == null
             ) {
                 answer.setError("missing information");
                 answer.setStatus(Status.FALHA);
@@ -93,7 +91,7 @@ public class AccountService {
             AccountData accountData =  AccountData.builder()
                 .accountNumber(body.getAccountNumber())
                 .clientCPF(clientCpf)
-                .balance(new BigDecimal(value))
+                .balance(new BigDecimal(0))
                 .managerCPF(managerCpf)
                 .build();
 
