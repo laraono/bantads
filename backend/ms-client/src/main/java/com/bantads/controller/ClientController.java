@@ -9,7 +9,6 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.CollectionModel;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin
@@ -25,22 +24,17 @@ public class ClientController {
 
     @GetMapping
     public
-    CollectionModel<EntityModel<Client>> listClients() {
-        List<Client> clients = clientService.listClients();
+    CollectionModel<EntityModel<Client>> listClients(
+        @RequestParam(value = "busca", required = false) String busca) {
+        List<Client> clients = clientService.listClients(busca);
         return assembler.toCollectionModel(clients);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{cpf}")
     public 
-    EntityModel<Client> getClient(@PathVariable Long id) {
-        Client client = clientService.getClient(id);
+    EntityModel<Client> getClient(@PathVariable String cpf) {
+        Client client = clientService.getClient(cpf);
         return assembler.toModel(client);
-    }
-
-    @GetMapping("/{cpf}/cpf")
-    public ResponseEntity<String> getName(@PathVariable String cpf) {
-        String name = clientService.getName(cpf);
-        return ResponseEntity.ok().body(name);
     }
 
     @GetMapping("/{id}/solicitacoes")

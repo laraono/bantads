@@ -1,27 +1,18 @@
 package com.bantads.service;
 
-import com.bantads.config.RabbitMQConfig;
-import com.bantads.dto.RequestDTO;
-import com.bantads.entity.*;
-import com.bantads.dto.AddressDTO;
-import com.bantads.model.RabbitAnswer;
-import com.bantads.model.RabbitRequest;
-import com.bantads.model.Status;
-import com.bantads.repository.AddressRepository;
+import com.bantads.entity.Client;
+import com.bantads.entity.Request;
 import com.bantads.repository.ClientRepository;
-import com.bantads.repository.RabbitRepository;
+import com.bantads.entity.*;
+import com.bantads.repository.AddressRepository;
 import com.bantads.repository.StateRepository;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
 
 @Service
 public class ClientService {
@@ -38,18 +29,16 @@ public class ClientService {
     @Autowired
     private RequestService requestService;
 
-    public List<Client> listClients() {
-        return clientRepository.findAll();
+    public List<Client> listClients(String busca) {
+        if (busca == null || busca.isBlank()) {
+            return clientRepository.findAll();
+        }
+
+        return clientRepository.search(busca);
     }
 
-    public Client getClient(Long id) {
-        return clientRepository.getReferenceById(id);
-    }
-
-    public String getName(String cpf) {
-        Client c = clientRepository.findByCpf(cpf);
-
-        return c.getName();
+    public Client getClient(String cpf) {
+        return clientRepository.findByCpf(cpf);
     }
 
     public Request getRequestByClient(Long id) {

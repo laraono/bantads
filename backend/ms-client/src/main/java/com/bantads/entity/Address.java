@@ -1,5 +1,6 @@
 package com.bantads.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -48,6 +49,7 @@ public class Address {
     @JoinColumn(name = "state_id")
     private State state;
     
+    @JsonIgnore
     @OneToMany(mappedBy = "address")
     private List<Client> clients;
     

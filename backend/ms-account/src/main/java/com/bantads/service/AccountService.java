@@ -43,6 +43,10 @@ public class AccountService {
         return this.accountDataService.getAccountsByManager(managerCPF);
     }
 
+    public List<AccountData> listAccounts(List<String> cpf) {
+        return this.accountDataService.listAccounts(cpf);
+    }
+
     @Transactional()
     public GetAccountDTO getAccountData(String accountNumber) {
         AccountData account = this.accountDataService.getAccountData(accountNumber);
@@ -337,6 +341,16 @@ public class AccountService {
         requestRepository.save(req);
     }
 
+    public GetAccountDTO getAccountDataByCpf(String cpf) {
+        AccountData account = this.accountDataService.getAccountDataByCpf(cpf);
+
+        return GetAccountDTO.builder()
+            .numero(account.getAccountNumber())
+            .cpfCliente(account.getClientCPF())
+            .saldo(account.getBalance().toPlainString())
+            .build();
+    }
+    
     public String findManager(Map<String, Object> payload) {
         List<String> managersCPF = (List<String>) payload.get("gerentes");
         return this.accountDataService.getManagerWithLowestAccount(managersCPF);

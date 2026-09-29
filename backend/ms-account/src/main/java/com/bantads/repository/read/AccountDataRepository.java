@@ -1,5 +1,6 @@
 package com.bantads.repository.read;
 
+import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +21,8 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     boolean existsAccountDataByAccountNumber(String accountNumber);
 
     AccountData findByAccountNumber(String accountNumber);
+
+    List<AccountData> findAllByClientCPFIn(List<String> clientCPFs);
+
+    AccountData findByClientCPF(String clientCPF);
 }
