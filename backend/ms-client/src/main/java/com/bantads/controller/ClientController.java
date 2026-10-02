@@ -43,10 +43,5 @@ public class ClientController {
         return clientService.getRequestByClient(id);
     }
 
-      @GetMapping("/buscar-cpf/{cpf}")
-    public
-    EntityModel<Client> getClientByCpf(@PathVariable String cpf) {
-        Client client = clientService.getClientByCpf(cpf);
-        return assembler.toModel(client);
-    }
+    
 }
