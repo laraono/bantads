@@ -52,5 +52,5 @@ public class Client {
     @Column(name = "approved_status", nullable = false)
     private String approvedStatus = "PENDENTE";
     
-    
+        
 }

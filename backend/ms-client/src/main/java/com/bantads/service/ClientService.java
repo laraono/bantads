@@ -58,11 +58,6 @@ public class ClientService {
         return requestService.getRequestByClient(client);
     }
 
-    public Client getClientByCpf(String cpf) {
-        Client client = clientRepository.findByCpf(cpf);
-        return client;
-    }
-
     
     public Client createClient(Request req) {
         if(stateRepository.findByUf(req.getState().getUf()) == null) {
