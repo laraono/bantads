@@ -36,7 +36,7 @@ app.use('/contas', accountRoutes);
 
 app.use('/gerentes', managerRoutes);
 
-app.use('/relatorios', authGatewayFilter(), createProxyMiddleware({
+app.use('/relatorios', authGatewayFilter('GERENTE'), createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
     changeOrigin: true,
     pathRewrite: { '^/': '/relatorios/' }
