@@ -8,25 +8,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
-@Service 
+@Service
 public class EmailService {
-    
-    @Autowired 
+
+    @Autowired
     private JavaMailSender javaMailSender;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    public void sendEmail(String to, String subject, String text) {
+    public void sendEmail(String to, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(subject);
-        message.setText(text);
+        message.setText(body);
         javaMailSender.send(message);
     }
 
@@ -34,26 +31,18 @@ public class EmailService {
     public void handleAccountCommand(RabbitRequest command) {
 
         String type = String.valueOf(command.getType());
+        Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
 
-        Map<String, Object> payload = new HashMap<>();
-
-        if(type.contains("enviar-senha")) {
-            try {
-
-
-                Map<String, String> emailObject = (Map<String, String>) command.getPayload().get("email");
-                String email = emailObject.get("email");
-                String password = emailObject.get("senha");
-
-                this.sendEmail(email, "Sua nova senha", password);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw e;
-            }
+        if (type.contains("enviar-senha")) {
+            this.sendEmail(email.get("email"), "Sua nova senha", email.get("senha"));
         }
 
+        if (type.contains("enviar-rejeicao")) {
+            String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
+            if (email.get("motivo") != null) {
+                text += " Motivo: " + email.get("motivo");
+            }
+            this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
+        }
     }
-
-
 }
