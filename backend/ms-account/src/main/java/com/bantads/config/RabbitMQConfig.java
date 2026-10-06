@@ -19,6 +19,9 @@ public class RabbitMQConfig {
     public static final String ACCOUNT_QUEUE_DLQ = "ms.conta.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
+    private static final int MAX_TENTATIVAS = 3;
+    private static final long INTERVALO_RETRY_MS = 5000L;
+
     @Bean
     public Queue readModelQueue() {
         return commandQueue(EVENT_QUEUE);

@@ -17,8 +17,6 @@ public class RabbitMQConfig {
     public static final String CLIENT_QUEUE = "ms.cliente.cmd";
     public static final String CLIENT_QUEUE_DLQ = "ms.cliente.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
-    public static final String CLIENT_QUEUE = "ms.cliente.cmd";
-    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
     public static final String EMAIL_QUEUE = "ms.email.cmd";
 
     private static final int MAX_TENTATIVAS = 3;

@@ -17,7 +17,6 @@ public class RabbitMQConfig {
     public static final String AUTH_QUEUE = "ms.auth.cmd";
     public static final String AUTH_QUEUE_DLQ = "ms.auth.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
-    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     private static final int MAX_TENTATIVAS = 3;
     private static final long INTERVALO_RETRY_MS = 5000L;
