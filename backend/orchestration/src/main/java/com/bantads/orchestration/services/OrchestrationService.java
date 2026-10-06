@@ -53,9 +53,6 @@ public class OrchestrationService {
         int attempt = (int) cmd.getOrDefault("attempt", 0);
         cmd.put("attempt", attempt);
 
-        System.out.println(cmd);
-        System.out.println(cmd.get("idSolicitacao"));
-
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);
 

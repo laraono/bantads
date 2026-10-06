@@ -156,7 +156,6 @@ public class ManagerService {
                 .build();
 
         if(type.contains("listar-gerentes")) {
-            System.out.println("listar gerentes");
             try {
                 List<ManagerDTO> gerentes = this.list();
                 payload.put("gerentes", gerentes);

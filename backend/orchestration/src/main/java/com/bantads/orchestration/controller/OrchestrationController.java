@@ -21,7 +21,6 @@ class OrchestrationController {
     @PostMapping("/create-account")
     ResponseEntity createAccount(@RequestBody Map<String, Object> payload) {
         try {
-            System.out.println("oie");
             orchestrationService.startSaga(SagaSteps.CRIACAO_CONTA, payload);
             return ResponseEntity.accepted().build();
         } catch (Exception e) {

@@ -36,8 +36,6 @@ public class SagaService {
 
     @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE)
     public void handleClientCQueue(Map<String, Object> command) {
-        System.out.println("client queue");
-
         UUID sagaId = UUID.fromString(command.get("sagaId").toString());
         String type = command.get("type").toString();
 
@@ -66,7 +64,6 @@ public class SagaService {
         }
 
         if(type.contains("aprovar-solicitacao")) {
-            System.out.println("aprovar solicitacao");
             try {
                 String id = (String) command.get("idSolicitacao");
                 this.requestService.approveRequest(id);
