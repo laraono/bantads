@@ -8,25 +8,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
-@Service 
+@Service
 public class EmailService {
-    
-    @Autowired 
+
+    @Autowired
     private JavaMailSender javaMailSender;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    public void sendEmail(String to, String subject, String text) {
+    public void sendEmail(String to, String subject, String body) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(subject);
-        message.setText(text);
+        message.setText(body);
         javaMailSender.send(message);
     }
 
@@ -34,8 +31,7 @@ public class EmailService {
     public void handleAccountCommand(RabbitRequest command) {
 
         String type = String.valueOf(command.getType());
-
-        Map<String, Object> payload = new HashMap<>();
+        Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
 
         if(type.contains("enviar-senha")) {
             try {
@@ -64,6 +60,14 @@ public class EmailService {
                 e.printStackTrace();
                 throw e;
             }
+        }
+
+        if (type.contains("enviar-rejeicao")) {
+            String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
+            if (email.get("motivo") != null) {
+                text += " Motivo: " + email.get("motivo");
+            }
+            this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
         }
 
     }

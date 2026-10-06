@@ -1,23 +1,29 @@
 package com.bantads.service;
 
 
+import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.AddressDTO;
 import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
+import com.bantads.model.RabbitRequest;
 import com.bantads.repository.AddressRepository;
 import com.bantads.repository.ClientRepository;
 import com.bantads.repository.RequestRepository;
 import com.bantads.repository.StateRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.amqp.autoconfigure.RabbitConnectionDetails;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 @Service
@@ -34,6 +40,9 @@ public class RequestService {
 
     @Autowired 
     private StateRepository stateRepository;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     public List<Request> listRequests() {
         return this.requestRepository.findAll();
@@ -111,8 +120,23 @@ public class RequestService {
 
         request.setApprovedAt(null);
         request.setStatus(RequestStatus.PENDENTE);
+        request.setRejectionAt(new Date());
 
         requestRepository.save(request);
+        this.sendRejectionEmail(request);
+    }
+
+    private void sendRejectionEmail(Request request) {
+        Map<String, Object> email = new HashMap<>();
+        email.put("email", request.getEmail());
+        email.put("nome", request.getName());
+        email.put("motivo", request.getRejectionReason());
+
+        RabbitRequest command = RabbitRequest.builder()
+                .type("email.enviar-rejeicao")
+                .payload(Map.of("email", email))
+                .build();
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, command);
     }
 
     public Request getRequestByClient(Client client) {

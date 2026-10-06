@@ -18,3 +18,9 @@ spring:
 
 server:
   port: 8084
+
+services:
+  ms-client:
+    base-url: http://${MS_CLIENT_HOST:ms-client}:${MS_CLIENT_PORT:8082}
+  ms-account:
+    base-url: http://${MS_ACCOUNT_HOST:ms-account}:${MS_ACCOUNT_PORT:8083}

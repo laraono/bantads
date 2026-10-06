@@ -59,16 +59,10 @@ public class RequestController {
         this.requestService.approveRequest(id);
     }   
 
-    @PostMapping("/{id}/reject")
-    @ResponseStatus(HttpStatus.CREATED)
-    void rejectRequest(@PathVariable String id, @RequestBody Map<String, String> body) {
-        try {
-            String motivo = body.get("motivo");
-            this.requestService.rejectRequest(id, motivo);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+    @PostMapping("/{id}/rejeicao")
+    @ResponseStatus(HttpStatus.OK)
+    void rejectRequest(@PathVariable Long id, @RequestBody String motivo) {
+        this.requestService.rejectRequest(id, motivo);
     }
 
     @GetMapping ("/{id}")

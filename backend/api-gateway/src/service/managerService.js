@@ -16,10 +16,20 @@ class MangerService {
     }
 
     async updateManager(id, body, headers) {
-        await axios.put(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
-            {payload: body},
-            { headers: { 'x-user-cpf': headers['x-user-cpf']} }
-        )
+        try {
+            const updateAnswer = await axios.put(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
+                body,
+                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+            )
+            return updateAnswer.data
+        } catch (err) {
+            if (err.response) {
+                const error = new Error(err.response.data?.message || err.message);
+                error.status = err.response.status;
+                throw error;
+            }
+            throw err;
+        }
     }
     
 }

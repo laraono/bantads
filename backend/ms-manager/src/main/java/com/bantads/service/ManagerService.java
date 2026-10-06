@@ -109,13 +109,26 @@ public class ManagerService {
 
     }
 
-    public void updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
+    public ManagerDTO updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
+        if (updateManagerDTO.getEmail() != null || updateManagerDTO.getCpf() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e CPF não podem ser alterados");
+        }
+
         Manager manager = this.getManager(managerCPF);
 
         manager.setName(updateManagerDTO.getNome());
         manager.setPhone(updateManagerDTO.getTelefone());
 
-        managerRepository.save(manager);
+        Manager salvo = managerRepository.save(manager);
+
+        return ManagerDTO.builder()
+                .id(salvo.getManagerId())
+                .ativo(salvo.isActive())
+                .cpf(salvo.getCpf())
+                .email(salvo.getEmail())
+                .nome(salvo.getName())
+                .telefone(salvo.getPhone())
+                .build();
     }
 
     public void deleteByCpf(String cpf) {

@@ -23,8 +23,8 @@ class ManagerController {
 
     async updateManager(req, res) {
         try {
-            await managerService.updateManager(req.params.id, req.body, req.headers);
-            return res.sendStatus(200);
+            const result = await managerService.updateManager(req.params.id, req.body, req.headers);
+            return res.status(200).json(result);
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
