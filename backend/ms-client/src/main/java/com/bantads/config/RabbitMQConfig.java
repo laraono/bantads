@@ -12,7 +12,7 @@ public class RabbitMQConfig {
 
     public static final String CLIENT_QUEUE = "ms.client.cmd";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply ";
-
+    public static final String EMAIL_QUEUE = "ms.email.cmd";
 
     @Bean
     public Queue accountQueue() {
@@ -23,6 +23,7 @@ public class RabbitMQConfig {
     public Queue orquestradorQueue() {
         return QueueBuilder.durable(ORQUESTRADOR_QUEUE).build();
     }
+
 
     @Bean
     public MessageConverter jsonMessageConverter() {
