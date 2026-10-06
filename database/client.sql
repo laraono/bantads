@@ -49,7 +49,7 @@ CREATE TABLE client (
 
 CREATE TABLE request (
     request_id          SERIAL PRIMARY KEY,
-    client_id           INTEGER NOT NULL,
+    client_id           INTEGER NULL,
     status              request_status NOT NULL,
     rejection_reason    VARCHAR(255) NULL,
     approved_at         TIMESTAMP NULL,

@@ -24,4 +24,6 @@ public class RabbitAnswer implements Serializable {
     private Status status;
 
     private String error;
+
+    private int attempt;
 }

@@ -11,7 +11,11 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -27,30 +31,51 @@ public class RequestController {
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public
-    EntityModel<Request>  createRequest(@Valid @RequestBody RequestDTO requestDTO) {
-        Request newRequest = this.requestService.createRequest(requestDTO);
-        return assembler.toModel(newRequest);
+    ResponseEntity<Request> createRequest(@RequestBody RequestDTO requestDTO) {
+        try {
+            Request newRequest = this.requestService.createRequest(requestDTO);
+            return ResponseEntity.ok().body(newRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @GetMapping()
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<List<Request>> listRequests() {
+        try {
+            List<Request> requests = this.requestService.listRequests();
+            return ResponseEntity.ok().body(requests);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @PostMapping("/{id}/aprovacao")
     @ResponseStatus(HttpStatus.CREATED)
-    public
-    void approveRequest(@PathVariable Long id) {
+    public void approveRequest(@PathVariable String id) {
         this.requestService.approveRequest(id);
     }   
 
     @PostMapping("/{id}/rejeicao")
     @ResponseStatus(HttpStatus.OK)
-    void rejectRequest(@PathVariable Long id, @RequestBody String motivo) {
+    void rejectRequest(@PathVariable String id, @RequestBody String motivo) {
         this.requestService.rejectRequest(id, motivo);
     }
 
     @GetMapping ("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public
-    EntityModel<Request> getRequest(@PathVariable Long id) {
-        Request request = this.requestService.getRequestById(id);
-        return assembler.toModel(request);
+    ResponseEntity<Request> getRequest(@PathVariable String id) {
+        try {
+            Request request = this.requestService.getRequestByCpf(id);
+            return ResponseEntity.ok().body(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 }

@@ -33,8 +33,33 @@ public class EmailService {
         String type = String.valueOf(command.getType());
         Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
 
-        if (type.contains("enviar-senha")) {
-            this.sendEmail(email.get("email"), "Sua nova senha", email.get("senha"));
+        if(type.contains("enviar-senha")) {
+            try {
+                Map<String, String> emailObject = (Map<String, String>) command.getPayload().get("email");
+                String clientEmail = emailObject.get("email");
+                String password = emailObject.get("senha");
+
+                this.sendEmail(clientEmail, "Sua nova senha", password);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        if(type.contains("novo-gerente")) {
+            try {
+                Map<String, String> gerente = (Map<String, String>) command.getPayload().get("email");
+                String managerName = gerente.get("nome");
+                String clientEmail = command.getPayload().get("email").toString();
+                String clientName = command.getPayload().get("nome").toString();
+
+                this.sendEmail(clientEmail, "Novo gerente", "Olá, " + clientName + "Seu novo gerente é:  " + managerName);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
         }
 
         if (type.contains("enviar-rejeicao")) {
@@ -44,5 +69,8 @@ public class EmailService {
             }
             this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
         }
+
     }
+
+
 }

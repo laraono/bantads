@@ -12,4 +12,5 @@ public class CreateManagerDTO {
     private String email;
     private String cpf;
     private String telefone;
+    private String senha;
 }

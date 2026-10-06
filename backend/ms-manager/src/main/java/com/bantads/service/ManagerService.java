@@ -131,51 +131,94 @@ public class ManagerService {
                 .build();
     }
 
-    @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void deleteByCpf(String cpf) {
+        this.managerRepository.deleteByCpf(cpf);
+    }
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+    @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
+    public void handleManagerQueue(Map<String, Object> payload) {
+
+        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
+        String type = payload.get("type").toString();
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
 
         if (alreadyProcessed) {
             return;
         }
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .status(Status.SUCESSO)
-                .build();
+        payload.put("status", Status.SUCESSO);
+        payload.put("timestamp", new Date());
 
         Request req = Request.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
+                .sagaId(sagaId)
+                .type(type)
                 .build();
-
-        String type = String.valueOf(command.getType());
-
-        Map<String, Object> payload = new HashMap<>();
 
         if(type.contains("listar-gerentes")) {
             try {
                 List<ManagerDTO> gerentes = this.list();
                 payload.put("gerentes", gerentes);
-
+                requestRepository.save(req);
             } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
+                payload.put("status", Status.FALHA);
+                payload.put("timestamp", new Date());
                 e.printStackTrace();
                 throw e;
             }
         }
 
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
+        if(type.contains("inserir-gerente")) {
+            try {
+                CreateManagerDTO managerDTO = (CreateManagerDTO) payload.get("gerente");
+                Manager manager = this.createManager(managerDTO);
+                payload.put("gerente", manager);
 
-        this.sendReadModelCommand(answer);
-        requestRepository.save(req);
+                Map<String, String> requisicao = new HashMap<>();
+
+                requisicao.put("email", manager.getEmail());
+                requisicao.put("cpf", manager.getCpf());
+                requisicao.put("tipo", "gerente");
+                requisicao.put("id", manager.getCpf());
+                requisicao.put("senha", managerDTO.getSenha());
+
+                payload.put("requisicao", requisicao);
+
+                requestRepository.save(req);
+            } catch (Exception e) {
+                payload.put("status", Status.FALHA);
+                payload.put("timestamp", new Date());
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        this.sendReadModelCommand(payload);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
+    public void handleDlqQueue(Map<String, Object> payload) {
+
+        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
+        String type = payload.get("type").toString();
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
+
+        Request req = Request.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build();
+
+
+        if(type.contains("inserir-gerente")) {
+            Manager manager = (Manager) payload.get("gerente");
+            this.deleteByCpf(manager.getCpf());
+            requestRepository.save(req);
+        }
+
+    }
+
+    public void sendReadModelCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

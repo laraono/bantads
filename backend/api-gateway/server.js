@@ -7,6 +7,7 @@ const accountRoutes = require('./src/routes/accountRoutes');
 const managerRoutes = require('./src/routes/managerRoutes');
 const rebootRoutes = require('./src/routes/rebootRoutes');
 const clientRoutes = require('./src/routes/clientRoutes');
+const requestRoutes = require('./src/routes/requestRoutes');
 const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
 const app = express();
@@ -26,11 +27,7 @@ app.use('', rebootRoutes);
 
 app.use('/clientes', clientRoutes);
 
-app.use('/solicitacoes', createProxyMiddleware({
-    target: `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}`,
-    changeOrigin: true,
-    pathRewrite: (path) => '/requests' + (path === '/' ? '' : path)
-}));
+app.use('/solicitacoes', requestRoutes);
 
 app.use('/contas', accountRoutes);
 

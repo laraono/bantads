@@ -10,6 +10,11 @@ spring:
     hibernate:
       ddl-auto: update
     packages-to-scan: com.bantads.entity
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: auto
+        default-requeue-rejected: false
 
 server:
   port: 8084

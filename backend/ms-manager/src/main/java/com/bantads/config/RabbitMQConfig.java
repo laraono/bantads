@@ -15,6 +15,7 @@ import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 public class RabbitMQConfig {
 
     public static final String MANAGER_QUEUE = "ms.gerente.cmd";
+    public static final String MANAGER_QUEUE_DLQ = "ms.gerente.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     private static final int MAX_TENTATIVAS = 3;
@@ -22,12 +23,15 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue managerQueue() {
-        return commandQueue(MANAGER_QUEUE);
+        return QueueBuilder.durable(MANAGER_QUEUE)
+            .withArgument("x-dead-letter-exchange", "")
+            .withArgument("x-dead-letter-routing-key", MANAGER_QUEUE + ".dlq")
+            .build();
     }
 
     @Bean
     public Queue managerQueueDlq() {
-        return dlq(MANAGER_QUEUE);
+        return QueueBuilder.durable(MANAGER_QUEUE_DLQ).build();
     }
 
     @Bean
