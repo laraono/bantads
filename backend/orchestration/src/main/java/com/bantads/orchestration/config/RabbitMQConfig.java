@@ -2,6 +2,8 @@ package com.bantads.orchestration.config;
 
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,7 +21,10 @@ public class RabbitMQConfig {
     public static final String MS_AUTH_CMD = "ms.auth.cmd";
     public static final String MS_EMAIL_CMD = "ms.email.cmd";
 
-    private static final long RETRY_DELAY_MS = 30000L;
+    @Bean
+    public MessageConverter jsonMessageConverter() {
+        return new JacksonJsonMessageConverter();
+    }
 
     // filas sem retry/DLQ 
 
@@ -51,11 +56,6 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue msClienteCmdWaitQueue() {
-        return waitQueue(MS_CLIENTE_CMD);
-    }
-
-    @Bean
     public Queue msClienteCmdDlq() {
         return dlq(MS_CLIENTE_CMD);
     }
@@ -63,11 +63,6 @@ public class RabbitMQConfig {
     @Bean
     public Queue msContaCmdQueue() {
         return commandQueue(MS_CONTA_CMD);
-    }
-
-    @Bean
-    public Queue msContaCmdWaitQueue() {
-        return waitQueue(MS_CONTA_CMD);
     }
 
     @Bean
@@ -81,11 +76,6 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue msGerenteCmdWaitQueue() {
-        return waitQueue(MS_GERENTE_CMD);
-    }
-
-    @Bean
     public Queue msGerenteCmdDlq() {
         return dlq(MS_GERENTE_CMD);
     }
@@ -93,11 +83,6 @@ public class RabbitMQConfig {
     @Bean
     public Queue msAuthCmdQueue() {
         return commandQueue(MS_AUTH_CMD);
-    }
-
-    @Bean
-    public Queue msAuthCmdWaitQueue() {
-        return waitQueue(MS_AUTH_CMD);
     }
 
     @Bean
@@ -114,13 +99,6 @@ public class RabbitMQConfig {
                 .build();
     }
 
-    private static Queue waitQueue(String name) {
-        return QueueBuilder.durable(name + ".wait")
-                .withArgument("x-message-ttl", RETRY_DELAY_MS)
-                .withArgument("x-dead-letter-exchange", "")
-                .withArgument("x-dead-letter-routing-key", ORQUESTRADOR_TIMEOUT)
-                .build();
-    }
 
     private static Queue dlq(String name) {
         return QueueBuilder.durable(name + ".dlq").build();

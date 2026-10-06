@@ -110,6 +110,27 @@ services:
         condition: service_healthy
     restart: always
 
+  orchestration:
+    container_name: orchestration
+    build:
+      context: ./backend/orchestration
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATA_REDIS_HOST: redis-app
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+    depends_on:
+      redis-app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
   ms-auth:
     container_name: ms-auth
     build:

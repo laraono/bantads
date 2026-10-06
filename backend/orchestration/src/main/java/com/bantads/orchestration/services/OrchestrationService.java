@@ -21,14 +21,11 @@ import com.bantads.orchestration.model.SagaSteps;
 @Service 
 public class OrchestrationService {
 
-    private final RedisTemplate<String, Serializable> redisTemplate;
-    private final RabbitTemplate rabbitTemplate;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
-    public OrchestrationService(RedisTemplate<String, Serializable> redisTemplate, RabbitTemplate rabbitTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.rabbitTemplate = rabbitTemplate;
-    }
+    private RabbitTemplate rabbitTemplate;
 
     public void startSaga(SagaSteps step, Map<String, Object> payload) {
         final UUID sagaId = UUID.randomUUID();
@@ -51,6 +48,9 @@ public class OrchestrationService {
         cmd.put("stepIndex", sagaStates.getStepIndex());
         cmd.put("type", sagaStates.getType());
 
+        int attempt = (int) cmd.getOrDefault("attempt", 0);
+        cmd.put("attempt", attempt);
+
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);
 
@@ -70,6 +70,7 @@ public class OrchestrationService {
         if (sagaStates == null) return;
 
         String status = reply.get("status").toString();
+        int attempt = (int) reply.get("attempt");
         int stepIndex = Integer.parseInt(reply.get("stepIndex").toString()); 
 
         if (sagaStates.getStatus() == SagaStatus.COMPENSACAO || sagaStates.getStatus() == SagaStatus.FALHA) {
@@ -90,10 +91,17 @@ public class OrchestrationService {
                 publishSagaCmd(sagaStates);
             }
         } else if ("FALHA".equals(status)) {
-            sagaStates.setStatus(SagaStatus.COMPENSACAO);
-            sagaStates.setError(reply.getOrDefault("error", "ERRO_DESCONHECIDO").toString());
-            redisTemplate.opsForValue().set(sagaKey, sagaStates);
-            compensate(sagaStates);
+            if(attempt < 3) {
+                reply.put("attempt", attempt  + 1);
+                sagaStates.setStepIndex(sagaStates.getStepIndex());
+                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                publishSagaCmd(sagaStates);
+            } else {
+                sagaStates.setStatus(SagaStatus.COMPENSACAO);
+                sagaStates.setError(reply.getOrDefault("error", "ERRO_DESCONHECIDO").toString());
+                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                compensate(sagaStates);
+            }
         }
     }
 
@@ -134,12 +142,12 @@ public class OrchestrationService {
         if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size()) return;
 
         StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
-        String queue = step.getQueue();
+        String queue = step.getQueue() + ".dql";
 
         Map<String, Object> comp = new HashMap<>();
         comp.put("sagaId", sagaStates.getSagaId());
         comp.put("stepIndex", stepIndex);
-        comp.put("type", "COMPENSATE");
+        comp.put("status", "COMPENSACAO");
         comp.put("payload", sagaStates.getPayload());
 
         rabbitTemplate.convertAndSend(queue, comp);
