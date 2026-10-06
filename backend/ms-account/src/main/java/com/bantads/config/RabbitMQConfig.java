@@ -12,6 +12,7 @@ public class RabbitMQConfig {
 
     public static final String EVENT_QUEUE = "ms.conta.events";
     public static final String ACCOUNT_QUEUE = "ms.conta.cmd";
+    public static final String ACCOUNT_QUEUE_DLQ = "ms.conta.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     @Bean
@@ -29,7 +30,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue accountQueueDlq() {
-        return QueueBuilder.durable(ACCOUNT_QUEUE + ".dlq").build();
+        return QueueBuilder.durable(ACCOUNT_QUEUE_DLQ).build();
     }
 
     @Bean

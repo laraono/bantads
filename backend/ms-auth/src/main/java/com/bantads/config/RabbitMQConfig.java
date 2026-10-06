@@ -11,6 +11,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 public class RabbitMQConfig {
 
     public static final String AUTH_QUEUE = "ms.auth.cmd";
+    public static final String AUTH_QUEUE_DLQ = "ms.auth.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     @Bean
@@ -23,7 +24,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue authQueueDlq() {
-        return QueueBuilder.durable(AUTH_QUEUE + ".dlq").build();
+        return QueueBuilder.durable(AUTH_QUEUE_DLQ).build();
     }
 
     @Bean

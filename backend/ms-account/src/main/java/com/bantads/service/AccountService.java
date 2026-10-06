@@ -360,5 +360,7 @@ public class AccountService {
         this.accountDataService.deleteAccount(cpf);
     }
 
-
+    public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
+        return this.accountDataService.getAccountToNewManager(payload);
+    }
 }

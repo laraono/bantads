@@ -39,13 +39,26 @@ public class EmailService {
 
         if(type.contains("enviar-senha")) {
             try {
-
-
                 Map<String, String> emailObject = (Map<String, String>) command.getPayload().get("email");
                 String email = emailObject.get("email");
                 String password = emailObject.get("senha");
 
                 this.sendEmail(email, "Sua nova senha", password);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        if(type.contains("novo-gerente")) {
+            try {
+                Map<String, String> gerente = (Map<String, String>) command.getPayload().get("email");
+                String managerName = gerente.get("nome");
+                String email = command.getPayload().get("email").toString();
+                String clientName = command.getPayload().get("nome").toString();
+
+                this.sendEmail(email, "Novo gerente", "Olá, " + clientName + "Seu novo gerente é:  " + managerName);
 
             } catch (Exception e) {
                 e.printStackTrace();

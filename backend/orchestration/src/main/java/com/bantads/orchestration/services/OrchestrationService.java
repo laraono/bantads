@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.bantads.orchestration.model.StepDefinition;
+import org.jspecify.annotations.NonNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,17 +40,21 @@ public class OrchestrationService {
                 .build();
 
         redisTemplate.opsForValue().set("saga:" + sagaId, sagaStates);
-        publishSagaCmd(sagaStates);
+        this.publishSagaCmd(sagaStates);
     }
 
-    public void publishSagaCmd(SagaStates sagaStates) {
-        Map<String, Object> cmd = new HashMap<>(sagaStates.getPayload());
-        cmd.put("sagaId", sagaStates.getSagaId()); 
+    public void publishSagaCmd(@NonNull SagaStates sagaStates) {
+        Map<String, Object> cmd = sagaStates.getPayload();
+
+        cmd.put("sagaId", sagaStates.getSagaId());
         cmd.put("stepIndex", sagaStates.getStepIndex());
         cmd.put("type", sagaStates.getType());
 
         int attempt = (int) cmd.getOrDefault("attempt", 0);
         cmd.put("attempt", attempt);
+
+        System.out.println(cmd);
+        System.out.println(cmd.get("idSolicitacao"));
 
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);

@@ -1,6 +1,7 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
+import com.bantads.entity.event.Event;
 import com.bantads.entity.read.Request;
 import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class SagaService {
@@ -30,36 +32,61 @@ public class SagaService {
     private RabbitTemplate rabbitTemplate;
 
     @RabbitListener(queues = RabbitMQConfig.ACCOUNT_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleAccountQueue(Map<String, Object> payload) {
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
+        String type = payload.get("type").toString();
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
 
         if (alreadyProcessed) {
             return;
         }
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .status(Status.SUCESSO)
-                .build();
+        payload.put("status", Status.SUCESSO);
+        payload.put("timestamp", new Date());
 
         Request req = Request.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
+                .sagaId(sagaId)
+                .type(type)
                 .build();
-
-        String type = String.valueOf(command.getType());
-
-        Map<String, Object> payload = new HashMap<>();
 
         if(type.contains("decidir-gerente")) {
             try {
-                String cpf = this.accountService.findManager(command.getPayload());
+                String cpf = this.accountService.findManager(payload);
                 payload.put("cpfGerente", cpf);
+
+                requestRepository.save(req);
             } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
+                payload.put("status", Status.FALHA);
+                payload.put("timestamp", new Date());
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        if(type.contains("associar-gerente")) {
+            try {
+                Map<String, String> gerente = (Map<String, String>) payload.get("gerente");
+                String managerCpf = gerente.get("cpf");
+                String accountNumber = (String) payload.get("numeroConta");
+                this.eventService.updateManager(managerCpf, accountNumber);
+                requestRepository.save(req);
+            } catch (Exception e) {
+                payload.put("status", Status.FALHA);
+                payload.put("timestamp", new Date());
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        if(type.contains("identificar-conta")) {
+            try {
+                this.accountService.getAccountToNewManager(payload);
+                requestRepository.save(req);
+            } catch (Exception e) {
+                payload.put("status", Status.FALHA);
+                payload.put("timestamp", new Date());
                 e.printStackTrace();
                 throw e;
             }
@@ -67,39 +94,64 @@ public class SagaService {
 
         if(type.contains("criar-conta")) {
             try {
-                if(command.getStatus().equals("COMPENSACAO")) {
-                    Map<String, Object> commandPayload = command.getPayload();
-                    String cpfCliente = String.valueOf(commandPayload.get("cpf"));
+                String cpfGerente = String.valueOf(payload.get("cpfGerente"));
+                String cpfCliente = String.valueOf(payload.get("cpfCliente"));
 
-                    this.accountService.deleteAccountByCPF(cpfCliente);
-                } else {
-                    Map<String, Object> commandPayload = command.getPayload();
-                    String cpfGerente = String.valueOf(commandPayload.get("cpfGerente"));
-                    String cpfCliente = String.valueOf(commandPayload.get("cpfCliente"));
+                Map<String, Object> eventPayload = new HashMap<>();
+                eventPayload.put("cpfGerente", cpfGerente);
+                eventPayload.put("cpfCliente", cpfCliente);
 
-                    Map<String, Object> eventPayload = new HashMap<>();
-                    eventPayload.put("cpfGerente", cpfGerente);
-                    eventPayload.put("cpfCliente", cpfCliente);
+                Event event = this.eventService.createAccount(eventPayload);
 
-                    this.eventService.createAccount(eventPayload);
-                }
+                eventPayload.put("numeroConta", event.getObjectId());
 
+                requestRepository.save(req);
             } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
+                payload.put("status", Status.FALHA);
+                payload.put("timestamp", new Date());
                 e.printStackTrace();
                 throw e;
             }
         }
 
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
+        this.sendCommand(payload);
 
-        this.sendReadModelCommand(answer);
-        requestRepository.save(req);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    @RabbitListener(queues = RabbitMQConfig.ACCOUNT_QUEUE_DLQ)
+    public void handleDlq(Map<String, Object> command) {
+        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
+        String type = command.get("type").toString();
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
+        if (alreadyProcessed) {
+            return;
+        }
+
+        Request req = Request.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build();
+
+        if(type.contains("criar-conta")) {
+            String cpfCliente = String.valueOf(command.get("cpf"));
+            String numeroConta = String.valueOf(command.get("numeroConta"));
+
+            this.accountService.deleteAccountByCPF(cpfCliente);
+            this.eventService.deleteByObjectId(numeroConta);
+            requestRepository.save(req);
+        }
+
+        if(type.contains("associar-gerente")) {
+            String managerCpf = (String) command.get("gerenteAntigo");
+            String accountNumber = (String) command.get("numeroConta");
+            this.eventService.updateManager(managerCpf, accountNumber);
+            requestRepository.save(req);
+        }
+
+    }
+
+    public void sendCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

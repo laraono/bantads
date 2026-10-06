@@ -92,7 +92,7 @@ public class RequestService {
         Request request = requestRepository.findByCpf(cpf);
 
         request.setApprovedAt(new Date());
-        request.setStatus(RequestStatus.APROVADO);
+        request.setStatus(RequestStatus.APROVADA);
 
         requestRepository.save(request);
     }

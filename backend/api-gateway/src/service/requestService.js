@@ -23,10 +23,8 @@ class RequestService {
     }
 
     async approveRequest(cpf) {
-        const payload = {idSolicitacao: cpf}
-        const response = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/create-account`, {
-            body: payload
-        })
+        const body = {idSolicitacao: cpf}
+        const response = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/create-account`,body )
         
         return response.data
     }

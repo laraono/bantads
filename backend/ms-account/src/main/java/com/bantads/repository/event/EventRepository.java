@@ -15,4 +15,6 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     List<Event> findAllByObjectIdOrderByVersionAsc(String objectId);
 
     boolean existsByObjectIdAndEventType(String objectId, EventType eventType);
+
+    void deleteByObjectId(String objectId);
 }

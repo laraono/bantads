@@ -114,72 +114,91 @@ public class AuthService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.AUTH_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleAuthQueue(Map<String, Object> command) {
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
+        String type = command.get("type").toString();
 
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
         if (alreadyProcessed) {
             return;
         }
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .status(Status.SUCESSO)
-                .build();
-
         Request req = new Request();
 
-        req.setSagaId(command.getSagaId());
-        req.setType(command.getType());
+        req.setSagaId(sagaId);
+        req.setType(type);
         req.setId(new ObjectId());
 
-        String type = String.valueOf(command.getType());
-
-        Map<String, Object> payload = new HashMap<>();
+        command.put("status", Status.SUCESSO);
+        command.put("timestamp", new Date());
 
         if(type.contains("criar-auth")) {
             try {
-                if(command.getStatus().equals("COMPENSACAO")) {
-                    Map<String, String> request = (Map<String, String>) payload.get("requsicao");
-                    String login = request.get("email");
+                Map<String, String> request = (Map<String, String>) command.get("requsicao");
+                String password = this.create(
+                        request.get("id"),
+                        request.get("cpf"),
+                        request.get("tipo"),
+                        request.get("email"),
+                        request.get("senha"),
+                        true
+                );
 
-                    this.authRepository.deleteByLogin(login);
-                } else {
-                    Map<String, String> request = (Map<String, String>) payload.get("requsicao");
-                    String password = this.create(
-                            request.get("id"),
-                            request.get("cpf"),
-                            request.get("tipo"),
-                            request.get("email"),
-                            request.get("senha"),
-                            true
-                    );
+                Map<String, String> email = new HashMap<>();
 
-                    Map<String, String> email = new HashMap<>();
+                email.put("email", request.get("email"));
+                email.put("senha", password);
 
-                    email.put("email", request.get("email"));
-                    email.put("senha", password);
+                command.put("email", email);
 
-                    payload.put("email", email);
-                }
+                requestRepository.save(req);
 
             } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
+                command.put("status", Status.FALHA);
+                command.put("timestamp", new Date());
                 e.printStackTrace();
                 throw e;
             }
         }
 
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
+        this.sendReadModelCommand(command);
+    }
 
-        this.sendReadModelCommand(answer);
+    @RabbitListener(queues = RabbitMQConfig.AUTH_QUEUE_DLQ)
+    public void handleDlqQueue(Map<String, Object> payload) {
+
+        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
+        String type = payload.get("type").toString();
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
+        if (alreadyProcessed) {
+            return;
+        }
+
+        Request req = new Request();
+
+        req.setSagaId(sagaId);
+        req.setType(type);
+        req.setId(new ObjectId());
+
+
+        if(type.contains("criar-auth")) {
+            try {
+                Map<String, String> request = (Map<String, String>) payload.get("requsicao");
+                String login = request.get("email");
+
+                this.authRepository.deleteByLogin(login);
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
         requestRepository.save(req);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    public void sendReadModelCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

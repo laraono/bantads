@@ -11,10 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Transactional
@@ -75,6 +72,26 @@ public class AccountDataService {
         return managerCPFs.get(index);
     }
 
+    public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
+        List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
+
+        if(cpfs.isEmpty()) {
+            payload.put("semConta", "");
+            return payload;
+        }
+
+        String managerCpf = cpfs.getFirst();
+
+        List<AccountData> accounts = this.accountDataRepository.findAllByManagerCPFOrderByBalanceAsc(managerCpf);
+
+        AccountData chosenAccount = accounts.getFirst();
+
+        payload.put("numeroConta", chosenAccount.getAccountNumber());
+        payload.put("cpfCliente", chosenAccount.getClientCPF());
+        payload.put("gerenteAntigo", managerCpf);
+
+        return payload;
+    }
 
     public AccountData getAccountData(String accountNumber) {
         return this.accountDataRepository.findByAccountNumber(accountNumber);
@@ -123,6 +140,10 @@ public class AccountDataService {
 
     public void deleteAccount(String cpf) {
         this.accountDataRepository.deleteByClientCPF(cpf);
+    }
+
+    public List<String> findManagersWithMultipleAccounts() {
+        return this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
     }
 
 }

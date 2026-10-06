@@ -19,9 +19,21 @@ class OrchestrationController {
     private OrchestrationService orchestrationService;
 
     @PostMapping("/create-account")
-    ResponseEntity startSaga(@RequestBody Map<String, Object> payload) {
+    ResponseEntity createAccount(@RequestBody Map<String, Object> payload) {
         try {
+            System.out.println("oie");
             orchestrationService.startSaga(SagaSteps.CRIACAO_CONTA, payload);
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @PostMapping("/insert-manager")
+    ResponseEntity insertManager(@RequestBody Map<String, Object> payload) {
+        try {
+            orchestrationService.startSaga(SagaSteps.INSERIR_GERENTE, payload);
             return ResponseEntity.accepted().build();
         } catch (Exception e) {
             e.printStackTrace();

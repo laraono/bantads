@@ -11,6 +11,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 public class RabbitMQConfig {
 
     public static final String MANAGER_QUEUE = "ms.gerente.cmd";
+    public static final String MANAGER_QUEUE_DLQ = "ms.gerente.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     @Bean
@@ -23,7 +24,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue managerQueueDlq() {
-        return QueueBuilder.durable(MANAGER_QUEUE + ".dlq").build();
+        return QueueBuilder.durable(MANAGER_QUEUE_DLQ).build();
     }
 
     @Bean

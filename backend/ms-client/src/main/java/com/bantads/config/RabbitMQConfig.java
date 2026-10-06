@@ -10,7 +10,8 @@ import org.springframework.amqp.support.converter.MessageConverter;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String CLIENT_QUEUE = "ms.client.cmd";
+    public static final String CLIENT_QUEUE = "ms.cliente.cmd";
+    public static final String CLIENT_QUEUE_DLQ = "ms.cliente.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
 
@@ -24,7 +25,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue clientQueueDlq() {
-        return QueueBuilder.durable(CLIENT_QUEUE + ".dlq").build();
+        return QueueBuilder.durable(CLIENT_QUEUE_DLQ).build();
     }
 
     @Bean
