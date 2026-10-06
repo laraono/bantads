@@ -44,10 +44,10 @@ public class ManagerController {
     }
 
     @PutMapping("/{cpf}")
-    public ResponseEntity<Object> updateManager(@PathVariable String managerCPF, @RequestBody UpdateManagerDTO manager) {
+    public ResponseEntity<ManagerDTO> updateManager(@PathVariable("cpf") String managerCPF, @RequestBody UpdateManagerDTO manager) {
         try {
-            managerService.updateManager(managerCPF, manager);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            ManagerDTO atualizado = managerService.updateManager(managerCPF, manager);
+            return ResponseEntity.status(HttpStatus.OK).body(atualizado);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -55,7 +55,7 @@ public class ManagerController {
     }
 
     @DeleteMapping("/{cpf}")
-    public ResponseEntity<Object> deleteManager(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String managerCPF) {
+    public ResponseEntity<Object> deleteManager(@RequestHeader("x-user-cpf") String userCPF, @PathVariable("cpf") String managerCPF) {
         try {
             this.managerService.deleteManager(managerCPF, userCPF);;
             return ResponseEntity.status(HttpStatus.CREATED).build();
