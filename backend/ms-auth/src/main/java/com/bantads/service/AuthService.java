@@ -140,22 +140,29 @@ public class AuthService {
 
         if(type.contains("criar-auth")) {
             try {
-                Map<String, String> request = (Map<String, String>) payload.get("requsicao");
-                String password = this.create(
-                        request.get("id"),
-                        request.get("cpf"),
-                        request.get("tipo"),
-                        request.get("email"),
-                        request.get("senha"),
-                        true
-                );
+                if(command.getStatus().equals("COMPENSACAO")) {
+                    Map<String, String> request = (Map<String, String>) payload.get("requsicao");
+                    String login = request.get("email");
 
-                Map<String, String> email = new HashMap<>();
+                    this.authRepository.deleteByLogin(login);
+                } else {
+                    Map<String, String> request = (Map<String, String>) payload.get("requsicao");
+                    String password = this.create(
+                            request.get("id"),
+                            request.get("cpf"),
+                            request.get("tipo"),
+                            request.get("email"),
+                            request.get("senha"),
+                            true
+                    );
 
-                email.put("email", request.get("email"));
-                email.put("senha", password);
+                    Map<String, String> email = new HashMap<>();
 
-                payload.put("email", email);
+                    email.put("email", request.get("email"));
+                    email.put("senha", password);
+
+                    payload.put("email", email);
+                }
 
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);

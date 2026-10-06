@@ -25,4 +25,6 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     List<AccountData> findAllByClientCPFIn(List<String> clientCPFs);
 
     AccountData findByClientCPF(String clientCPF);
+
+    void deleteByClientCPF(String CPF);
 }

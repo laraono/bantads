@@ -12,7 +12,7 @@ public class RabbitMQConfig {
 
     public static final String EVENT_QUEUE = "ms.conta.events";
     public static final String ACCOUNT_QUEUE = "ms.conta.cmd";
-    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply ";
+    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     @Bean
     public Queue readModelQueue() {
@@ -21,7 +21,15 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue accountQueue() {
-        return QueueBuilder.durable(ACCOUNT_QUEUE).build();
+        return QueueBuilder.durable(ACCOUNT_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", ACCOUNT_QUEUE + ".dlq")
+                .build();
+    }
+
+    @Bean
+    public Queue accountQueueDlq() {
+        return QueueBuilder.durable(ACCOUNT_QUEUE + ".dlq").build();
     }
 
     @Bean

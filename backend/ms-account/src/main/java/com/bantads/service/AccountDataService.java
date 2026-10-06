@@ -121,4 +121,8 @@ public class AccountDataService {
         return this.accountDataRepository.findByClientCPF(cpf);
     }
 
+    public void deleteAccount(String cpf) {
+        this.accountDataRepository.deleteByClientCPF(cpf);
+    }
+
 }
