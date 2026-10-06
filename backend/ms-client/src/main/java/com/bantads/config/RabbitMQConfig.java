@@ -11,12 +11,20 @@ import org.springframework.amqp.support.converter.MessageConverter;
 public class RabbitMQConfig {
 
     public static final String CLIENT_QUEUE = "ms.client.cmd";
-    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply ";
+    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
 
     @Bean
-    public Queue accountQueue() {
-        return QueueBuilder.durable(CLIENT_QUEUE).build();
+    public Queue clientQueue() {
+        return QueueBuilder.durable(CLIENT_QUEUE)
+            .withArgument("x-dead-letter-exchange", "")
+            .withArgument("x-dead-letter-routing-key", CLIENT_QUEUE + ".dlq")
+            .build();
+    }
+
+    @Bean
+    public Queue clientQueueDlq() {
+        return QueueBuilder.durable(CLIENT_QUEUE + ".dlq").build();
     }
 
     @Bean

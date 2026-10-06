@@ -20,4 +20,6 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
        "lower(c.name) LIKE lower(CONCAT('%', :busca, '%')) OR " +
        "c.cpf LIKE CONCAT('%', :busca, '%')")
     List<Client> search(@Param("busca") String busca);
+
+    void deleteByCpf(String cpf);
 }

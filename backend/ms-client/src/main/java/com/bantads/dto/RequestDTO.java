@@ -34,7 +34,7 @@ public class RequestDTO {
     private String telefone;
 
     @NotNull(message = "Salário é obrigatório") 
-    private BigDecimal salario;
+    private String salario;
     
     @NotNull(message = "Endereço é obrigatório") 
     private AddressDTO endereco;

@@ -11,11 +11,19 @@ import org.springframework.amqp.support.converter.MessageConverter;
 public class RabbitMQConfig {
 
     public static final String MANAGER_QUEUE = "ms.gerente.cmd";
-    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply ";
+    public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     @Bean
     public Queue managerQueue() {
-        return QueueBuilder.durable(MANAGER_QUEUE).build();
+        return QueueBuilder.durable(MANAGER_QUEUE)
+            .withArgument("x-dead-letter-exchange", "")
+            .withArgument("x-dead-letter-routing-key", MANAGER_QUEUE + ".dlq")
+            .build();
+    }
+
+    @Bean
+    public Queue managerQueueDlq() {
+        return QueueBuilder.durable(MANAGER_QUEUE + ".dlq").build();
     }
 
     @Bean

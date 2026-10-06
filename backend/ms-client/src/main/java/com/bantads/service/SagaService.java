@@ -58,8 +58,13 @@ public class SagaService {
 
         if(type.contains("criar-cliente")) {
             try {
-                Request request = (Request) command.getPayload().get("requisicao");
-                this.clientService.createClient(request);
+                if(command.getStatus().equals("COMPENSACAO")) {
+                    String cpf = (String) command.getPayload().get("cpfCliente");
+                    this.clientService.deleteByCpf(cpf);
+                } else {
+                    Request request = (Request) command.getPayload().get("requisicao");
+                    this.clientService.createClient(request);
+                }
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -70,10 +75,16 @@ public class SagaService {
 
         if(type.contains("aprovar-solicitacao")) {
             try {
-                Long id = (Long) command.getPayload().get("idSolicitacao");
-                this.requestService.approveRequest(id);
-                Request request = this.requestService.getRequestById(id);
-                payload.put("cpfCliente", request.getCpf());
+                if(command.getStatus().equals("COMPENSACAO")) {
+                    String id = (String) command.getPayload().get("idSolicitacao");
+                    this.requestService.compensateRequestStatus(id);
+                } else {
+                    String id = (String) command.getPayload().get("idSolicitacao");
+                    this.requestService.approveRequest(id);
+                    Request request = this.requestService.getRequestByCpf(id);
+                    payload.put("cpfCliente", request.getCpf());
+                    payload.put("requisicao", request);
+                }
             } catch (Exception e) {
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
