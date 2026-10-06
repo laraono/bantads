@@ -1,5 +1,4 @@
 const clientService = require('../service/clientService');
-const accountController = require('./accountController');
 
 class ClientController {
 
