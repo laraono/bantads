@@ -56,37 +56,33 @@ public class SagaService {
 
         Map<String, Object> payload = new HashMap<>();
 
-        if(type.contains("criar-cliente")) {
-            try {
+        try {
+            if (type.contains("criar-cliente")) {
                 Request request = (Request) command.getPayload().get("requisicao");
                 this.clientService.createClient(request);
-            } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
-                e.printStackTrace();
-                throw e;
             }
-        }
 
-        if(type.contains("aprovar-solicitacao")) {
-            try {
+            if (type.contains("aprovar-solicitacao")) {
                 Long id = (Long) command.getPayload().get("idSolicitacao");
                 this.requestService.approveRequest(id);
                 Request request = this.requestService.getRequestById(id);
                 payload.put("cpfCliente", request.getCpf());
-            } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
-                e.printStackTrace();
-                throw e;
             }
+
+            answer.setPayload(payload);
+            answer.setTimestamp(new Date());
+
+            this.sendReadModelCommand(answer);
+            rabbitRepository.save(req);
+
+        } catch (Exception e) {
+            answer.setStatus(Status.FALHA);
+            answer.setTimestamp(new Date());
+            answer.setPayload(Map.of("error", e.getMessage()));
+            this.sendReadModelCommand(answer);
+            rabbitRepository.save(req);
+            return;
         }
-
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
-
-        this.sendReadModelCommand(answer);
-        rabbitRepository.save(req);
     }
 
     public void sendReadModelCommand(RabbitAnswer answer) {

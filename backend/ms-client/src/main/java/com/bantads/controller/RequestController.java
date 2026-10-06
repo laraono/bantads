@@ -40,9 +40,9 @@ public class RequestController {
     }   
 
     @PostMapping("/{id}/rejeicao")
-    @ResponseStatus(HttpStatus.CREATED)
-    void rejectRequest(@PathVariable Long id) {
-        this.requestService.rejectRequest(id, null);
+    @ResponseStatus(HttpStatus.OK)
+    void rejectRequest(@PathVariable Long id, @RequestBody String motivo) {
+        this.requestService.rejectRequest(id, motivo);
     }
 
     @GetMapping ("/{id}")

@@ -16,6 +16,7 @@ public class RabbitMQConfig {
 
     public static final String CLIENT_QUEUE = "ms.cliente.cmd";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
+    public static final String EMAIL_QUEUE = "ms.email.cmd";
 
     private static final int MAX_TENTATIVAS = 3;
     private static final long INTERVALO_RETRY_MS = 5000L;
@@ -34,6 +35,7 @@ public class RabbitMQConfig {
     public Queue orquestradorQueue() {
         return QueueBuilder.durable(ORQUESTRADOR_QUEUE).build();
     }
+
 
     @Bean
     public MessageConverter jsonMessageConverter() {

@@ -34,6 +34,9 @@ public class Request {
 
     @Column(nullable = true, length = 255, name = "rejection_reason")
     private String rejectionReason;
+
+    @Column(nullable = true, name = "rejection_at")
+    private Date rejectionAt;
     
     @Column(nullable = true, name = "approved_at")
     private Date approvedAt;
