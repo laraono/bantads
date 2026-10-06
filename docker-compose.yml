@@ -20,7 +20,6 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASS}
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init_db.sh:/docker-entrypoint-initdb.d/init.sh
@@ -28,7 +27,15 @@ services:
       - ./database/request.sql:/docker-entrypoint-initdb.d/schemas/request.sql
       - ./database/manager.sql:/docker-entrypoint-initdb.d/schemas/manager.sql
       - ./database/client.sql:/docker-entrypoint-initdb.d/schemas/client.sql
+    mem_limit: 384m
     restart: always
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c work_mem=4MB
+      -c max_connections=40
+      -c effective_cache_size=384MB
+      -c maintenance_work_mem=32MB
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -38,6 +45,7 @@ services:
   mongodb:
     image: mongo:6.0
     container_name: mongodb
+    command: mongod --wiredTigerCacheSizeGB 0.25
     networks:
       - backend-net
     ports:
@@ -48,6 +56,7 @@ services:
     volumes:
       - mongo_data:/data/db
       - ./init-scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    mem_limit: 384m
     restart: always
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
@@ -62,7 +71,9 @@ services:
       - backend-net
     ports:
       - "6379:6379"
+    mem_limit: 128m
     restart: always
+    command: redis-server --maxmemory 100mb --maxmemory-policy noeviction
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -80,6 +91,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark relative 0.6"
+    mem_limit: 512m
     restart: always
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -97,6 +110,7 @@ services:
     ports:
       - "8082:8082"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/client_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASS}
@@ -108,6 +122,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    mem_limit: 512m
+    mem_reservation: 384m
     restart: always
 
   ms-auth:
@@ -120,6 +136,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
       MONGO_USER: ${MONGO_USER}
       MONGO_PASS: ${MONGO_PASS}
       SPRING_DATA_REDIS_HOST: redis-app
@@ -133,6 +150,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    mem_limit: 512m
+    mem_reservation: 384m
     restart: always
 
   ms-account:
@@ -145,6 +164,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
       SERVER_PORT: 8083
       SPRING_DATASOURCE_COMMAND_URL: jdbc:postgresql://postgres-db:5432/command_db
       SPRING_DATASOURCE_REQUEST_URL: jdbc:postgresql://postgres-db:5432/request_db
@@ -161,6 +181,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    mem_limit: 512m
+    mem_reservation: 384m
     restart: always
 
   ms-manager:
@@ -173,6 +195,7 @@ services:
     ports:
       - "8084:8084"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/manager_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASS}
@@ -183,6 +206,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    mem_limit: 512m
+    mem_reservation: 384m
     restart: always
 
   ms-email:
@@ -195,6 +220,7 @@ services:
     ports:
       - "8086:8086"
     environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SMTP_HOST: smtp.gmail.com
@@ -204,6 +230,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    mem_limit: 512m
+    mem_reservation: 384m
     restart: always
 
   api-gateway:
@@ -218,13 +246,20 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
+    command: node --max-old-space-size=192 server.js
     ports:
       - "3000:3000"
     depends_on:
       - redis-app
       - rabbitmq
       - ms-auth
+    mem_limit: 256m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   front:
     container_name: front
@@ -237,4 +272,5 @@ services:
       - "80:80"
     depends_on:
       - api-gateway
+    mem_limit: 64m
     restart: always
