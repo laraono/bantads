@@ -16,6 +16,7 @@ public class RabbitMQConfig {
 
     public static final String EVENT_QUEUE = "ms.conta.events";
     public static final String ACCOUNT_QUEUE = "ms.conta.cmd";
+    public static final String ACCOUNT_QUEUE_DLQ = "ms.conta.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     private static final int MAX_TENTATIVAS = 3;
@@ -33,12 +34,15 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue accountQueue() {
-        return commandQueue(ACCOUNT_QUEUE);
+        return QueueBuilder.durable(ACCOUNT_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", ACCOUNT_QUEUE + ".dlq")
+                .build();
     }
 
     @Bean
     public Queue accountQueueDlq() {
-        return dlq(ACCOUNT_QUEUE);
+        return QueueBuilder.durable(ACCOUNT_QUEUE_DLQ).build();
     }
 
     @Bean

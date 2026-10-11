@@ -219,19 +219,9 @@ const rules = {
                             <v-form>
                                 <label class="field-label" for="atualizar-nome">Nome Completo</label>
                                 <v-text-field id="atualizar-nome" v-model="nome" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="Ex: João da Silva" type="text" :rules="[rules.required, rules.nome]"/>
-                                <div class="primeiro-bloco">
-                                    <div class="gerente-cpf">
-                                        <label class="field-label" for="atualizar-cpf">CPF</label>
-                                        <v-mask-input id="atualizar-cpf" v-model="cpf" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" :rules="[rules.required]" mask="###.###.###-##"/>
-                                    </div>
-                                    <div class="gerente-telefone">
-                                        <label class="field-label" for="atualizar-telefone">Telefone</label>
-                                        <v-mask-input id="atualizar-telefone" v-model="telefone" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="(00) 00000-0000" type="text" :rules="[rules.required, rules.telefone]" mask='(##) #####-####'/>
-                                    </div>
-                                </div>
-                                <label class="field-label" for="atualizar-email">E-mail (Campo Único)</label>
-                                <v-text-field id="atualizar-email" v-model="email" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="email@bantads.com" type="email" :rules="[rules.required, rules.email]"/>
-                                <div class="segundo-bloco">
+                                <label class="field-label" for="atualizar-telefone">Telefone</label>
+                                <v-mask-input id="atualizar-telefone" v-model="telefone" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="(00) 00000-0000" type="text" :rules="[rules.required, rules.telefone]" mask='(##) #####-####'/>
+                                <div class="bloco-senha">
                                     <div class="gerente-senha">
                                         <label class="field-label" for="atualizar-password">Senha</label>
                                         <v-text-field id="atualizar-password" v-model="senha" class="field-input" variant="outlined" flat single-line density="comfortable" type="password" :rules="[rules.required]"/>
@@ -490,7 +480,7 @@ const rules = {
     font-size: 0.9rem;
 }
 
-.primeiro-bloco, .segundo-bloco {
+.primeiro-bloco, .segundo-bloco, .bloco-senha {
     display: flex;
     gap: 15px;
 }

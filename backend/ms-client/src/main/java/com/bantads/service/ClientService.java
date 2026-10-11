@@ -75,4 +75,8 @@ public class ClientService {
         return clientRepository.save(client);
     }
 
+    public void deleteByCpf(String cpf) {
+        this.clientRepository.deleteByCpf(cpf);
+    }
+
 }

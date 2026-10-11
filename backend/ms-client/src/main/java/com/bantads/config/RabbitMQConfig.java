@@ -15,6 +15,7 @@ import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 public class RabbitMQConfig {
 
     public static final String CLIENT_QUEUE = "ms.cliente.cmd";
+    public static final String CLIENT_QUEUE_DLQ = "ms.cliente.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
     public static final String EMAIL_QUEUE = "ms.email.cmd";
 
@@ -22,13 +23,16 @@ public class RabbitMQConfig {
     private static final long INTERVALO_RETRY_MS = 5000L;
 
     @Bean
-    public Queue accountQueue() {
-        return commandQueue(CLIENT_QUEUE);
+    public Queue clientQueue() {
+        return QueueBuilder.durable(CLIENT_QUEUE)
+            .withArgument("x-dead-letter-exchange", "")
+            .withArgument("x-dead-letter-routing-key", CLIENT_QUEUE + ".dlq")
+            .build();
     }
 
     @Bean
-    public Queue accountQueueDlq() {
-        return dlq(CLIENT_QUEUE);
+    public Queue clientQueueDlq() {
+        return QueueBuilder.durable(CLIENT_QUEUE_DLQ).build();
     }
 
     @Bean

@@ -4,7 +4,6 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.AddressDTO;
 import com.bantads.dto.RequestDTO;
-import com.bantads.entity.Address;
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
@@ -21,9 +20,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class RequestService {
@@ -43,10 +44,18 @@ public class RequestService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    public List<Request> listRequests() {
+        return this.requestRepository.findAll();
+    }
+
     public Request createRequest(RequestDTO requestDTO) {
 
         if(requestDTO.getCpf() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
+        }
+
+        if(requestRepository.existsByCpf(requestDTO.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
         }
 
         if(requestDTO.getEmail() == null) {
@@ -57,40 +66,30 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
         }
 
-        if(clientRepository.existsByCpf(requestDTO.getCpf())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
-        }
-
-        if(clientRepository.existsByEmail(requestDTO.getEmail())) {
+        if(requestRepository.existsByEmail(requestDTO.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
         }
 
-        AddressDTO addressDTO = requestDTO.getEndereco();
+        if(requestDTO.getCpf().length() < 11) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
+        }
 
-        Address addressEntity = Address.builder()
-            .additionalInfo(addressDTO.getComplemento())
-            .cep(addressDTO.getCep())
-            .city(addressDTO.getCidade())
-            .state(stateRepository.findByUf(addressDTO.getUf()))
-            .city(addressDTO.getCidade())
-            .number(addressDTO.getNumero())
-            .street(addressDTO.getLogradouro())
-            .build();
+        AddressDTO addressDTO = requestDTO.getEndereco();
+        BigDecimal salary = new BigDecimal(requestDTO.getSalario());
 
         Request requestEntity = Request.builder()
-            .status(RequestStatus.PENDING.getLabel())
+            .status(RequestStatus.PENDENTE)
             .additionalInfo(addressDTO.getComplemento())
             .cep(addressDTO.getCep())
             .city(addressDTO.getCidade())
             .state(stateRepository.findByUf(addressDTO.getUf()))
-            .city(addressDTO.getCidade())
             .number(addressDTO.getNumero())
             .street(addressDTO.getLogradouro())
             .cpf(requestDTO.getCpf())
             .email(requestDTO.getEmail())
             .name(requestDTO.getNome())
             .phone(requestDTO.getTelefone())
-            .salary(requestDTO.getSalario())
+            .salary(salary)
             .build();
 
         requestRepository.save(requestEntity);
@@ -98,20 +97,29 @@ public class RequestService {
         return requestEntity;
     }
 
-    public void approveRequest(Long id) {
-        Request request = requestRepository.getReferenceById(id);
+    public void approveRequest(String cpf) {
+        Request request = requestRepository.findByCpf(cpf);
 
         request.setApprovedAt(new Date());
-        request.setStatus(RequestStatus.APPROVED.getLabel());
+        request.setStatus(RequestStatus.APROVADA);
 
         requestRepository.save(request);
     }
 
-    public void rejectRequest(Long id, String rejectReason) {
-        Request request = requestRepository.getReferenceById(id);
+    public void rejectRequest(String cpf, String rejectReason) {
+        Request request = requestRepository.findByCpf(cpf);
 
         request.setRejectionReason(rejectReason);
-        request.setStatus(RequestStatus.REJECTED.getLabel());
+        request.setStatus(RequestStatus.NÃO_APROVADA);
+
+        requestRepository.save(request);
+    }
+
+    public void compensateRequestStatus(String cpf) {
+        Request request = requestRepository.findByCpf(cpf);
+
+        request.setApprovedAt(null);
+        request.setStatus(RequestStatus.PENDENTE);
         request.setRejectionAt(new Date());
 
         requestRepository.save(request);
@@ -135,15 +143,14 @@ public class RequestService {
         return requestRepository.findByClient(client);
     }
 
-    public Request getRequestById(Long id) {
-        return requestRepository.getReferenceById(id);
+    public Request getRequestByCpf(String cpf) {
+        Request req = requestRepository.findByCpf(cpf);
+
+        if(req == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitacao não encontrada");
+        }
+
+        return req;
     }
 
-    public void associateRequestToClient(Long id, Client client) {
-        Request request = requestRepository.getReferenceById(id);
-
-        request.setClient(client);
-
-        requestRepository.save(request);
-    }
 }

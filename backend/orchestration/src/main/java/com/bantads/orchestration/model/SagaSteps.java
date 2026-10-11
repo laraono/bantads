@@ -14,6 +14,15 @@ public enum SagaSteps {
             new StepDefinition(RabbitMQConfig.MS_AUTH_CMD, "auth.criar-auth"),
             new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.criar-conta"),
             new StepDefinition(RabbitMQConfig.MS_EMAIL_CMD, "email.enviar-senha")
+    )),
+
+    INSERIR_GERENTE(List.of(
+            new StepDefinition(RabbitMQConfig.MS_GERENTE_CMD, "gerente.inserir-gerente"),
+            new StepDefinition(RabbitMQConfig.MS_AUTH_CMD, "auth.criar-auth"),
+            new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.identificar-conta"),
+            new StepDefinition(RabbitMQConfig.MS_CONTA_CMD,"conta.associar-gerente"),
+            new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.obter-dados"),
+            new StepDefinition(RabbitMQConfig.MS_EMAIL_CMD, "email.novo-gerente")
     ));
 
     private final List<StepDefinition> steps;

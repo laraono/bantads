@@ -356,5 +356,11 @@ public class AccountService {
         return this.accountDataService.getManagerWithLowestAccount(managersCPF);
     }
 
+    public void deleteAccountByCPF(String cpf) {
+        this.accountDataService.deleteAccount(cpf);
+    }
 
+    public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
+        return this.accountDataService.getAccountToNewManager(payload);
+    }
 }

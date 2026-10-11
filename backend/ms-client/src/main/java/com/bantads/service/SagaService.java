@@ -2,6 +2,7 @@ package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.RequestDTO;
+import com.bantads.entity.Client;
 import com.bantads.entity.Rabbit;
 import com.bantads.entity.Request;
 import com.bantads.model.RabbitAnswer;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class SagaService {
@@ -33,59 +35,102 @@ public class SagaService {
     private RabbitRepository rabbitRepository;
 
     @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleClientCQueue(Map<String, Object> command) {
+        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
+        String type = command.get("type").toString();
 
-        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
 
         if (alreadyProcessed) {
             return;
         }
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .status(Status.SUCESSO)
-                .build();
-
         Rabbit req = Rabbit.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
+                .sagaId(sagaId)
+                .type(type)
                 .build();
 
-        String type = String.valueOf(command.getType());
-
-        Map<String, Object> payload = new HashMap<>();
-
-        try {
-            if (type.contains("criar-cliente")) {
-                Request request = (Request) command.getPayload().get("requisicao");
+        if(type.contains("criar-cliente")) {
+            try {
+                Request request = (Request) command.get("requisicao");
                 this.clientService.createClient(request);
+                rabbitRepository.save(req);
+            } catch (Exception e) {
+                command.put("status", Status.FALHA);
+                command.put("timestamp", new Date());
+                e.printStackTrace();
+                throw e;
             }
-
-            if (type.contains("aprovar-solicitacao")) {
-                Long id = (Long) command.getPayload().get("idSolicitacao");
-                this.requestService.approveRequest(id);
-                Request request = this.requestService.getRequestById(id);
-                payload.put("cpfCliente", request.getCpf());
-            }
-
-            answer.setPayload(payload);
-            answer.setTimestamp(new Date());
-
-            this.sendReadModelCommand(answer);
-            rabbitRepository.save(req);
-
-        } catch (Exception e) {
-            answer.setStatus(Status.FALHA);
-            answer.setTimestamp(new Date());
-            answer.setPayload(Map.of("error", e.getMessage()));
-            this.sendReadModelCommand(answer);
-            rabbitRepository.save(req);
-            return;
         }
+
+        if(type.contains("aprovar-solicitacao")) {
+            try {
+                String id = (String) command.get("idSolicitacao");
+                this.requestService.approveRequest(id);
+                Request request = this.requestService.getRequestByCpf(id);
+                command.put("cpfCliente", request.getCpf());
+                command.put("requisicao", request);
+                rabbitRepository.save(req);
+            } catch (Exception e) {
+                command.put("status", Status.FALHA);
+                command.put("timestamp", new Date());
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        if(type.contains("obter-dados")) {
+            try {
+                String cpf = (String) command.get("cpfCliente");
+                Client client = this.clientService.getClient(cpf);
+
+                command.put("nome", client.getName());
+                command.put("email", client.getEmail());
+
+                rabbitRepository.save(req);
+            } catch (Exception e) {
+                command.put("status", Status.FALHA);
+                command.put("timestamp", new Date());
+                e.printStackTrace();
+                throw e;
+            }
+        }
+
+        command.put("status", "SUCESSO");
+
+        this.sendCommand(command);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE_DLQ)
+    public void handlDlqQueue(Map<String, Object> command) {
+        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
+        String type = command.get("type").toString();
+
+        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
+        if (alreadyProcessed) {
+            return;
+        }
+
+        Rabbit req = Rabbit.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build();
+
+
+        if(type.contains("criar-cliente")) {
+            String cpf = (String) command.get("cpfCliente");
+            this.clientService.deleteByCpf(cpf);
+        }
+
+        if(type.contains("aprovar-solicitacao")) {
+            String id = (String) command.get("idSolicitacao");
+            this.requestService.compensateRequestStatus(id);
+        }
+
+        rabbitRepository.save(req);
+    }
+
+    public void sendCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

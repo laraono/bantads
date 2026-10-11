@@ -16,4 +16,6 @@ public class RabbitRequest {
     private String type;
 
     private Map<String, Object> payload;
+
+    private String status;
 }

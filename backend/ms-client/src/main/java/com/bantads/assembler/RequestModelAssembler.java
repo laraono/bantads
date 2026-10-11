@@ -17,7 +17,7 @@ public class RequestModelAssembler implements RepresentationModelAssembler<Reque
     public EntityModel<Request> toModel(Request request) {
         EntityModel<Request> model = EntityModel.of(request);
 
-        model.add(linkTo(methodOn(RequestController.class).getRequest(request.getRequestId())).withSelfRel());
+        model.add(linkTo(methodOn(RequestController.class).getRequest(request.getCpf())).withSelfRel());
         
         if ("PENDENTE".equals(request.getStatus())) {
             model.add(linkTo(RequestController.class).slash(request.getRequestId()).slash("aprovacao").withRel("aprovacao"));

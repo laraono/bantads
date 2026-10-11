@@ -12,6 +12,8 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
 
     List<AccountData> findAllByManagerCPF(String managerCPF);
 
+    List<AccountData> findAllByManagerCPFOrderByBalanceAsc(String managerCPF);
+
     @Query("SELECT managerCPF, COUNT(accountNumber) as totalAccounts, SUM(balance) as totalBalance FROM AccountData GROUP BY managerCPF")
     List<AccountsByManagerDTO> getAccountCountGroupByManager();
 
@@ -25,4 +27,9 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     List<AccountData> findAllByClientCPFIn(List<String> clientCPFs);
 
     AccountData findByClientCPF(String clientCPF);
+
+    @Query("SELECT a.managerCPF FROM AccountData a GROUP BY a.managerCPF HAVING COUNT(a) > 1 ORDER BY COUNT(a) ASC")
+    List<String> findManagersWithMultipleAccountsOrderedByCount();
+
+    void deleteByClientCPF(String CPF);
 }

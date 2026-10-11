@@ -8,5 +8,9 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
 
     Request findByClient(Client client);
 
-    Request findByClientCpf(String cpf);
+    Request findByCpf(String cpf);
+
+    boolean existsByCpf(String cpf);
+
+    boolean existsByEmail(String email);
 }
