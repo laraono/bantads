@@ -47,16 +47,21 @@ public class AccountDataService {
     public String getManagerWithLowestAccount(List<String> managerCPFs) {
 
         Iterator<String> cpfIterator = managerCPFs.iterator();
-        String firstCPF = managerCPFs.get(0);
+        String firstCPF = managerCPFs.getFirst();
         AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
 
-        int lowestAccountAmount = first.getTotalAccounts();
+        Long lowestAccountAmount = first.getTotalAccounts();
         BigDecimal lowestTotalBalance = first.getTotalBalance();
         int index = 0;
-        int i = 1;
+        int i = 0;
 
-        while(cpfIterator.hasNext()) {
-            AccountsByManagerDTO current = this.getAccountsCountByManager(cpfIterator.next());
+        for (String cpf : managerCPFs) {
+            AccountsByManagerDTO current = this.getAccountsCountByManager(cpf);
+
+            if (current == null) {
+                current = new AccountsByManagerDTO(cpf, 0L, BigDecimal.ZERO);
+            }
+
             if (current.getTotalAccounts() < lowestAccountAmount) {
                 lowestAccountAmount = current.getTotalAccounts();
                 lowestTotalBalance = current.getTotalBalance();
@@ -76,7 +81,7 @@ public class AccountDataService {
         List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
 
         if(cpfs.isEmpty()) {
-            payload.put("semConta", "");
+            payload.put("numeroConta", "semConta");
             return payload;
         }
 

@@ -32,9 +32,9 @@ public class AccountController {
     }
 
     @GetMapping("/cpf/{cpf}")
-    ResponseEntity<GetAccountDTO> getAccountDataByCpf(@PathVariable String cpf) {
+    ResponseEntity<GetAccountDTO> getAccountDataByCpf(@PathVariable String cpf, @RequestHeader("x-user-cpf") String userCPF) {
         try {
-            GetAccountDTO account = this.accountService.getAccountDataByCpf(cpf);
+            GetAccountDTO account = this.accountService.getAccountDataByCpf(cpf, userCPF);
             return ResponseEntity.status(HttpStatus.OK).body(account);
         } catch (Exception e) {
             e.printStackTrace();
