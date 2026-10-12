@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
@@ -32,12 +33,16 @@ public class ManagerService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     public Manager createManager(CreateManagerDTO createManagerDTO) {
         Manager manager = Manager.builder()
                 .cpf(createManagerDTO.getCpf())
                 .email(createManagerDTO.getEmail())
                 .name(createManagerDTO.getNome())
                 .phone(createManagerDTO.getTelefone())
+                .isActive(true)
                 .build();
 
         return managerRepository.save(manager);
@@ -67,6 +72,10 @@ public class ManagerService {
         gerentes.put("gerentes", managerList);
 
         return gerentes;
+    }
+
+    public List<String> listManagerCPFs() {
+        return this.managerRepository.findCPFs();
     }
 
     public List<ManagerDTO> list() {
@@ -157,7 +166,7 @@ public class ManagerService {
 
         if(type.contains("listar-gerentes")) {
             try {
-                List<ManagerDTO> gerentes = this.list();
+                List<String> gerentes = this.listManagerCPFs();
                 payload.put("gerentes", gerentes);
                 requestRepository.save(req);
             } catch (Exception e) {
@@ -170,7 +179,8 @@ public class ManagerService {
 
         if(type.contains("inserir-gerente")) {
             try {
-                CreateManagerDTO managerDTO = (CreateManagerDTO) payload.get("gerente");
+                Object requisicaoObj = payload.get("gerente");
+                CreateManagerDTO managerDTO = objectMapper.convertValue(requisicaoObj, CreateManagerDTO.class);
                 Manager manager = this.createManager(managerDTO);
                 payload.put("gerente", manager);
 
@@ -178,7 +188,7 @@ public class ManagerService {
 
                 requisicao.put("email", manager.getEmail());
                 requisicao.put("cpf", manager.getCpf());
-                requisicao.put("tipo", "gerente");
+                payload.put("tipo", "gerente");
                 requisicao.put("id", manager.getCpf());
                 requisicao.put("senha", managerDTO.getSenha());
 
@@ -211,7 +221,8 @@ public class ManagerService {
 
 
         if(type.contains("inserir-gerente")) {
-            Manager manager = (Manager) payload.get("gerente");
+            Object requisicaoObj = payload.get("gerente");
+            CreateManagerDTO manager = objectMapper.convertValue(requisicaoObj, CreateManagerDTO.class);
             this.deleteByCpf(manager.getCpf());
             requestRepository.save(req);
         }
