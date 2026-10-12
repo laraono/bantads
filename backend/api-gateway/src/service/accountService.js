@@ -24,28 +24,27 @@ class AccountService {
 
         const cpf = destinationCPF.data;
 
-
         if (!cpf ) {
             const error = new Error('Conta não existe');
             error.status = 422;
             throw error;
         }
 
-        const originClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${headers['x-user-cpf']}/cpf`, {
+        const originClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${headers['x-user-cpf']}`, {
             headers: { 'x-user-cpf': headers['x-user-cpf']}
         })
 
-        if(!originClient.data) {
+        if(!originClient.data || !originClient.data.name) {
             const error = new Error('Usuário não encontrado');
             error.status = 404;
             throw error;
         }
 
-        const destinationClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}/cpf`, {
+        const destinationClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`, {
             headers: { 'x-user-cpf': headers['x-user-cpf']}
         })
 
-        if(!destinationClient.data) {
+        if(!destinationClient.data || !destinationClient.data.name) {
             const error = new Error('Usuário não existe');
             error.status = 422;
             throw error;
@@ -54,11 +53,11 @@ class AccountService {
         const payload = {
             destino: {
                 conta: msBody.contaDestino,
-                nome: destinationClient.data,
+                nome: destinationClient.data.name,
                 cpf
             },
             origem: {
-                nome: originClient.data,
+                nome: originClient.data.name,
                 valor: msBody.valor
             }
         }
@@ -68,6 +67,8 @@ class AccountService {
             },
             { headers: { 'x-user-cpf': headers['x-user-cpf']} }
         );
+
+        console.log("transferData", transferAnswer.data)
 
         if(!transferAnswer.data) {
             const error = new Error('Transferência não finalizada');
@@ -116,8 +117,10 @@ class AccountService {
         return accountAnswer.data        
     }
 
-    async getAccountByCpf(cpf) {
-        const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`)
+    async getAccountByCpf(cpf, headers) {
+        const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`, {
+            headers: { 'x-user-cpf': headers['x-user-cpf']}
+        })
 
         if(!accountAnswer.data) {
             const error = new Error('Conta não encontrado');
