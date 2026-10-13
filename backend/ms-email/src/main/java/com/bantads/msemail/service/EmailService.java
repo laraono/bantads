@@ -54,6 +54,9 @@ public class EmailService {
         answer.put("type", command.getType());
         answer.put("status", status);
         answer.put("error", error);
+        answer.put("stepIndex", command.getStepIndex());
+        answer.put("attempt", command.getAttempt());
+        answer.put("payload", command.getPayload());
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_REPLY, answer);
     }
 

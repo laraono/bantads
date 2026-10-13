@@ -19,6 +19,8 @@ public class RabbitRequest {
 
     private int stepIndex;
 
+    private int attempt;
+
     private Map<String, Object> payload;
 
     private String status;

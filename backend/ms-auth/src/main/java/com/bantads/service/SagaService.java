@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -82,10 +83,33 @@ public class SagaService {
                 .status(status)
                 .error(error)
                 .stepIndex(command.getStepIndex())
+                .attempt(command.getAttempt())
                 .payload(payload)
                 .timestamp(new Date())
                 .build();
 
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.AUTH_QUEUE_DLQ)
+    public void handleDlqQueue(Map<String, Object> payload) {
+        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
+        String type = payload.get("type").toString();
+
+        if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
+            return;
+        }
+
+        SagaStepHandler handler = this.handlers.get(type);
+
+        if (handler != null) {
+            handler.compensate(payload);
+        }
+
+        requestRepository.save(Request.builder()
+                .id(new ObjectId())
+                .sagaId(sagaId)
+                .type(type)
+                .build());
     }
 }

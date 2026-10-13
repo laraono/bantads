@@ -41,10 +41,10 @@ public class RequestController {
         }
     }
 
-    @PostMapping("/{id}/aprovacao")
+    @PostMapping("/{cpf}/aprovacao")
     @ResponseStatus(HttpStatus.CREATED)
-    public void approveRequest(@PathVariable Long id) {
-        this.requestService.approveRequest(id);
+    public void approveRequest(@PathVariable String cpf) {
+        this.requestService.approveRequest(cpf);
     }
 
     @PostMapping("/{cpf}/rejeicao")

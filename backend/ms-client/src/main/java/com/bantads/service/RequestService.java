@@ -110,6 +110,19 @@ public class RequestService {
         requestRepository.save(request);
     }
 
+    public void compensateRequestStatus(String cpf) {
+        Request request = requestRepository.findByCpf(cpf);
+
+        if (request == null) {
+            return;
+        }
+
+        request.setApprovedAt(null);
+        request.setStatus(RequestStatus.PENDENTE);
+
+        requestRepository.save(request);
+    }
+
     public Request rejectRequest(String cpf, String rejectReason) {
         if(rejectReason == null || rejectReason.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Motivo não informado");
@@ -129,18 +142,6 @@ public class RequestService {
         return request;
     }
 
-    public void compensateRequestStatus(String cpf) {
-        Request request = requestRepository.findByCpf(cpf);
-
-        request.setApprovedAt(null);
-        request.setStatus(RequestStatus.PENDENTE);
-        request.setRejectionAt(new Date());
-
-        requestRepository.save(request);
-        this.sendRejectionEmail(request);
-
-        return request;
-    }
 
     private void sendRejectionEmail(Request request) {
         Map<String, Object> email = new HashMap<>();

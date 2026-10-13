@@ -21,9 +21,9 @@ public class ApproveRequestHandler implements SagaStepHandler {
 
     @Override
     public Map<String, Object> execute(Map<String, Object> payload) {
-        Long id = (Long) payload.get("idSolicitacao");
-        this.requestService.approveRequest(id);
-        Request request = this.requestService.getRequestById(id);
+        String cpf = String.valueOf(payload.get("idSolicitacao"));
+        this.requestService.approveRequest(cpf);
+        Request request = this.requestService.getRequestByCpf(cpf);
         payload.put("cpfCliente", request.getCpf());
         return payload;
     }

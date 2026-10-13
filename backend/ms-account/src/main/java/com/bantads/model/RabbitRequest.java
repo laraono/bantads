@@ -18,6 +18,8 @@ public class RabbitRequest {
     private boolean compensation;
     
     private String stepIndex;
+
+    private int attempt;
     
     private Map<String, Object> payload;
 

@@ -78,6 +78,8 @@ public class AuthService {
 
         auth.setPassword(hash);
 
+        authRepository.save(auth);
+
         return password;
 
     }
