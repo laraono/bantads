@@ -25,6 +25,7 @@ public class CreateClientHandler implements SagaStepHandler {
         Client client = clientService.createClient(payload);
 
         payload.put("cpfCliente", client.getCpf());
+        payload.put("tipo", "cliente");
         return payload;
     }
 

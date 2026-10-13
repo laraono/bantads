@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -20,6 +21,9 @@ import java.util.Map;
 @Service
 public class ClientService {
     
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Autowired
     private ClientRepository clientRepository;
 
@@ -56,7 +60,7 @@ public class ClientService {
 
     public Client createClient(Map<String, Object> payload) {
 
-        Request req = (Request) payload.get("requisicao");
+        Request req = objectMapper.convertValue(payload.get("requisicao"), Request.class);
 
         if(stateRepository.findByUf(req.getState().getUf()) == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");

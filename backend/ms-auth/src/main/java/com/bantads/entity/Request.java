@@ -19,7 +19,7 @@ public class Request
     private ObjectId id;
 
     @Field("saga_id")
-    private String sagaId;
+    private UUID sagaId;
 
     @Field("type")
     private String type;

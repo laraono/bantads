@@ -25,6 +25,7 @@ public class ApproveRequestHandler implements SagaStepHandler {
         this.requestService.approveRequest(cpf);
         Request request = this.requestService.getRequestByCpf(cpf);
         payload.put("cpfCliente", request.getCpf());
+        payload.put("requisicao", request);
         return payload;
     }
 

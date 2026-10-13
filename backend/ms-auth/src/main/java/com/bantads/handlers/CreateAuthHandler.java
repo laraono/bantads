@@ -21,17 +21,19 @@ public class CreateAuthHandler implements SagaStepHandler {
 
     @Override
     public Map<String, Object> execute(Map<String, Object> payload) {
-        Map<String, String> request = (Map<String, String>) payload.get("requisicao");
+        Map<String, Object> request = (Map<String, Object>) payload.get("requisicao");
+        String id = request.get("id") != null ? String.valueOf(request.get("id")) : null;
+        Object tipo = request.getOrDefault("tipo", payload.get("tipo"));
         String password = this.authService.create(
-                request.get("id"),
-                request.get("cpf"),
-                request.get("tipo"),
-                request.get("email"),
-                request.get("senha"),
+                id,
+                String.valueOf(request.get("cpf")),
+                String.valueOf(tipo),
+                String.valueOf(request.get("email")),
+                String.valueOf(request.getOrDefault("senha", "")),
                 true);
         Map<String, String> email = new HashMap<>();
 
-        email.put("email", request.get("email"));
+        email.put("email", String.valueOf(request.get("email")));
         email.put("senha", password);
 
         payload.put("email", email);
@@ -41,9 +43,9 @@ public class CreateAuthHandler implements SagaStepHandler {
 
     @Override
     public void compensate(Map<String, Object> payload) {
-        Map<String, String> request = (Map<String, String>) payload.get("requisicao");
+        Map<String, Object> request = (Map<String, Object>) payload.get("requisicao");
 
-        this.authService.invalidateAuth(request.get("cpf"));
+        this.authService.invalidateAuth(String.valueOf(request.get("cpf")));
         return;
     }
 
