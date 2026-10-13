@@ -1,4 +1,5 @@
 package com.bantads.service;
+
 import com.bantads.entity.Auth;
 import com.bantads.repository.AuthRepository;
 import com.password4j.Password;
@@ -20,27 +21,23 @@ public class AuthService {
 
     private final AuthRepository authRepository;
 
-    public AuthService(AuthRepository authRepository) 
-    {
+    public AuthService(AuthRepository authRepository) {
         this.authRepository = authRepository;
     }
 
-    public Auth authenticate(String login, String password) 
-    {
+    public Auth authenticate(String login, String password) {
 
-        Auth auth = authRepository.findByLogin(login).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED,"NÃO AUTORIZADO"));
+        Auth auth = authRepository.findByLogin(login)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NÃO AUTORIZADO"));
 
-        if (!Boolean.TRUE.equals(auth.getActive())) 
-            {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"NÃO AUTORIZADO"
-            );
+        if (!Boolean.TRUE.equals(auth.getActive())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NÃO AUTORIZADO");
         }
 
         boolean passwordValid = Password.check(password, auth.getPassword()).withArgon2();
 
-        if (!passwordValid) 
-        {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"NÃO AUTORIZADO");
+        if (!passwordValid) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NÃO AUTORIZADO");
         }
 
         return auth;
@@ -52,21 +49,16 @@ public class AuthService {
             String type,
             String login,
             String rawPassword,
-            Boolean active
-    ) {
+            Boolean active) {
 
-        if (authRepository.existsByLogin(login)) 
-        {
-            throw new ResponseStatusException( HttpStatus.CONFLICT,"CONTA JÁ EXISTE");
+        if (authRepository.existsByLogin(login)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
         }
 
         Auth auth = new Auth();
 
-        if (userId != null) {
-            auth.setUserId(userId);
-        } else {
-            auth.setUserId(UUID.randomUUID().toString());
-        }
+        auth.setUserId(userId != null ? userId : UUID.randomUUID().toString());
+
         auth.setCpf(cpf);
         auth.setType(type);
         auth.setLogin(login);
@@ -97,8 +89,7 @@ public class AuthService {
         redisTemplate.opsForValue().set("bloqueado:" + cpf, "1").block();
     }
 
-    public List<Auth> findAll() 
-    {
+    public List<Auth> findAll() {
         return authRepository.findAll();
     }
 
@@ -108,8 +99,7 @@ public class AuthService {
         SecureRandom random = new SecureRandom();
         StringBuilder sb = new StringBuilder();
 
-        for (int i = 0; i < 6; i++)
-        {
+        for (int i = 0; i < 6; i++) {
             int randomIndex = random.nextInt(chars.length());
             sb.append(chars.charAt(randomIndex));
         }

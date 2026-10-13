@@ -1,12 +1,11 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
-import com.bantads.dto.RequestDTO;
-import com.bantads.entity.Client;
 import com.bantads.entity.Rabbit;
 import com.bantads.handlers.SagaStepHandler;
 import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
+import com.bantads.entity.Request;
 import com.bantads.model.Status;
 import com.bantads.repository.RabbitRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

@@ -18,16 +18,6 @@ class OrchestrationController {
     @Autowired
     private OrchestrationService orchestrationService;
 
-    @PostMapping("/create-account")
-    ResponseEntity createAccount(@RequestBody Map<String, Object> payload) {
-        try {
-            orchestrationService.startSaga(SagaSteps.CRIACAO_CONTA, payload);
-            return ResponseEntity.accepted().build();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
 
     @PostMapping("/insert-manager")
     ResponseEntity insertManager(@RequestBody Map<String, Object> payload) {

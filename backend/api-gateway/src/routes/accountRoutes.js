@@ -9,6 +9,8 @@ const MS_ACCOUNT_HOST = process.env.MS_ACCOUNT_HOST || 'ms-account';
 const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || '8083';
 const target = `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}`;
 
+router.get('/cpf/:cpf', authGatewayFilter(), accountController.getAccountByCpf);
+
 router.get('/:id', authGatewayFilter(), accountController.getAccount);
 
 router.post('/:id/deposito',  authGatewayFilter(), accountController.deposit);

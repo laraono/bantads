@@ -13,6 +13,7 @@ import com.bantads.repository.ClientRepository;
 import com.bantads.repository.RequestRepository;
 import com.bantads.repository.StateRepository;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
@@ -33,16 +34,13 @@ public class RequestService {
     private RequestRepository requestRepository;
 
     @Autowired 
-    private AddressRepository addressRepository;
-
-    @Autowired 
-    private ClientRepository clientRepository;
-
-    @Autowired 
     private StateRepository stateRepository;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private ClientRepository clientRepository;
 
     public Request createRequest(RequestDTO requestDTO) {
 
@@ -110,6 +108,7 @@ public class RequestService {
         requestRepository.save(request);
     }
 
+    @Transactional
     public void compensateRequestStatus(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 

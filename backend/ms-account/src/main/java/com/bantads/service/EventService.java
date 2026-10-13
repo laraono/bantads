@@ -283,7 +283,8 @@ public class EventService {
 
         Map<String, Object> destination = (Map<String, Object>) payload.get("destino");
         Map<String, Object> origin = (Map<String, Object>) payload.get("origem");
-        
+        origin.put("cpf", userCPF);
+
         String destinationCPF = String.valueOf(destination.get("cpf"));
         String destinationObjectId = String.valueOf(destination.get("conta"));
 
@@ -319,22 +320,26 @@ public class EventService {
 
         this.eventRepository.save(destinationTransfer);
 
-        origin.put("eventId", originTransfer.getEventId());
-        origin.put("version", originTransfer.getVersion());
+        // cópia defensiva: os comandos do read model levam o payload completo
+        // (origem + destino) pra cada lado conseguir montar o histórico com o
+        // nome/cpf da outra ponta, sem contaminar o payload do evento (write side)
+        Map<String, Object> originCommandPayload = new HashMap<>(payload);
+        originCommandPayload.put("eventId", originTransfer.getEventId());
+        originCommandPayload.put("version", originTransfer.getVersion());
 
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(origin)
+                .payload(originCommandPayload)
                 .accountNumber(originObjectId)
                 .timestamp(new Date())
                 .type(EventType.ORIGINTRANSFER)
                 .build();
 
-        destination.put("eventId", destinationTransfer.getEventId());
-        destination.put("version", destinationTransfer.getVersion());
-        destination.put("valor", origin.get("valor"));
+        Map<String, Object> destCommandPayload = new HashMap<>(payload);
+        destCommandPayload.put("eventId", destinationTransfer.getEventId());
+        destCommandPayload.put("version", destinationTransfer.getVersion());
 
         RabbitCommandDTO destCommand = RabbitCommandDTO.builder()
-                .payload(destination)
+                .payload(destCommandPayload)
                 .accountNumber(destinationObjectId)
                 .timestamp(new Date())
                 .type(EventType.DESTINATIONTRANSFER)

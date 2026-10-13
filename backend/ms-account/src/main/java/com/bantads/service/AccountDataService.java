@@ -53,17 +53,30 @@ public class AccountDataService {
         long lowestAccountAmount = Long.MAX_VALUE;
         BigDecimal lowestTotalBalance = BigDecimal.ZERO;
 
+        Iterator<String> cpfIterator = managerCPFs.iterator();
+        String firstCPF = managerCPFs.getFirst();
+        AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
+
+        lowestAccountAmount = first.getTotalAccounts();
+        lowestTotalBalance = first.getTotalBalance();
+        int index = 0;
+        int i = 0;
+
         for (String cpf : managerCPFs) {
             AccountsByManagerDTO current = this.getAccountsCountByManager(cpf);
-            long amount = current == null ? 0 : current.getTotalAccounts();
-            BigDecimal balance = current == null || current.getTotalBalance() == null ? BigDecimal.ZERO : current.getTotalBalance();
 
-            if (best == null
-                    || amount < lowestAccountAmount
-                    || (amount == lowestAccountAmount && balance.compareTo(lowestTotalBalance) < 0)) {
-                best = cpf;
-                lowestAccountAmount = amount;
-                lowestTotalBalance = balance;
+            if (current == null) {
+                current = new AccountsByManagerDTO(cpf, 0L, BigDecimal.ZERO);
+            }
+
+            if (current.getTotalAccounts() < lowestAccountAmount) {
+                lowestAccountAmount = current.getTotalAccounts();
+                lowestTotalBalance = current.getTotalBalance();
+                index = i;
+            } else if (current.getTotalAccounts() == lowestAccountAmount && current.getTotalBalance().compareTo(lowestTotalBalance) < 0) {
+                lowestAccountAmount = current.getTotalAccounts();
+                lowestTotalBalance = current.getTotalBalance();
+                index = i;
             }
         }
 
@@ -74,7 +87,7 @@ public class AccountDataService {
         List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
 
         if(cpfs.isEmpty()) {
-            payload.put("semConta", "");
+            payload.put("numeroConta", "semConta");
             return payload;
         }
 

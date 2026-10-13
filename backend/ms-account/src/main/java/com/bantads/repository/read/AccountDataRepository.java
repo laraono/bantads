@@ -1,10 +1,10 @@
 package com.bantads.repository.read;
 
-import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -14,11 +14,11 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
 
     List<AccountData> findAllByManagerCPFOrderByBalanceAsc(String managerCPF);
 
-    @Query("SELECT managerCPF, COUNT(accountNumber) as totalAccounts, SUM(balance) as totalBalance FROM AccountData GROUP BY managerCPF")
-    List<AccountsByManagerDTO> getAccountCountGroupByManager();
+    @Query("SELECT new com.bantads.dto.read.AccountsByManagerDTO(a.managerCPF, COALESCE(COUNT(a.accountNumber), 0L), COALESCE(SUM(a.balance), 0.00)) FROM AccountData a WHERE a.managerCPF = :cpf GROUP BY a.managerCPF")
+    AccountsByManagerDTO getAccountCountByManager(@Param("cpf") String cpf);
 
-    @Query("SELECT new com.bantads.dto.read.AccountsByManagerDTO(managerCPF, COUNT(accountNumber), SUM(balance)) FROM AccountData WHERE managerCPF = :cpf GROUP BY managerCPF")
-    AccountsByManagerDTO getAccountCountByManager(String cpf);
+    @Query("SELECT new com.bantads.dto.read.AccountsByManagerDTO(a.managerCPF, COALESCE(COUNT(a.accountNumber), 0L), COALESCE(SUM(a.balance), 0.00)) FROM AccountData a GROUP BY a.managerCPF")
+    List<AccountsByManagerDTO> getAccountCountGroupByManager();
 
     boolean existsAccountDataByAccountNumber(String accountNumber);
 

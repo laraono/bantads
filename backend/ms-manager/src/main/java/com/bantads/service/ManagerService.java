@@ -47,6 +47,7 @@ public class ManagerService {
                 .email(createManagerDTO.getEmail())
                 .name(createManagerDTO.getNome())
                 .phone(createManagerDTO.getTelefone())
+                .isActive(true)
                 .build();
 
         return managerRepository.save(manager);
@@ -76,6 +77,10 @@ public class ManagerService {
         gerentes.put("gerentes", managerList);
 
         return gerentes;
+    }
+
+    public List<String> listManagerCPFs() {
+        return this.managerRepository.findCPFs();
     }
 
     public List<ManagerDTO> list() {

@@ -8,6 +8,7 @@ const managerRoutes = require('./src/routes/managerRoutes');
 const rebootRoutes = require('./src/routes/rebootRoutes');
 const clientRoutes = require('./src/routes/clientRoutes');
 const requestRoutes = require('./src/routes/requestRoutes');
+const rabbitConnector = require('./src/connector/rabbitConnector');
 const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
 const app = express();
@@ -16,12 +17,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
-const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
 const MS_EMAIL_HOST = process.env.MS_EMAIL_HOST || 'ms-email';
 const MS_EMAIL_PORT = process.env.MS_EMAIL_PORT || '8086';
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
+
+rabbitConnector.connect()
 
 app.use('', rebootRoutes);
 
@@ -64,12 +65,8 @@ app.use('/email', createProxyMiddleware({
     pathRewrite: { '^/': '/email/' }
 }));
 
-app.post('/reboot', (req, res) => {
-  res.status(200).json({status: 'OK', message: 'API Gateway foi reiniciado'})
-});
-
 app.get('/health', (req, res) => {
-  res.status(200).json({status: 'UP', message: 'API Gateway rodando na porta 3000'})
+    res.status(200).json({status: 'UP', message: 'API Gateway rodando na porta 3000'})
 });
 
 app.listen(PORT, () => console.log(`API Gateway rodando na porta ${PORT}`));

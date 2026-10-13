@@ -4,6 +4,7 @@ import com.bantads.assembler.RequestModelAssembler;
 import com.bantads.dto.RejectRequestDTO;
 import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Request;
+import com.bantads.entity.RequestStatus;
 import com.bantads.service.RequestService;
 
 import jakarta.validation.Valid;

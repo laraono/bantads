@@ -6,6 +6,8 @@ const router = Router();
 
 router.get('/', authGatewayFilter(), managerController.list);
 
+router.post('/', authGatewayFilter(), managerController.createManager);
+
 router.get('/:id', authGatewayFilter(), managerController.getManager);
 
 router.put('/:id', authGatewayFilter(), managerController.updateManager);

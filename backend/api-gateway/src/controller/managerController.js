@@ -43,6 +43,16 @@ class ManagerController {
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
     }
+    
+    async createManager(req, res) {
+        try {
+            const jobId = await managerService.createManager(req.body);
+            return res.status(202).json(jobId);
+        } catch (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ error: err.message || 'Erro no servidor' });
+        }
+    }
 
 }
 
