@@ -1,11 +1,46 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useCadastro } from '../composables/useCadastro';
 import { useRoute, useRouter } from 'vue-router';
+import { criarSolicitacao } from '@/services/requestService'
 
-const { cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
+const { nome, cpf, telefone, email, cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
 const estados = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
 const mensagemAlerta = ref(false)
+const erroEnvio = ref('')
+const enviando = ref(false)
+const buscandoCep = ref(false)
+const erroCep = ref('')
+
+async function buscarEnderecoPorCep(cepDigitos: string) {
+    buscandoCep.value = true
+    erroCep.value = ''
+    try {
+        const resp = await fetch(`https://viacep.com.br/ws/${cepDigitos}/json/`)
+        const data = await resp.json()
+
+        if (data.erro) {
+            erroCep.value = 'CEP não encontrado.'
+            return
+        }
+
+        rua.value = data.logradouro || rua.value
+        cidade.value = data.localidade || cidade.value
+        estado.value = data.uf || estado.value
+    } catch {
+        erroCep.value = 'Não foi possível buscar o CEP agora.'
+    } finally {
+        buscandoCep.value = false
+    }
+}
+
+watch(cep, (novoCep) => {
+    const digitos = (novoCep ?? '').replace(/\D/g, '')
+    erroCep.value = ''
+    if (digitos.length === 8) {
+        buscarEnderecoPorCep(digitos)
+    }
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -29,7 +64,7 @@ const maskSalario = (v: string) => {
         let reais = valor.slice(0, -2);
 
         reais= reais.replace(/^0+(?=\d)/, '');
-        
+
         reais = reais.replace(/\B(?=(\d{3})+(?!\d))/g,
                 '.'
             );
@@ -37,15 +72,55 @@ const maskSalario = (v: string) => {
         salario.value = `${reais},${centavos}`;
 };
 
-function envioDados() {
-    mensagemAlerta.value = true
-    cep.value = ''
-    numero.value = ''
-    rua.value = ''
-    complemento.value = ''
-    cidade.value = ''
-    estado.value = null
-    salario.value = ''
+// "1.234,56" (máscara de exibição) -> "1234.56" (formato que o back-end espera)
+function salarioParaDecimal(v: string): string {
+    return v.replace(/\./g, '').replace(',', '.')
+}
+
+function soDigitos(v: string): string {
+    return v.replace(/\D/g, '')
+}
+
+async function envioDados() {
+    erroEnvio.value = ''
+    enviando.value = true
+    try {
+        await criarSolicitacao({
+            nome: nome.value,
+            email: email.value,
+            cpf: soDigitos(cpf.value),
+            telefone: soDigitos(telefone.value),
+            salario: salarioParaDecimal(salario.value),
+            endereco: {
+                logradouro: rua.value,
+                numero: numero.value,
+                complemento: complemento.value,
+                cep: soDigitos(cep.value),
+                cidade: cidade.value,
+                uf: estado.value ?? '',
+            },
+        })
+
+        mensagemAlerta.value = true
+        nome.value = ''
+        cpf.value = ''
+        telefone.value = ''
+        email.value = ''
+        cep.value = ''
+        numero.value = ''
+        rua.value = ''
+        complemento.value = ''
+        cidade.value = ''
+        estado.value = null
+        salario.value = ''
+
+        setTimeout(() => router.push('/login'), 1500)
+    } catch (err) {
+        const anyErr = err as { response?: { data?: { message?: string } } }
+        erroEnvio.value = anyErr.response?.data?.message || 'Não foi possível enviar sua solicitação. Verifique os dados e tente novamente.'
+    } finally {
+        enviando.value = false
+    }
 }
 
 </script>
@@ -81,11 +156,13 @@ function envioDados() {
                 <div class="progresso-barra">
                     <div class="progresso"></div>
                 </div>
-                <v-form>
+                <v-form @submit.prevent="envioDados">
                     <div class="container-endereco">
                         <div class="endereco">
                             <label class="field-label" for="cadastro-cep">CEP</label>
                             <v-mask-input id="cadastro-cep" v-model="cep" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="00000-000" type="text" :rules="[rules.required]" mask="#####-###"/>
+                            <span v-if="buscandoCep" class="cep-status">Buscando endereço...</span>
+                            <span v-else-if="erroCep" class="cep-status cep-erro">{{ erroCep }}</span>
                         </div>
                         <div class="endereco">
                             <label class="field-label" for="cadastro-numero">Número</label>
@@ -120,12 +197,15 @@ function envioDados() {
                             <v-icon icon="mdi-arrow-left" start/>
                             Voltar
                         </v-btn>
-                        <v-btn type="submit" class="submit-btn" block size="largue" @click="envioDados">
+                        <v-btn type="submit" class="submit-btn" block size="largue" :loading="enviando">
                             Enviar Cadastro
                             <v-icon class="separacao" icon="mdi-arrow-right" end/>
                         </v-btn>
                         <v-snackbar v-model="mensagemAlerta" color="success" timeout="3000" location="top">
-                            Os dados foram enviados com sucesso.
+                            Solicitação enviada! Aguarde a aprovação de um gerente.
+                        </v-snackbar>
+                        <v-snackbar :model-value="!!erroEnvio" color="error" timeout="5000" location="top" @update:model-value="erroEnvio = ''">
+                            {{ erroEnvio }}
                         </v-snackbar>
                     </div>
                 </v-form>
@@ -351,6 +431,16 @@ function envioDados() {
     display: flex;
     flex-direction: column;
     min-width: 250px;
+}
+
+.cep-status {
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+.cep-status.cep-erro {
+    color: #dc2626;
 }
 
 /* Posiciona os botões horizontalmente, lado a lado, e define um gap (espaço) de 10px entre eles.*/

@@ -18,8 +18,19 @@ class RequestService {
     }
 
     async createRequest(body) {
-        const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`, body)        
-        return response.data
+        try {
+            const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`, body)
+            return response.data
+        } catch (err) {
+            if (err.response) {
+                const data = err.response.data;
+                const message = (typeof data === 'object' && (data?.detail || data?.message)) || err.message;
+                const error = new Error(message);
+                error.status = err.response.status;
+                throw error;
+            }
+            throw err;
+        }
     }
 
     async approveRequest(cpf) {

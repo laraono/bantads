@@ -1,34 +1,52 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { DateTime } from 'luxon'
 import Sidebar from '../components/Sidebar.vue'
-import { useAccount, OPENING_BALANCE, type AccountTransaction } from '../composables/useAccount'
+import { useAccount, type AccountTransaction } from '../composables/useAccount'
+import { useAuth } from '../composables/useAuth'
 
 type Transaction = AccountTransaction
 
-const user = {
-  fullName: 'John Doe',
-  email: 'john@example.com',
-  initials: 'AD'
-}
+const { usuario } = useAuth()
+const user = computed(() => {
+  const nome = usuario.value?.nome ?? ''
+  const iniciais = nome
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join('') || 'CL'
+  return { fullName: nome || 'Cliente', email: usuario.value?.email ?? '', initials: iniciais }
+})
 
 const DEFAULT_RANGE_DAYS = 30
 const MAX_RANGE_DAYS = 365
 
 const today = DateTime.now().startOf('day')
 
-const { transactions } = useAccount()
+const { loadAccount, fetchExtrato } = useAccount()
+
+const transactions = ref<Transaction[]>([])
+const openingBalance = ref(0)
+const loading = ref(false)
 
 function parseTxDateTime(tx: Transaction): DateTime {
   return DateTime.fromFormat(`${tx.date} ${tx.time}`, 'dd/MM/yyyy HH:mm')
 }
 
-// Saldo consolidado ao final de cada dia, calculado cronologicamente sobre todo o histórico
-// (independe do filtro ativo) — equivalente ao que o MS Conta devolveria pronto.
+function toIsoDate(brDate: string): string {
+  const [day, month, year] = brDate.split('/')
+  return `${year}-${month}-${day}`
+}
+
+// Saldo consolidado ao final de cada dia, calculado cronologicamente a partir
+// do saldo de abertura do período devolvido pelo MS Conta.
 const balanceByIsoDay = computed(() => {
-  const chronological = [...transactions].sort((a, b) => parseTxDateTime(a).toMillis() - parseTxDateTime(b).toMillis())
+  const chronological = [...transactions.value].sort(
+    (a, b) => parseTxDateTime(a).toMillis() - parseTxDateTime(b).toMillis(),
+  )
   const map = new Map<string, number>()
-  let running = OPENING_BALANCE
+  let running = openingBalance.value
   for (const tx of chronological) {
     running += tx.amount
     map.set(toIsoDate(tx.date), running)
@@ -37,7 +55,7 @@ const balanceByIsoDay = computed(() => {
 })
 
 function balanceAtEndOfDay(iso: string): number {
-  let result = OPENING_BALANCE
+  let result = openingBalance.value
   for (const [day, running] of balanceByIsoDay.value) {
     if (day <= iso) result = running
     else break
@@ -51,29 +69,17 @@ const appliedStart = ref(startDate.value)
 const appliedEnd = ref(endDate.value)
 const rangeError = ref('')
 
-function toIsoDate(brDate: string): string {
-  const [day, month, year] = brDate.split('/')
-  return `${year}-${month}-${day}`
-}
-
-const filteredTransactions = computed(() => {
-  return transactions
-    .filter((tx) => {
-      const iso = toIsoDate(tx.date)
-      if (appliedStart.value && iso < appliedStart.value) return false
-      if (appliedEnd.value && iso > appliedEnd.value) return false
-      return true
-    })
-    .sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis())
-})
+const sortedTransactions = computed(() =>
+  [...transactions.value].sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis()),
+)
 
 // Uma linha por dia do período (com ou sem movimentação), do mais recente para o mais antigo,
-// com o saldo consolidado do dia — igual ao que o MS Conta devolveria pronto.
+// com o saldo consolidado do dia.
 const groupedByDay = computed(() => {
   if (!appliedStart.value || !appliedEnd.value) return []
 
   const byDay = new Map<string, Transaction[]>()
-  for (const tx of filteredTransactions.value) {
+  for (const tx of sortedTransactions.value) {
     const key = toIsoDate(tx.date)
     if (!byDay.has(key)) byDay.set(key, [])
     byDay.get(key)!.push(tx)
@@ -98,7 +104,23 @@ const groupedByDay = computed(() => {
   return days.sort((a, b) => b.sortKey - a.sortKey)
 })
 
-function handleSearch() {
+async function loadExtrato() {
+  loading.value = true
+  try {
+    const extrato = await fetchExtrato(appliedStart.value, appliedEnd.value)
+    openingBalance.value = extrato.saldoAbertura
+    transactions.value = extrato.transactions
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadAccount()
+  await loadExtrato()
+})
+
+async function handleSearch() {
   rangeError.value = ''
 
   if (!startDate.value || !endDate.value) {
@@ -122,6 +144,7 @@ function handleSearch() {
 
   appliedStart.value = startDate.value
   appliedEnd.value = endDate.value
+  await loadExtrato()
 }
 
 function openPicker(event: MouseEvent) {
@@ -193,7 +216,7 @@ function formatCurrency(value: number): string {
         </table>
 
         <div class="table-footer">
-          <span class="footer-count">Showing {{ filteredTransactions.length }} clients</span>
+          <span class="footer-count">{{ transactions.length }} movimentações no período</span>
           <div class="pagination">
             <button class="page-btn" disabled>
               <svg viewBox="0 0 24 24" class="page-icon"><path d="m15 18-6-6 6-6" /></svg>

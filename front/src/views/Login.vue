@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { login, type UserRole } from '@/services/authService'
+import { login } from '@/services/authService'
 import { useAuth } from '@/composables/useAuth'
 
-const role = ref<UserRole>('cliente')
 const email = ref('')
 const password = ref('')
 const remember = ref(false)
@@ -14,7 +13,7 @@ const errorMessage = ref('')
 
 const route = useRoute()
 const router = useRouter()
-const { setToken, setRole } = useAuth()
+const { setToken, setRole, setUsuario } = useAuth()
 
 const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',
@@ -25,10 +24,11 @@ async function handleSubmit() {
     errorMessage.value = ''
     loading.value = true
     try {
-        const { token } = await login({ email: email.value, password: password.value, role: role.value})
+        const { token, role, usuario } = await login({ email: email.value, senha: password.value })
         setToken(token)
-        setRole(role.value)
-        const fallback = role.value === 'gerente' ? '/gerentes' : '/home'
+        setRole(role)
+        setUsuario(usuario)
+        const fallback = role === 'gerente' ? '/gerentes' : '/home'
         const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : fallback
         router.push(redirect)
     } catch {
@@ -67,14 +67,6 @@ async function handleSubmit() {
                 <div class="login-form">
                     <h2>Bem-vindo de volta</h2>
                     <p class="subtitle">Informe seus dados para acessar o sistema.</p>
-                    <div class="role-toggle" role="tablist">
-                        <button type="button" role="tab" :aria-selected="role === 'cliente'" :class="{ active: role === 'cliente' }" @click="role = 'cliente'">
-                            Cliente
-                        </button>
-                        <button type="button" role="tab" :aria-selected="role === 'gerente'" :class="{ active: role === 'gerente' }" @click="role = 'gerente'">
-                            Gerente
-                        </button>
-                    </div>
                     <v-form @submit.prevent="handleSubmit">
                         <label class="field-label" for="login-email">E-mail</label>
                         <v-text-field id="login-email" v-model="email" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="seu@email.com" type="email" :rules="[rules.required, rules.email]"/>

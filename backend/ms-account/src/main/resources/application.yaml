@@ -16,3 +16,6 @@ spring:
     listener:
       simple:
         default-requeue-rejected: false
+  web:
+    error:
+      include-message: always

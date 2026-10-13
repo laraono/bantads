@@ -6,6 +6,9 @@ spring:
     username: ${SPRING_DATASOURCE_USERNAME:user}
     password: ${SPRING_DATASOURCE_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,5 +17,8 @@ spring:
     listener:
       simple:
         default-requeue-rejected: false
+  web:
+    error:
+      include-message: always
 server:
   port: 8082
