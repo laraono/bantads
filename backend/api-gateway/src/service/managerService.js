@@ -36,7 +36,7 @@ class MangerService {
 
     async deleteManager(id, headers) {
         try {
-            const deleteAnswer = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/sagas/deletar-gerente`,
+            const deleteAnswer = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/delete-manager`,
                 { cpfGerente: id },
                 { headers: { 'x-user-cpf': headers['x-user-cpf']} }
             )

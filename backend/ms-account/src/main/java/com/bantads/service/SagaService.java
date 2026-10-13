@@ -69,7 +69,6 @@ public class SagaService {
                 handler.compensate(command.getPayload());
             } else {
                 payload = handler.execute(command.getPayload());
-                status = Status.SUCESSO;
             }
         } catch (Exception e) {
             status = Status.FALHA;

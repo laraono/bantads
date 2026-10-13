@@ -181,22 +181,6 @@ public class EventService {
         return newEvent;
     }
 
-    public Event deleteAccount(Map<String, Object> payload) {
-        AccountData client = this.accountDataService.getAccountDataByCpf(payload.get("cpfCliente").toString());
-
-        Event newEvent = Event.builder()
-                .payload(payload)
-                .objectId(client.getAccountNumber())
-                .eventType(EventType.DELETED)
-                .version(0)
-                .createdAt(new Date())
-                .build();
-        
-        this.eventRepository.save(newEvent);
-
-        return newEvent;
-    }
-
     public List<String> deleteManager(Map<String, Object> payload) {
         String cpfGerente = String.valueOf(payload.get("cpfGerente"));
 

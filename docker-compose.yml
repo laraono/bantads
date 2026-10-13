@@ -255,32 +255,6 @@ services:
     mem_reservation: 384m
     restart: always
 
-  orchestration:
-    container_name: orchestration
-    build:
-      context: ./backend/orchestration
-      dockerfile: Dockerfile
-    networks:
-      - backend-net
-    ports:
-      - "8085:8085"
-    environment:
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
-      SPRING_DATA_REDIS_HOST: redis-app
-      SPRING_DATA_REDIS_PORT: 6379
-      SPRING_RABBITMQ_HOST: rabbitmq
-      SPRING_RABBITMQ_PORT: 5672
-      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
-      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS}
-    depends_on:
-      redis-app:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    mem_limit: 512m
-    mem_reservation: 384m
-    restart: always
-
   api-gateway:
     container_name: api-gateway
     build:

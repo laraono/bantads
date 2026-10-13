@@ -32,6 +32,9 @@ class ManagerController {
     }
 
     async deleteManager(req, res) {
+        if (req.headers['x-user-cpf'] === req.params.id) {
+            return res.status(403).json({ error: 'Não é possível remover a si mesmo' });
+        }
         try {
             const result = await managerService.deleteManager(req.params.id, req.headers);
             return res.status(202).json(result);

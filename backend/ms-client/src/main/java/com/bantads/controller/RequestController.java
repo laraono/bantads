@@ -29,12 +29,11 @@ public class RequestController {
     RequestModelAssembler assembler;
 
     @PostMapping()
-    @ResponseStatus(HttpStatus.CREATED)
     public
-    ResponseEntity<Request> createRequest(@RequestBody RequestDTO requestDTO) {
+    ResponseEntity<EntityModel<Request>> createRequest(@RequestBody RequestDTO requestDTO) {
         try {
             Request newRequest = this.requestService.createRequest(requestDTO);
-            return ResponseEntity.ok().body(newRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(assembler.toModel(newRequest));
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

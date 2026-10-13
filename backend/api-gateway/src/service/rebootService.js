@@ -40,12 +40,13 @@ class RebootService {
       try {
         const options = {
             type: argon2.argon2id, 
-            memoryCost: 65536,     
-            timeCost: 3,           
+            memoryCost: 15360,     
+            timeCost: 2,           
             parallelism: 1,        
             };
         
-            return await argon2.hash(pass, options);
+            const hash = await argon2.hash(pass, options);
+            return hash.replace(/m=(\d+),p=(\d+),t=(\d+)/, 'm=$1,t=$3,p=$2');
         
         } catch (err) {
             console.error("Erro ao gerar hash Argon2:", err);
@@ -60,7 +61,7 @@ class RebootService {
 
         try {
             await client.connect();
-            const db = client.db('auths_db');
+            const db = client.db('account_mongo');
             const collection = db.collection('auths');
 
             await collection.createIndex({ login: 1 }, { unique: true });

@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.bantads.entity.event.Event;
 import com.bantads.model.Status;
 import com.bantads.service.EventService;
 
@@ -29,16 +30,17 @@ public class CreateAccountHandler implements SagaStepHandler {
         eventPayload.put("cpfGerente", cpfGerente);
         eventPayload.put("cpfCliente", cpfCliente);
 
-        this.eventService.createAccount(eventPayload);
+        Event event = this.eventService.createAccount(eventPayload);
          
-        return Map.of();
+        payload.put("numeroConta", event.getObjectId());
+        
+        return payload;
     }
     
 
     @Override
     public void compensate(Map<String, Object> payload) {
-        this.eventService.deleteAccount(payload);
-        return;
+       this.eventService.deleteByObjectId(String.valueOf(payload.get("numeroConta")));
     }
 
 }

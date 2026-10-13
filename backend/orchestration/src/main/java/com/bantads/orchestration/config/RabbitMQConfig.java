@@ -15,6 +15,8 @@ public class RabbitMQConfig {
     public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
     public static final String ORQUESTRADOR_TIMEOUT = "orquestrador.timeout";
 
+    public static final int SAGA_TIMEOUT_MS = 30_000;
+
     public static final String MS_CLIENTE_CMD = "ms.cliente.cmd";
     public static final String MS_CONTA_CMD = "ms.conta.cmd";
     public static final String MS_GERENTE_CMD = "ms.gerente.cmd";
@@ -47,14 +49,29 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(MS_EMAIL_CMD).build();
     }
 
-    @Bean 
+    @Bean
     public Queue msEmailCmdWaitQueue() {
+        return waitQueue(MS_EMAIL_CMD);
+    }
+
+    @Bean
+    public Queue msClienteCmdWaitQueue() {
         return waitQueue(MS_CLIENTE_CMD);
     }
 
     @Bean
-    public Queue msEmailCmdDlq() {
-        return dlq(MS_CLIENTE_CMD);
+    public Queue msContaCmdWaitQueue() {
+        return waitQueue(MS_CONTA_CMD);
+    }
+
+    @Bean
+    public Queue msGerenteCmdWaitQueue() {
+        return waitQueue(MS_GERENTE_CMD);
+    }
+
+    @Bean
+    public Queue msAuthCmdWaitQueue() {
+        return waitQueue(MS_AUTH_CMD);
     }
 
     @Bean
@@ -106,6 +123,14 @@ public class RabbitMQConfig {
                 .build();
     }
 
+
+    private static Queue waitQueue(String name) {
+        return QueueBuilder.durable(name + ".wait")
+                .withArgument("x-message-ttl", SAGA_TIMEOUT_MS)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", ORQUESTRADOR_TIMEOUT)
+                .build();
+    }
 
     private static Queue dlq(String name) {
         return QueueBuilder.durable(name + ".dlq").build();

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.bantads.controller.RequestController;
 import com.bantads.entity.Request;
+import com.bantads.entity.RequestStatus;
 
 @Component
 public class RequestModelAssembler implements RepresentationModelAssembler<Request, EntityModel<Request>>  {
@@ -19,7 +20,7 @@ public class RequestModelAssembler implements RepresentationModelAssembler<Reque
 
         model.add(linkTo(methodOn(RequestController.class).getRequest(request.getCpf())).withSelfRel());
         
-        if ("PENDENTE".equals(request.getStatus())) {
+        if (request.getStatus() == RequestStatus.PENDENTE) {
             model.add(linkTo(RequestController.class).slash(request.getCpf()).slash("aprovacao").withRel("aprovacao"));
             model.add(linkTo(RequestController.class).slash(request.getCpf()).slash("rejeicao").withRel("rejeicao"));
         }

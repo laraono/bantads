@@ -39,4 +39,15 @@ class OrchestrationController {
             throw e;
         }
     }
+
+    @PostMapping("/delete-manager")
+    ResponseEntity deleteManager(@RequestBody Map<String, Object> payload) {
+        try {
+            orchestrationService.startSaga(SagaSteps.DELETAR_GERENTE, payload);
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
 }
