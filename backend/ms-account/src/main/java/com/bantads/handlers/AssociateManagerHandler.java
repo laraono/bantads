@@ -21,7 +21,7 @@ public class AssociateManagerHandler implements SagaStepHandler {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, Object> execute(Map<String, Object> payload) {
-        if (payload.containsKey("semConta")) {
+        if (payload.get("numeroConta").toString().isEmpty()) {
             return payload;
         }
 
@@ -35,7 +35,7 @@ public class AssociateManagerHandler implements SagaStepHandler {
 
     @Override
     public void compensate(Map<String, Object> payload) {
-        if (payload.containsKey("semConta") || payload.get("gerenteAntigo") == null) {
+        if (payload.get("numeroConta").toString().isEmpty() || payload.get("gerenteAntigo") == null) {
             return;
         }
 

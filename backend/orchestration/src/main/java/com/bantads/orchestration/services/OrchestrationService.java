@@ -81,7 +81,7 @@ public class OrchestrationService {
 
         String accountNumber = reply.getOrDefault("numeroConta", "").toString();
 
-        if(accountNumber != null && accountNumber.equals("semConta")) {
+        if(accountNumber != null && accountNumber.isEmpty()) {
             sagaStates.setStatus(SagaStatus.CONCLUIDO);
             redisTemplate.opsForValue().set(sagaKey, sagaStates);
             redisTemplate.expire(sagaKey, Duration.ofHours(24));

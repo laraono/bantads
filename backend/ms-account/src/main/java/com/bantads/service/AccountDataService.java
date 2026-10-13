@@ -87,7 +87,7 @@ public class AccountDataService {
         List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
 
         if(cpfs.isEmpty()) {
-            payload.put("numeroConta", "semConta");
+            payload.put("numeroConta", "");
             return payload;
         }
 
