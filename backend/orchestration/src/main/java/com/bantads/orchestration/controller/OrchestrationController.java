@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 @CrossOrigin
 @RestController
@@ -22,7 +23,7 @@ class OrchestrationController {
     @PostMapping("/insert-manager")
     ResponseEntity insertManager(@RequestBody Map<String, Object> payload) {
         try {
-            orchestrationService.startSaga(SagaSteps.INSERIR_GERENTE, payload);
+            orchestrationService.startSaga(SagaSteps.INSERIR_GERENTE, payload, UUID.randomUUID());
             return ResponseEntity.accepted().build();
         } catch (Exception e) {
             e.printStackTrace();
@@ -33,7 +34,7 @@ class OrchestrationController {
     @PostMapping("/delete-manager")
     ResponseEntity deleteManager(@RequestBody Map<String, Object> payload) {
         try {
-            orchestrationService.startSaga(SagaSteps.DELETAR_GERENTE, payload);
+            orchestrationService.startSaga(SagaSteps.DELETAR_GERENTE, payload, UUID.randomUUID());
             return ResponseEntity.accepted().build();
         } catch (Exception e) {
             e.printStackTrace();
