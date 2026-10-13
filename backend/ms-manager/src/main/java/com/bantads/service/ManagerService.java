@@ -6,7 +6,7 @@ import com.bantads.dto.ManagerDTO;
 import com.bantads.dto.UpdateManagerDTO;
 import com.bantads.entity.Manager;
 import com.bantads.entity.Request;
-import com.bantads.model.RabbitAnswer;
+import com.bantads.handlers.SagaStepHandler;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.ManagerRepository;
@@ -17,9 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ManagerService {
@@ -33,8 +33,13 @@ public class ManagerService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    private Map<String, SagaStepHandler> handlers = new HashMap<>();
+
     @Autowired
-    private ObjectMapper objectMapper;
+    public void setHandlers(List<SagaStepHandler> handlersToInject) {
+        this.handlers = handlersToInject.stream()
+                .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
+    }
 
     public Manager createManager(CreateManagerDTO createManagerDTO) {
         Manager manager = Manager.builder()
@@ -54,7 +59,7 @@ public class ManagerService {
 
         List<ManagerDTO> managerList = new ArrayList<>();
 
-        while(managerIterator.hasNext()) {
+        while (managerIterator.hasNext()) {
             Manager manager = managerIterator.next();
             ManagerDTO dto = ManagerDTO.builder()
                     .id(manager.getManagerId())
@@ -84,7 +89,7 @@ public class ManagerService {
 
         List<ManagerDTO> managerList = new ArrayList<>();
 
-        while(managerIterator.hasNext()) {
+        while (managerIterator.hasNext()) {
             Manager manager = managerIterator.next();
             ManagerDTO dto = ManagerDTO.builder()
                     .id(manager.getManagerId())
@@ -105,19 +110,6 @@ public class ManagerService {
         return managerRepository.findByCpfAndIsActive(cpf, true);
     }
 
-    public void deleteManager(String managerCPF, String userCPF) {
-         Manager manager = this.getManager(managerCPF);
-
-        if(manager.getCpf().equals(userCPF)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível deletar a si mesmo");
-        }
-
-        manager.setActive(false);
-
-        managerRepository.save(manager);
-
-    }
-
     public ManagerDTO updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
         if (updateManagerDTO.getEmail() != null || updateManagerDTO.getCpf() != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e CPF não podem ser alterados");
@@ -127,16 +119,17 @@ public class ManagerService {
 
         manager.setName(updateManagerDTO.getNome());
         manager.setPhone(updateManagerDTO.getTelefone());
+        manager.setActive(updateManagerDTO.getAtivo());
 
-        Manager salvo = managerRepository.save(manager);
+        Manager saved = managerRepository.save(manager);
 
         return ManagerDTO.builder()
-                .id(salvo.getManagerId())
-                .ativo(salvo.isActive())
-                .cpf(salvo.getCpf())
-                .email(salvo.getEmail())
-                .nome(salvo.getName())
-                .telefone(salvo.getPhone())
+                .id(saved.getManagerId())
+                .ativo(saved.isActive())
+                .cpf(saved.getCpf())
+                .email(saved.getEmail())
+                .nome(saved.getName())
+                .telefone(saved.getPhone())
                 .build();
     }
 
@@ -145,88 +138,75 @@ public class ManagerService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
-    public void handleManagerQueue(Map<String, Object> payload) {
+    public void handleManagerQueue(RabbitRequest command) {
 
-        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
-        String type = payload.get("type").toString();
-
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
 
         if (alreadyProcessed) {
             return;
         }
 
-        payload.put("status", Status.SUCESSO);
-        payload.put("timestamp", new Date());
+        String action = command.getType();
 
-        Request req = Request.builder()
-                .sagaId(sagaId)
-                .type(type)
-                .build();
-
-        if(type.contains("listar-gerentes")) {
-            try {
-                List<String> gerentes = this.listManagerCPFs();
-                payload.put("gerentes", gerentes);
-                requestRepository.save(req);
-            } catch (Exception e) {
-                payload.put("status", Status.FALHA);
-                payload.put("timestamp", new Date());
-                e.printStackTrace();
-                throw e;
-            }
+        if (!this.handlers.containsKey(action)) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
         }
 
-        if(type.contains("inserir-gerente")) {
-            try {
-                Object requisicaoObj = payload.get("gerente");
-                CreateManagerDTO managerDTO = objectMapper.convertValue(requisicaoObj, CreateManagerDTO.class);
-                Manager manager = this.createManager(managerDTO);
-                payload.put("gerente", manager);
+        SagaStepHandler handler = this.handlers.get(action);
 
-                Map<String, String> requisicao = new HashMap<>();
+        Map<String, Object> payload = new HashMap<>();
+        Status status = Status.SUCESSO;
+        String error = null;
 
-                requisicao.put("email", manager.getEmail());
-                requisicao.put("cpf", manager.getCpf());
-                payload.put("tipo", "gerente");
-                requisicao.put("id", manager.getCpf());
-                requisicao.put("senha", managerDTO.getSenha());
-
-                payload.put("requisicao", requisicao);
-
-                requestRepository.save(req);
-            } catch (Exception e) {
-                payload.put("status", Status.FALHA);
-                payload.put("timestamp", new Date());
-                e.printStackTrace();
-                throw e;
+        try {
+            if (command.isCompensation()) {
+                handler.compensate(command.getPayload());
+            } else {
+                payload = handler.execute(command.getPayload());
             }
+
+            requestRepository.save(Request.builder()
+                    .sagaId(command.getSagaId())
+                    .type(command.getType())
+                    .build());
+        } catch (Exception e) {
+            status = Status.FALHA;
+            error = e.getMessage();
+            e.printStackTrace();
         }
 
-        this.sendReadModelCommand(payload);
+        Map<String, Object> reply = new HashMap<>();
+        reply.put("sagaId", command.getSagaId());
+        reply.put("type", command.getType());
+        reply.put("stepIndex", command.getStepIndex());
+        reply.put("attempt", command.getAttempt());
+        reply.put("status", status.toString());
+        reply.put("error", error);
+        reply.put("timestamp", new Date());
+        reply.put("payload", payload);
+
+        this.sendReadModelCommand(reply);
     }
 
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
     public void handleDlqQueue(Map<String, Object> payload) {
-
         UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
         String type = payload.get("type").toString();
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(sagaId, type);
-
-        Request req = Request.builder()
-                .sagaId(sagaId)
-                .type(type)
-                .build();
-
-
-        if(type.contains("inserir-gerente")) {
-            Object requisicaoObj = payload.get("gerente");
-            CreateManagerDTO manager = objectMapper.convertValue(requisicaoObj, CreateManagerDTO.class);
-            this.deleteByCpf(manager.getCpf());
-            requestRepository.save(req);
+        if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
+            return;
         }
 
+        SagaStepHandler handler = this.handlers.get(type);
+
+        if (handler != null) {
+            handler.compensate(payload);
+        }
+
+        requestRepository.save(Request.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build());
     }
 
     public void sendReadModelCommand(Map<String, Object> answer) {

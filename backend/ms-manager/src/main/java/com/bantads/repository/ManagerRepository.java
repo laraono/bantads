@@ -10,6 +10,8 @@ public interface ManagerRepository extends JpaRepository<Manager, Long> {
 
     List<Manager> findAllByIsActiveOrderByNameAsc(boolean isActive);
 
+    Manager findByCpf(String cpf);
+    
     @Query("SELECT cpf FROM Manager WHERE isActive = true")
     List<String> findCPFs();
 

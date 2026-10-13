@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+
+// Gerencia histórico de transações
 public class AccountHistoryService {
 
     @Autowired

@@ -22,6 +22,11 @@ function authGatewayFilter(requiredRole = null) {
                 return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
             }
 
+            if (await redis.exists(`bloqueado:${decoded.cpf}`)) {
+                await redis.del(sessionKey);
+                return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
+            }
+
             await redis.expire(sessionKey, 1800);
 
             if (requiredRole && decoded.tipo !== requiredRole) {

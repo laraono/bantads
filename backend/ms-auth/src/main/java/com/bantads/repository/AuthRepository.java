@@ -16,5 +16,7 @@ public interface AuthRepository extends MongoRepository<Auth, String>
 
     boolean existsByLogin(String login);
 
+    Auth findByCpf(String cpf);
+    
     void deleteByLogin(String login);
 }

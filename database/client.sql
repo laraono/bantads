@@ -61,7 +61,8 @@ CREATE TABLE rabbit_request(
     request_id SERIAL PRIMARY KEY,
     saga_id UUID NOT NULL,
     type VARCHAR(50) NOT NULL,
+    compensation BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    UNIQUE(saga_id, type)
+    UNIQUE(saga_id, type, compensation)
 );

@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String MS_EMAIL_CMD = "ms.email.cmd";
+    public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
 
     @Bean
     public Queue msEmailCmdQueue() {

@@ -38,9 +38,10 @@ CREATE TABLE request(
     version BIGINT NULL,
     saga_id UUID NULL,
     type VARCHAR(50) NULL,
+    is_compensation BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
     UNIQUE(event_id, version),
-    UNIQUE(saga_id, type)
+    UNIQUE(saga_id, type, is_compensation)
 );
 

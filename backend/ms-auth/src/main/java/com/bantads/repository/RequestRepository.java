@@ -7,5 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.UUID;
 
 public interface RequestRepository extends MongoRepository<Request, ObjectId> {
-    boolean existsBySagaIdAndType(String sagaId, String type);
+    boolean existsBySagaIdAndType(UUID sagaId, String type);
+
+    boolean existsBySagaIdAndTypeAndCompensation(UUID sagaId, String type, boolean compensation);
 }

@@ -1,5 +1,7 @@
 package com.bantads.orchestration.config;
 
+import java.io.Serializable;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;

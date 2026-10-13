@@ -1,7 +1,7 @@
 package com.bantads.controller;
 
-
 import com.bantads.assembler.RequestModelAssembler;
+import com.bantads.dto.RejectRequestDTO;
 import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
@@ -30,53 +30,44 @@ public class RequestController {
     RequestModelAssembler assembler;
 
     @PostMapping()
-    @ResponseStatus(HttpStatus.CREATED)
     public
-    ResponseEntity<Request> createRequest(@RequestBody RequestDTO requestDTO) {
+    ResponseEntity<EntityModel<Request>> createRequest(@RequestBody RequestDTO requestDTO) {
         try {
             Request newRequest = this.requestService.createRequest(requestDTO);
-            return ResponseEntity.ok().body(newRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(assembler.toModel(newRequest));
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
+    }
+
+    @PostMapping("/{cpf}/aprovacao")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void approveRequest(@PathVariable String cpf) {
+        this.requestService.approveRequest(cpf);
+    }
+
+    @PostMapping("/{cpf}/rejeicao")
+    @ResponseStatus(HttpStatus.OK)
+    public EntityModel<Request> rejectRequest(@PathVariable String cpf, @RequestBody RejectRequestDTO dto) {
+        Request request = this.requestService.rejectRequest(cpf, dto.getMotivo());
+        return assembler.toModel(request);
     }
 
     @GetMapping()
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<List<Request>> listRequests() {
-        try {
-            List<Request> requests = this.requestService.listRequests();
-            return ResponseEntity.ok().body(requests);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, List<EntityModel<Request>>> listRequests() {
+        List<EntityModel<Request>> requests = this.requestService.listRequests().stream()
+                .map(assembler::toModel)
+                .toList();
+        return Map.of("solicitacoes", requests);
     }
 
-    @PostMapping("/{id}/reject")
+    @GetMapping("/{cpf}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<RequestStatus> rejectRequest(@PathVariable String id, @RequestBody String motivo) {
-        try{
-            RequestStatus status = this.requestService.rejectRequest(id, motivo);
-            return ResponseEntity.ok().body(status);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    @GetMapping ("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public
-    ResponseEntity<Request> getRequest(@PathVariable String id) {
-        try {
-            Request request = this.requestService.getRequestByCpf(id);
-            return ResponseEntity.ok().body(request);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+    public EntityModel<Request> getRequest(@PathVariable String cpf) {
+        Request request = this.requestService.getRequestByCpf(cpf);
+        return assembler.toModel(request);
     }
 
 }

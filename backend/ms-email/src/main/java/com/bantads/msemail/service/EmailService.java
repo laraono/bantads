@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -28,13 +31,39 @@ public class EmailService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.MS_EMAIL_CMD)
-    public void handleAccountCommand(Map<String, Object> command) {
+    public void handleAccountCommand(RabbitRequest command) {
 
-        String type = String.valueOf(command.get("type"));
-        Map<String, String> emailObject = (Map<String, String>) command.get("email");
+        String type = String.valueOf(command.getType());
 
+        try {
+            this.processEmail(type, command);
+            this.reply(command, "SUCESSO", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (type.contains("enviar-avisar-delecao")) {
+                this.reply(command, "SUCESSO", null);
+            } else {
+                this.reply(command, "FALHA", e.getMessage());
+            }
+        }
+    }
+
+    private void reply(RabbitRequest command, String status, String error) {
+        Map<String, Object> answer = new HashMap<>();
+        answer.put("sagaId", command.getSagaId());
+        answer.put("type", command.getType());
+        answer.put("status", status);
+        answer.put("error", error);
+        answer.put("stepIndex", command.getStepIndex());
+        answer.put("attempt", command.getAttempt());
+        answer.put("payload", command.getPayload());
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_REPLY, answer);
+    }
+
+    private void processEmail(String type, RabbitRequest command) {
         if(type.contains("enviar-senha")) {
             try {
+                Map<String, String> emailObject = (Map<String, String>) command.getPayload().get("email");
                 String clientEmail = emailObject.get("email");
                 String password = emailObject.get("senha");
 
@@ -48,10 +77,10 @@ public class EmailService {
 
         if(type.contains("novo-gerente")) {
             try {
-                Map<String, String> gerente = (Map<String, String>) command.get("gerente");
+                Map<String, String> gerente = (Map<String, String>) command.getPayload().get("email");
                 String managerName = gerente.get("nome");
-                String clientEmail = emailObject.get("email").toString();
-                String clientName = emailObject.get("nome").toString();
+                String clientEmail = command.getPayload().get("email").toString();
+                String clientName = command.getPayload().get("nome").toString();
 
                 this.sendEmail(clientEmail, "Novo gerente", "Olá, " + clientName + "Seu novo gerente é:  " + managerName);
 
@@ -62,13 +91,26 @@ public class EmailService {
         }
 
         if (type.contains("enviar-rejeicao")) {
-            String text = "Olá " + emailObject.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
-            if (emailObject.get("motivo") != null) {
-                text += " Motivo: " + emailObject.get("motivo");
+            Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
+            String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
+            if (email.get("motivo") != null) {
+                text += " Motivo: " + email.get("motivo");
             }
-            this.sendEmail(emailObject.get("email"), "Solicitação rejeitada", text);
+            this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
         }
 
+        if (type.contains("enviar-avisar-delecao")) {
+            List<String> emails = (List<String>) command.getPayload().get("emails");
+            String text = "Olá, sua conta foi transferida para um novo gerente.";
+            
+            if (command.getPayload().get("motivo") != null) {
+                text += " Motivo: " + command.getPayload().get("motivo");
+            }
+
+            for (String email : emails) {
+                this.sendEmail(email, "Conta transferida", text);
+            }
+        }
     }
 
 

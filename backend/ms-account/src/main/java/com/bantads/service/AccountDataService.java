@@ -44,14 +44,21 @@ public class AccountDataService {
         return this.accountDataRepository.getAccountCountByManager(cpf);
     }
 
+    public List<String> getAllManagersCpf() {
+        return this.accountDataRepository.findAllUniqueManagerCPF();
+    }
+
     public String getManagerWithLowestAccount(List<String> managerCPFs) {
+        String best = null;
+        long lowestAccountAmount = Long.MAX_VALUE;
+        BigDecimal lowestTotalBalance = BigDecimal.ZERO;
 
         Iterator<String> cpfIterator = managerCPFs.iterator();
         String firstCPF = managerCPFs.getFirst();
         AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
 
-        Long lowestAccountAmount = first.getTotalAccounts();
-        BigDecimal lowestTotalBalance = first.getTotalBalance();
+        lowestAccountAmount = first.getTotalAccounts();
+        lowestTotalBalance = first.getTotalBalance();
         int index = 0;
         int i = 0;
 
@@ -71,17 +78,16 @@ public class AccountDataService {
                 lowestTotalBalance = current.getTotalBalance();
                 index = i;
             }
-            i++;
         }
 
-        return managerCPFs.get(index);
+        return best;
     }
 
     public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
         List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
 
         if(cpfs.isEmpty()) {
-            payload.put("numeroConta", "semConta");
+            payload.put("numeroConta", "");
             return payload;
         }
 
@@ -122,6 +128,17 @@ public class AccountDataService {
         account.setBalance(balance.add(value));
 
         return this.accountDataRepository.save(account);
+    }
+
+    public void deleteAccountData(String accountNumber) {
+        AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
+
+        if (account == null) {
+            return;
+        }
+
+        account.setDeletedAt(new java.util.Date());
+        this.accountDataRepository.save(account);
     }
 
     public AccountData updateAccountManager(String managerCPF, String accountNumber) {

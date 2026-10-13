@@ -16,6 +16,9 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     Client findByCpf(String cpf);
 
+    @Query ("SELECT c FROM Client c WHERE c.cpf IN :cpfs")
+    List<Client> findAllByCpfIn(List<String> cpfs);
+
     @Query("SELECT c FROM Client c WHERE " +
        "lower(c.name) LIKE lower(CONCAT('%', :busca, '%')) OR " +
        "c.cpf LIKE CONCAT('%', :busca, '%')")

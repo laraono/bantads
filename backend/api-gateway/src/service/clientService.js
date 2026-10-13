@@ -2,6 +2,8 @@ const axios = require('axios');
 
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
+const ORCHESTRATION_HOST = process.env.ORCHESTRATION_HOST || 'orchestration';
+const ORCHESTRATION_PORT = process.env.ORCHESTRATION_PORT || '8085';
 
 class ClientService {
     async listClients(busca) {
@@ -26,6 +28,23 @@ class ClientService {
                     uf: response.data.address.state.uf
                 }
             },
+        }
+    }
+
+    async createClient(targetCpf, headers) {
+        try {
+            const response = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/create-account`,
+                { cpfCliente: targetCpf },
+                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+            )
+            return response.data
+        } catch (err) {
+            if (err.response) {
+                const error = new Error(err.response.data?.message || err.message);
+                error.status = err.response.status;
+                throw error;
+            }
+            throw err;
         }
     }
 }

@@ -8,7 +8,8 @@ public enum EventType {
     WITHDRAW("saque"),
     ORIGINTRANSFER("transferencia_origem"),
     DESTINATIONTRANSFER("transferencia_destino"),
-    UPDATEMANAGER("gerente_alterado");
+    UPDATEMANAGER("gerente_alterado"),
+    DELETED("deletado");
 
     private final String label;
 

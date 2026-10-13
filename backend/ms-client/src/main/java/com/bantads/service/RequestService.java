@@ -15,7 +15,6 @@ import com.bantads.repository.StateRepository;
 
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.amqp.autoconfigure.RabbitConnectionDetails;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.List;
 
@@ -39,9 +39,8 @@ public class RequestService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    public List<Request> listRequests() {
-        return this.requestRepository.findAll();
-    }
+    @Autowired
+    private ClientRepository clientRepository;
 
     public Request createRequest(RequestDTO requestDTO) {
 
@@ -61,7 +60,15 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
         }
 
-        if(requestRepository.existsByEmail(requestDTO.getEmail())) {
+        if(requestRepository.findByCpf(requestDTO.getCpf()) != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+        }
+
+        if(clientRepository.existsByCpf(requestDTO.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+        }
+
+        if(clientRepository.existsByEmail(requestDTO.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
         }
 
@@ -101,28 +108,39 @@ public class RequestService {
         requestRepository.save(request);
     }
 
-    public RequestStatus rejectRequest(String cpf, String rejectReason) {
-        Request request = this.getRequestByCpf(cpf);
-
-        request.setRejectionReason(rejectReason);
-        request.setStatus(RequestStatus.NAO_APROVADA);
-
-        requestRepository.save(request);
-
-        return request.getStatus();
-    }
-
     @Transactional
     public void compensateRequestStatus(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 
+        if (request == null) {
+            return;
+        }
+
         request.setApprovedAt(null);
         request.setStatus(RequestStatus.PENDENTE);
-        request.setRejectionAt(new Date());
 
         requestRepository.save(request);
-        this.sendRejectionEmail(request);
     }
+
+    public Request rejectRequest(String cpf, String rejectReason) {
+        if(rejectReason == null || rejectReason.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Motivo não informado");
+        }
+
+        Request request = requestRepository.findByCpf(cpf);
+
+        if(request == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
+        }
+
+        request.setRejectionReason(rejectReason);
+        request.setStatus(RequestStatus.REJEITADA);
+
+        requestRepository.save(request);
+
+        return request;
+    }
+
 
     private void sendRejectionEmail(Request request) {
         Map<String, Object> email = new HashMap<>();
@@ -137,18 +155,26 @@ public class RequestService {
         rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, command);
     }
 
+    public List<Request> listRequests() {
+        return requestRepository.findAll();
+    }
+
     public Request getRequestByClient(Client client) {
         return requestRepository.findByClient(client);
     }
 
     public Request getRequestByCpf(String cpf) {
-        Request req = requestRepository.findByCpf(cpf);
+        Request request = requestRepository.findByCpf(cpf);
 
-        if(req == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitacao não encontrada");
+        if(request == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 
-        return req;
+        return request;
+    }
+
+    public Request getRequestById(Long id) {
+        return requestRepository.getReferenceById(id);
     }
 
 }
