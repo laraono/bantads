@@ -200,7 +200,7 @@ public class AccountService {
                 return answer;
             }
 
-            if(eventType == EventType.UPDATEMANAGER) {
+            if(eventType != EventType.UPDATEMANAGER) {
                 answer.setError("wrong request");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -345,13 +345,18 @@ public class AccountService {
         requestRepository.save(req);
     }
 
-    public GetAccountDTO getAccountDataByCpf(String cpf) {
+    public GetAccountDTO getAccountDataByCpf(String cpf, String headerCpf) {
+        if(!cpf.equals(headerCpf)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não pode acessar conta que não é sua.");
+        }
+
         AccountData account = this.accountDataService.getAccountDataByCpf(cpf);
 
         return GetAccountDTO.builder()
             .numero(account.getAccountNumber())
             .cpfCliente(account.getClientCPF())
             .saldo(account.getBalance().toPlainString())
+            .cpfGerente(account.getManagerCPF())
             .build();
     }
     

@@ -1,21 +1,18 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
-import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Client;
 import com.bantads.entity.Rabbit;
 import com.bantads.entity.Request;
-import com.bantads.model.RabbitAnswer;
-import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.RabbitRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,6 +30,9 @@ public class SagaService {
 
     @Autowired
     private RabbitRepository rabbitRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE)
     public void handleClientCQueue(Map<String, Object> command) {
@@ -52,7 +52,10 @@ public class SagaService {
 
         if(type.contains("criar-cliente")) {
             try {
-                Request request = (Request) command.get("requisicao");
+                Object requisicaoObj = command.get("requisicao");
+                Request request = objectMapper.convertValue(requisicaoObj, Request.class);
+
+                command.put("tipo", "cliente");
                 this.clientService.createClient(request);
                 rabbitRepository.save(req);
             } catch (Exception e) {
@@ -97,6 +100,7 @@ public class SagaService {
         }
 
         command.put("status", "SUCESSO");
+        command.put("timestamp", new Date());
 
         this.sendCommand(command);
     }

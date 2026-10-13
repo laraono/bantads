@@ -1,9 +1,9 @@
 const axios = require('axios');
+const rabbitConnector = require('../connector/rabbitConnector')
 
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
-const ORCHESTRATION_HOST= process.env.ORCHESTRATION_HOST || 'orchestration';
-const ORCHESTRATION_PORT = process.env.ORCHESTRATION_PORT || '8085';
+
 
 class RequestService {
     async listRequests() {        
@@ -34,10 +34,20 @@ class RequestService {
     }
 
     async approveRequest(cpf) {
-        const body = {idSolicitacao: cpf}
-        const response = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/create-account`,body )
-        
-        return response.data
+        const payload = {
+            idSolicitacao: cpf,
+            type: 'CRIACAO_CONTA'
+        }
+
+        const job = {
+            status: "PENDENTE",
+            resultType: "resource",
+            dominio: "clientes",
+            resourceId: cpf,
+            erro: null
+        }
+            
+        return await rabbitConnector.startSaga(payload, job)
     }
 
     async rejectRequest(cpf, body) {

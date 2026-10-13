@@ -33,7 +33,7 @@ services:
       postgres
       -c shared_buffers=128MB
       -c work_mem=4MB
-      -c max_connections=40
+      -c max_connections=100
       -c effective_cache_size=384MB
       -c maintenance_work_mem=32MB
     healthcheck:

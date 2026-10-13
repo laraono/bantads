@@ -1,11 +1,10 @@
 const argon2 = require('argon2');
 const crypto = require('crypto');
 const path = require('path');
-const { exec } = require('child_process');
-const { promisify } = require('util');
 const { MongoClient } = require('mongodb');
 const { Client } = require('pg');
 const fs = require('fs/promises');
+const redis = require('../config/redis');
 
 const MONGO_USER = process.env.MONGO_USER || 'admin';
 const MONGO_PASS = process.env.MONGO_PASS || 'password';
@@ -182,6 +181,10 @@ class RebootService {
                 await client.end();
             }
         }
+    }
+
+    async flushRedis() {
+        await redis.flushAll()
     }
 }
 

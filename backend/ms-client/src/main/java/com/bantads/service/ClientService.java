@@ -2,10 +2,12 @@ package com.bantads.service;
 
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
+import com.bantads.model.Status;
 import com.bantads.repository.ClientRepository;
 import com.bantads.entity.*;
 import com.bantads.repository.AddressRepository;
 import com.bantads.repository.StateRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -69,12 +71,14 @@ public class ClientService {
                 .email(req.getEmail())
                 .name(req.getName())
                 .phone(req.getPhone())
+                .approvedStatus("SUCESSO")
                 .salary(req.getSalary())
                 .build();
 
         return clientRepository.save(client);
     }
 
+    @Transactional
     public void deleteByCpf(String cpf) {
         this.clientRepository.deleteByCpf(cpf);
     }

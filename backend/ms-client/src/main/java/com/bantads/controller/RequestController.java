@@ -4,6 +4,7 @@ package com.bantads.controller;
 import com.bantads.assembler.RequestModelAssembler;
 import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Request;
+import com.bantads.entity.RequestStatus;
 import com.bantads.service.RequestService;
 
 import jakarta.validation.Valid;
@@ -53,16 +54,16 @@ public class RequestController {
         }
     }
 
-    @PostMapping("/{id}/aprovacao")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void approveRequest(@PathVariable String id) {
-        this.requestService.approveRequest(id);
-    }   
-
-    @PostMapping("/{id}/rejeicao")
+    @PostMapping("/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
-    void rejectRequest(@PathVariable String id, @RequestBody String motivo) {
-        this.requestService.rejectRequest(id, motivo);
+    public ResponseEntity<RequestStatus> rejectRequest(@PathVariable String id, @RequestBody String motivo) {
+        try{
+            RequestStatus status = this.requestService.rejectRequest(id, motivo);
+            return ResponseEntity.ok().body(status);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping ("/{id}")

@@ -96,6 +96,8 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
+        payload.putIfAbsent("version", newEvent.getVersion());
+        payload.putIfAbsent("eventId", newEvent.getEventId());
 
         RabbitCommandDTO command = RabbitCommandDTO.builder()
                 .payload(payload)

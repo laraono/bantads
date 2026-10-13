@@ -1,7 +1,9 @@
 const axios = require('axios');
+const rabbitConnector = require('../connector/rabbitConnector')
 
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
+
 
 class MangerService {
     async list() {
@@ -22,6 +24,32 @@ class MangerService {
                 { headers: { 'x-user-cpf': headers['x-user-cpf']} }
             )
             return updateAnswer.data
+        } catch (err) {
+            if (err.response) {
+                const error = new Error(err.response.data?.message || err.message);
+                error.status = err.response.status;
+                throw error;
+            }
+            throw err;
+        }
+    }
+
+    async createManager(gerente) {
+        try {
+            const payload = {
+                ...gerente,
+                type: "INSERIR_GERENTE"
+            }
+
+            const job = {
+                status: "PENDENTE",
+                resultType: "resource",
+                dominio: "gerentes",
+                resourceId: gerente.cpf,
+                erro: null
+            }
+
+            return await rabbitConnector.startSaga(payload, job)
         } catch (err) {
             if (err.response) {
                 const error = new Error(err.response.data?.message || err.message);

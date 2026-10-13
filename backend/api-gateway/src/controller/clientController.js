@@ -27,7 +27,7 @@ class ClientController {
 
     async getClient(req, res){
         try {
-            const client = await clientService.getClient(req.params.cpf);
+            const client = await clientService.getClient(req.params.cpf, req.headers);
             return res.status(200).json(client);
         } catch (err) {
             const status = err.status || 500;
