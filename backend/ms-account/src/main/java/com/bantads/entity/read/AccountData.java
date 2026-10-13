@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
+import org.hibernate.annotations.SQLRestriction;                 
 
 @Entity
 @Table(name = "account_data")
@@ -12,6 +15,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLRestriction("deleted_at IS NULL")
 public class AccountData {
     @Id
     @Column(name = "account_number")
@@ -25,4 +29,7 @@ public class AccountData {
 
     @Column(nullable = false)
     private BigDecimal balance;
+
+    @Column(name = "deleted_at")
+    private Date deletedAt;
 }

@@ -54,17 +54,6 @@ public class ManagerController {
         }
     }
 
-    @DeleteMapping("/{cpf}")
-    public ResponseEntity<Object> deleteManager(@RequestHeader("x-user-cpf") String userCPF, @PathVariable("cpf") String managerCPF) {
-        try {
-            this.managerService.deleteManager(managerCPF, userCPF);;
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
     @GetMapping("/{cpf}")
     public ResponseEntity<Manager> getManagerByCpf(@PathVariable String cpf) {
         try{

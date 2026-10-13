@@ -2,6 +2,8 @@ const axios = require('axios');
 
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
+const ORCHESTRATION_HOST = process.env.ORCHESTRATION_HOST || 'orchestration';
+const ORCHESTRATION_PORT = process.env.ORCHESTRATION_PORT || '8085';
 
 class MangerService {
     async list() {
@@ -22,6 +24,23 @@ class MangerService {
                 { headers: { 'x-user-cpf': headers['x-user-cpf']} }
             )
             return updateAnswer.data
+        } catch (err) {
+            if (err.response) {
+                const error = new Error(err.response.data?.message || err.message);
+                error.status = err.response.status;
+                throw error;
+            }
+            throw err;
+        }
+    }
+
+    async deleteManager(id, headers) {
+        try {
+            const deleteAnswer = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/sagas/deletar-gerente`,
+                { cpfGerente: id },
+                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+            )
+            return deleteAnswer.data
         } catch (err) {
             if (err.response) {
                 const error = new Error(err.response.data?.message || err.message);

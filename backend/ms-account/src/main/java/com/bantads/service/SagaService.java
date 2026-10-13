@@ -2,6 +2,7 @@ package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.entity.read.Request;
+import com.bantads.handlers.SagaStepHandler;
 import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
@@ -13,7 +14,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Service
 public class SagaService {
@@ -29,61 +33,60 @@ public class SagaService {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
+    private Map<String, SagaStepHandler> handlers = new HashMap<>();
+
+    public SagaService(List<SagaStepHandler> handlersToInject) {
+        this.handlers = handlersToInject.stream()
+                .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
+    }
+
     @RabbitListener(queues = RabbitMQConfig.ACCOUNT_QUEUE)
     public void handleAccountCommand(RabbitRequest command) {
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
+                command.getType(), command.isCompensation());
 
         if (alreadyProcessed) {
             return;
         }
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .status(Status.SUCESSO)
-                .build();
+        String action = command.getType();
 
-        Request req = Request.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .build();
+        if (!this.handlers.containsKey(action)) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        }
 
-        String type = String.valueOf(command.getType());
+        SagaStepHandler handler = this.handlers.get(action);
 
         Map<String, Object> payload = new HashMap<>();
 
-        if(type.contains("decidir-gerente")) {
-            try {
-                String cpf = this.accountService.findManager(command.getPayload());
-                payload.put("cpfGerente", cpf);
-
-            } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
-                e.printStackTrace();
-                throw e;
+        Status status = Status.SUCESSO;
+        String error = null;
+        try {
+            if (command.isCompensation()) {
+                handler.compensate(command.getPayload());
+            } else {
+                payload = handler.execute(command.getPayload());
+                status = Status.SUCESSO;
             }
+        } catch (Exception e) {
+            status = Status.FALHA;
+            error = e.getMessage();
+            e.printStackTrace();
         }
+        Request req = Request.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .compensation(command.isCompensation())
+                .build();
 
-        if(type.contains("criar-conta")) {
-            try {
-                Map<String, Object> commandPayload = command.getPayload();
-                String cpfGerente = String.valueOf(commandPayload.get("cpfGerente"));
-                String cpfCliente = String.valueOf(commandPayload.get("cpf"));
-
-                Map<String, Object> eventPayload = new HashMap<>();
-                eventPayload.put("cpfGerente", cpfGerente);
-                eventPayload.put("cpfCliente", cpfCliente);
-
-                this.eventService.createAccount(eventPayload);
-            } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
-                e.printStackTrace();
-                throw e;
-            }
-        }
+        RabbitAnswer answer = RabbitAnswer.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .error(error)
+                .status(status)
+                .stepIndex(command.getStepIndex())
+                .build();
 
         answer.setPayload(payload);
         answer.setTimestamp(new Date());

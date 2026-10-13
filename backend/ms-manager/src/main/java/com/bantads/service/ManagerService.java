@@ -49,7 +49,7 @@ public class ManagerService {
 
         List<ManagerDTO> managerList = new ArrayList<>();
 
-        while(managerIterator.hasNext()) {
+        while (managerIterator.hasNext()) {
             Manager manager = managerIterator.next();
             ManagerDTO dto = ManagerDTO.builder()
                     .id(manager.getManagerId())
@@ -75,7 +75,7 @@ public class ManagerService {
 
         List<ManagerDTO> managerList = new ArrayList<>();
 
-        while(managerIterator.hasNext()) {
+        while (managerIterator.hasNext()) {
             Manager manager = managerIterator.next();
             ManagerDTO dto = ManagerDTO.builder()
                     .id(manager.getManagerId())
@@ -96,19 +96,6 @@ public class ManagerService {
         return managerRepository.findByCpfAndIsActive(cpf, true);
     }
 
-    public void deleteManager(String managerCPF, String userCPF) {
-         Manager manager = this.getManager(managerCPF);
-
-        if(manager.getCpf().equals(userCPF)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível deletar a si mesmo");
-        }
-
-        manager.setActive(false);
-
-        managerRepository.save(manager);
-
-    }
-
     public ManagerDTO updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
         if (updateManagerDTO.getEmail() != null || updateManagerDTO.getCpf() != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e CPF não podem ser alterados");
@@ -118,16 +105,17 @@ public class ManagerService {
 
         manager.setName(updateManagerDTO.getNome());
         manager.setPhone(updateManagerDTO.getTelefone());
+        manager.setActive(updateManagerDTO.getAtivo());
 
-        Manager salvo = managerRepository.save(manager);
+        Manager saved = managerRepository.save(manager);
 
         return ManagerDTO.builder()
-                .id(salvo.getManagerId())
-                .ativo(salvo.isActive())
-                .cpf(salvo.getCpf())
-                .email(salvo.getEmail())
-                .nome(salvo.getName())
-                .telefone(salvo.getPhone())
+                .id(saved.getManagerId())
+                .ativo(saved.isActive())
+                .cpf(saved.getCpf())
+                .email(saved.getEmail())
+                .nome(saved.getName())
+                .telefone(saved.getPhone())
                 .build();
     }
 
@@ -143,7 +131,6 @@ public class ManagerService {
         RabbitAnswer answer = RabbitAnswer.builder()
                 .sagaId(command.getSagaId())
                 .type(command.getType())
-                .status(Status.SUCESSO)
                 .build();
 
         Request req = Request.builder()
@@ -155,7 +142,7 @@ public class ManagerService {
 
         Map<String, Object> payload = new HashMap<>();
 
-        if(type.contains("listar-gerentes")) {
+        if (type.contains("listar-gerentes")) {
             try {
                 List<ManagerDTO> gerentes = this.list();
                 payload.put("gerentes", gerentes);
@@ -164,6 +151,26 @@ public class ManagerService {
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
                 e.printStackTrace();
+                throw e;
+            }
+        }
+        if(type.contains("gerente.deletar-gerente")) { 
+            String cpfGerente = String.valueOf(payload.get("cpfGerente"));
+            Manager gerente = this.getManager(cpfGerente);
+
+            try {
+                if(answer.getStatus() != Status.SUCESSO) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falha no servidor");
+                } else {
+                    gerente.setActive(false);
+                    managerRepository.save(gerente);
+                }
+            } catch (Exception e) {
+                answer.setStatus(Status.FALHA);
+                answer.setTimestamp(new Date());
+                e.printStackTrace();
+                gerente.setActive(true);
+                managerRepository.save(gerente);
                 throw e;
             }
         }

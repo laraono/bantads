@@ -1,7 +1,7 @@
 package com.bantads.controller;
 
-
 import com.bantads.assembler.RequestModelAssembler;
+import com.bantads.dto.RejectRequestDTO;
 import com.bantads.dto.RequestDTO;
 import com.bantads.entity.Request;
 import com.bantads.service.RequestService;
@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -26,30 +29,37 @@ public class RequestController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public
-    EntityModel<Request>  createRequest(@Valid @RequestBody RequestDTO requestDTO) {
+    public EntityModel<Request> createRequest(@Valid @RequestBody RequestDTO requestDTO) {
         Request newRequest = this.requestService.createRequest(requestDTO);
         return assembler.toModel(newRequest);
     }
 
     @PostMapping("/{id}/aprovacao")
     @ResponseStatus(HttpStatus.CREATED)
-    public
-    void approveRequest(@PathVariable Long id) {
+    public void approveRequest(@PathVariable Long id) {
         this.requestService.approveRequest(id);
-    }   
-
-    @PostMapping("/{id}/rejeicao")
-    @ResponseStatus(HttpStatus.OK)
-    void rejectRequest(@PathVariable Long id, @RequestBody String motivo) {
-        this.requestService.rejectRequest(id, motivo);
     }
 
-    @GetMapping ("/{id}")
+    @PostMapping("/{cpf}/rejeicao")
     @ResponseStatus(HttpStatus.OK)
-    public
-    EntityModel<Request> getRequest(@PathVariable Long id) {
-        Request request = this.requestService.getRequestById(id);
+    public EntityModel<Request> rejectRequest(@PathVariable String cpf, @RequestBody RejectRequestDTO dto) {
+        Request request = this.requestService.rejectRequest(cpf, dto.getMotivo());
+        return assembler.toModel(request);
+    }
+
+    @GetMapping()
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, List<EntityModel<Request>>> listRequests() {
+        List<EntityModel<Request>> requests = this.requestService.listRequests().stream()
+                .map(assembler::toModel)
+                .toList();
+        return Map.of("solicitacoes", requests);
+    }
+
+    @GetMapping("/{cpf}")
+    @ResponseStatus(HttpStatus.OK)
+    public EntityModel<Request> getRequest(@PathVariable String cpf) {
+        Request request = this.requestService.getRequestByCpf(cpf);
         return assembler.toModel(request);
     }
 

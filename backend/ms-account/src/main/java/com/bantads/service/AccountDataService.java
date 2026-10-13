@@ -47,32 +47,30 @@ public class AccountDataService {
         return this.accountDataRepository.getAccountCountByManager(cpf);
     }
 
+    public List<String> getAllManagersCpf() {
+        return this.accountDataRepository.findAllUniqueManagerCPF();
+    }
+
     public String getManagerWithLowestAccount(List<String> managerCPFs) {
+        String best = null;
+        long lowestAccountAmount = Long.MAX_VALUE;
+        BigDecimal lowestTotalBalance = BigDecimal.ZERO;
 
-        Iterator<String> cpfIterator = managerCPFs.iterator();
-        String firstCPF = managerCPFs.get(0);
-        AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
+        for (String cpf : managerCPFs) {
+            AccountsByManagerDTO current = this.getAccountsCountByManager(cpf);
+            long amount = current == null ? 0 : current.getTotalAccounts();
+            BigDecimal balance = current == null || current.getTotalBalance() == null ? BigDecimal.ZERO : current.getTotalBalance();
 
-        int lowestAccountAmount = first.getTotalAccounts();
-        BigDecimal lowestTotalBalance = first.getTotalBalance();
-        int index = 0;
-        int i = 1;
-
-        while(cpfIterator.hasNext()) {
-            AccountsByManagerDTO current = this.getAccountsCountByManager(cpfIterator.next());
-            if (current.getTotalAccounts() < lowestAccountAmount) {
-                lowestAccountAmount = current.getTotalAccounts();
-                lowestTotalBalance = current.getTotalBalance();
-                index = i;
-            } else if (current.getTotalAccounts() == lowestAccountAmount && current.getTotalBalance().compareTo(lowestTotalBalance) < 0) {
-                lowestAccountAmount = current.getTotalAccounts();
-                lowestTotalBalance = current.getTotalBalance();
-                index = i;
+            if (best == null
+                    || amount < lowestAccountAmount
+                    || (amount == lowestAccountAmount && balance.compareTo(lowestTotalBalance) < 0)) {
+                best = cpf;
+                lowestAccountAmount = amount;
+                lowestTotalBalance = balance;
             }
-            i++;
         }
 
-        return managerCPFs.get(index);
+        return best;
     }
 
 
@@ -100,6 +98,17 @@ public class AccountDataService {
         account.setBalance(balance.add(value));
 
         return this.accountDataRepository.save(account);
+    }
+
+    public void deleteAccountData(String accountNumber) {
+        AccountData account = this.accountDataRepository.findByAccountNumber(accountNumber);
+
+        if (account == null) {
+            return;
+        }
+
+        account.setDeletedAt(new java.util.Date());
+        this.accountDataRepository.save(account);
     }
 
     public AccountData updateAccountManager(String managerCPF, String accountNumber) {

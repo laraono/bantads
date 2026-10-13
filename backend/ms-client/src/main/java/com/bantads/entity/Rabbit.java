@@ -27,6 +27,9 @@ public class Rabbit {
     @Column(nullable = false, name = "saga_id")
     private UUID sagaId;
 
+    @Column(nullable = false)
+    private boolean compensation;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -1,5 +1,6 @@
 package com.bantads.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -32,6 +33,7 @@ public class Request {
     @Builder.Default
     private String status = RequestStatus.PENDING.getLabel();
 
+    @JsonProperty("motivo")
     @Column(nullable = true, length = 255, name = "rejection_reason")
     private String rejectionReason;
 

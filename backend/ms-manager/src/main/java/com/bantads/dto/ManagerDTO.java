@@ -13,5 +13,5 @@ public class ManagerDTO {
     private String email;
     private String cpf;
     private String telefone;
-    private boolean ativo;
+    private Boolean ativo;
 }

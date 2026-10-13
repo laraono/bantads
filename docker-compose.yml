@@ -33,7 +33,7 @@ services:
       postgres
       -c shared_buffers=128MB
       -c work_mem=4MB
-      -c max_connections=40
+      -c max_connections=100
       -c effective_cache_size=384MB
       -c maintenance_work_mem=32MB
     healthcheck:
@@ -234,6 +234,32 @@ services:
     mem_reservation: 384m
     restart: always
 
+  orchestration:
+    container_name: orchestration
+    build:
+      context: ./backend/orchestration
+      dockerfile: Dockerfile
+    networks:
+      - backend-net
+    ports:
+      - "8085:8085"
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Xss512k"
+      SPRING_DATA_REDIS_HOST: redis-app
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS}
+    depends_on:
+      redis-app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    mem_limit: 512m
+    mem_reservation: 384m
+    restart: always
+
   api-gateway:
     container_name: api-gateway
     build:
@@ -246,6 +272,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
+      ORCHESTRATION_HOST: orchestration
+      ORCHESTRATION_PORT: 8085
     command: node --max-old-space-size=192 server.js
     ports:
       - "3000:3000"
@@ -253,6 +281,7 @@ services:
       - redis-app
       - rabbitmq
       - ms-auth
+      - orchestration
     mem_limit: 256m
     restart: always
     healthcheck:

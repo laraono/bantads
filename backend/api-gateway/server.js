@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 require('dotenv').config();
 const authController = require('./src/controller/authController');
 const accountRoutes = require('./src/routes/accountRoutes');
@@ -29,7 +29,8 @@ app.use('/clientes', clientRoutes);
 app.use('/solicitacoes', createProxyMiddleware({
     target: `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}`,
     changeOrigin: true,
-    pathRewrite: (path) => '/requests' + (path === '/' ? '' : path)
+    pathRewrite: (path) => '/requests' + (path === '/' ? '' : path),
+    on: { proxyReq: fixRequestBody }
 }));
 
 app.use('/contas', accountRoutes);

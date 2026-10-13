@@ -31,6 +31,16 @@ class ManagerController {
         }
     }
 
+    async deleteManager(req, res) {
+        try {
+            const result = await managerService.deleteManager(req.params.id, req.headers);
+            return res.status(202).json(result);
+        } catch (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ error: err.message || 'Erro no servidor' });
+        }
+    }
+
 }
 
 module.exports = new ManagerController();

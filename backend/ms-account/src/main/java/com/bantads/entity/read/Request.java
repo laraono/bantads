@@ -41,6 +41,9 @@ public class Request {
     @Column(nullable = true, name = "saga_id")
     private UUID sagaId;
 
+    @Column(nullable = false, name = "is_compensation")
+    private boolean compensation;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

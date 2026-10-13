@@ -20,6 +20,8 @@ import java.math.BigDecimal;
 import java.util.*;
 
 @Service
+
+// Serviço de leitura (consultas)
 public class AccountService {
 
     @Autowired
@@ -193,7 +195,7 @@ public class AccountService {
                 return answer;
             }
 
-            if(eventType == EventType.UPDATEMANAGER) {
+            if(eventType != EventType.UPDATEMANAGER) {
                 answer.setError("wrong request");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -331,6 +333,9 @@ public class AccountService {
             case EventType.CREATED:
                 this.createAccountData(command);
                 break;
+            case EventType.DELETED:
+                this.accountDataService.deleteAccountData(command.getAccountNumber());
+                break;
             case EventType.UPDATEMANAGER:
                 this.updateAccountManager(command);
                 break;
@@ -350,7 +355,7 @@ public class AccountService {
             .saldo(account.getBalance().toPlainString())
             .build();
     }
-    
+
     public String findManager(Map<String, Object> payload) {
         List<String> managersCPF = (List<String>) payload.get("gerentes");
         return this.accountDataService.getManagerWithLowestAccount(managersCPF);

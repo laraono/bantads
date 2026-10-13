@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface RequestRepository extends MongoRepository<Request, ObjectId> {
     boolean existsBySagaIdAndType(UUID sagaId, String type);
+
+    boolean existsBySagaIdAndTypeAndCompensation(UUID sagaId, String type, boolean compensation);
 }

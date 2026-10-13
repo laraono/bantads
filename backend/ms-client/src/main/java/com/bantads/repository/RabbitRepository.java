@@ -8,4 +8,6 @@ import java.util.UUID;
 public interface RabbitRepository extends JpaRepository<Rabbit, Long> {
     boolean existsBySagaIdAndType(UUID sagaId, String type);
 
+    boolean existsBySagaIdAndTypeAndCompensation(UUID sagaId, String type, boolean compensation);
+
 }

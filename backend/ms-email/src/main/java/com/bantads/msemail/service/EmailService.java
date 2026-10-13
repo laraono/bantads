@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -31,18 +34,54 @@ public class EmailService {
     public void handleAccountCommand(RabbitRequest command) {
 
         String type = String.valueOf(command.getType());
-        Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
 
+        try {
+            this.processEmail(type, command);
+            this.reply(command, "SUCESSO", null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (type.contains("enviar-avisar-delecao")) {
+                this.reply(command, "SUCESSO", null);
+            } else {
+                this.reply(command, "FALHA", e.getMessage());
+            }
+        }
+    }
+
+    private void reply(RabbitRequest command, String status, String error) {
+        Map<String, Object> answer = new HashMap<>();
+        answer.put("sagaId", command.getSagaId());
+        answer.put("type", command.getType());
+        answer.put("status", status);
+        answer.put("error", error);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_REPLY, answer);
+    }
+
+    private void processEmail(String type, RabbitRequest command) {
         if (type.contains("enviar-senha")) {
+            Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
             this.sendEmail(email.get("email"), "Sua nova senha", email.get("senha"));
         }
 
         if (type.contains("enviar-rejeicao")) {
+            Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
             String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
             if (email.get("motivo") != null) {
                 text += " Motivo: " + email.get("motivo");
             }
             this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
+        }
+        if (type.contains("enviar-avisar-delecao")) {
+            List<String> emails = (List<String>) command.getPayload().get("emails");
+            String text = "Olá, sua conta foi transferida para um novo gerente.";
+            
+            if (command.getPayload().get("motivo") != null) {
+                text += " Motivo: " + command.getPayload().get("motivo");
+            }
+
+            for (String email : emails) {
+                this.sendEmail(email, "Conta transferida", text);
+            }
         }
     }
 }

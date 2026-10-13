@@ -30,7 +30,7 @@ public class OrchestrationService {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void startSaga(SagaSteps step, Map<String, Object> payload) {
+    public UUID startSaga(SagaSteps step, Map<String, Object> payload) {
         final UUID sagaId = UUID.randomUUID();
 
         SagaStates sagaStates = SagaStates.builder()
@@ -43,13 +43,16 @@ public class OrchestrationService {
 
         redisTemplate.opsForValue().set("saga:" + sagaId, sagaStates);
         publishSagaCmd(sagaStates);
+        return sagaId;
     }
 
     public void publishSagaCmd(SagaStates sagaStates) {
-        Map<String, Object> cmd = new HashMap<>(sagaStates.getPayload());
-        cmd.put("sagaId", sagaStates.getSagaId()); 
+        Map<String, Object> cmd = new HashMap<>();
+        cmd.put("sagaId", sagaStates.getSagaId());
         cmd.put("stepIndex", sagaStates.getStepIndex());
         cmd.put("type", sagaStates.getType());
+        cmd.put("compensation", false);
+        cmd.put("payload", sagaStates.getPayload());
 
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);
@@ -70,16 +73,16 @@ public class OrchestrationService {
         if (sagaStates == null) return;
 
         String status = reply.get("status").toString();
-        int stepIndex = Integer.parseInt(reply.get("stepIndex").toString()); 
 
         if (sagaStates.getStatus() == SagaStatus.COMPENSACAO || sagaStates.getStatus() == SagaStatus.FALHA) {
-            if ("SUCESSO".equals(status)) {
-                compensateSingleStep(sagaStates, stepIndex);
-            }
             return;
         }
 
         if ("SUCESSO".equals(status)) {
+            if (reply.get("payload") instanceof Map<?, ?> stepPayload) {
+                stepPayload.forEach((k, v) -> sagaStates.getPayload().put(String.valueOf(k), v));
+            }
+
             if (sagaStates.isLastStep()) {
                 sagaStates.setStatus(SagaStatus.CONCLUIDO);
                 redisTemplate.opsForValue().set(sagaKey, sagaStates);
@@ -123,7 +126,6 @@ public class OrchestrationService {
         }
 
         sagaStates.setStatus(SagaStatus.FALHA);
-        sagaStates.setError("COMPENSACAO");
         
         String sagaKey = "saga:" + sagaStates.getSagaId();
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
@@ -139,7 +141,8 @@ public class OrchestrationService {
         Map<String, Object> comp = new HashMap<>();
         comp.put("sagaId", sagaStates.getSagaId());
         comp.put("stepIndex", stepIndex);
-        comp.put("type", "COMPENSATE");
+        comp.put("type", step.getActionType());
+        comp.put("compensation", true);
         comp.put("payload", sagaStates.getPayload());
 
         rabbitTemplate.convertAndSend(queue, comp);

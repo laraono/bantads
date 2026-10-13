@@ -1,7 +1,5 @@
 package com.bantads.service;
 
-import com.bantads.entity.Client;
-import com.bantads.entity.Request;
 import com.bantads.repository.ClientRepository;
 import com.bantads.entity.*;
 import com.bantads.repository.AddressRepository;
@@ -12,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -47,7 +46,14 @@ public class ClientService {
         return requestService.getRequestByClient(client);
     }
 
-    public Client createClient(Request req) {
+    public List<Client> getClientsByCpf(List<String> cpfs) {
+        return clientRepository.findAllByCpfIn(cpfs);
+    }
+
+    public Client createClient(Map<String, Object> payload) {
+
+        Request req = (Request) payload.get("requisicao");
+
         if(stateRepository.findByUf(req.getState().getUf()) == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
         }
@@ -73,6 +79,20 @@ public class ClientService {
                 .build();
 
         return clientRepository.save(client);
+    }
+
+    public void deleteClient(Map<String, Object> payload) {
+        Object cpf = payload.get("cpfCliente");
+
+        if (cpf == null) {
+            return;
+        }
+
+        Client client = clientRepository.findByCpf(cpf.toString());
+
+        if (client != null) {
+            clientRepository.delete(client);
+        }
     }
 
 }

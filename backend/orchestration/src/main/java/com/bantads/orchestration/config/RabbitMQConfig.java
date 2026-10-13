@@ -39,11 +39,18 @@ public class RabbitMQConfig {
     }
     @Bean
     public Queue msEmailCmdQueue() {
-        // fire-and-forget: MS Email nao responde na SAGA, logo nao tem DLQ de compensacao.
         return QueueBuilder.durable(MS_EMAIL_CMD).build();
     }
 
-    // filas de comando com retry (wait) + DLQ 
+    @Bean 
+    public Queue msEmailCmdWaitQueue() {
+        return waitQueue(MS_CLIENTE_CMD);
+    }
+
+    @Bean
+    public Queue msEmailCmdDlq() {
+        return dlq(MS_CLIENTE_CMD);
+    }
 
     @Bean
     public Queue msClienteCmdQueue() {
