@@ -1,5 +1,15 @@
-import { computed, reactive } from 'vue'
+import { computed, ref } from 'vue'
 import { DateTime } from 'luxon'
+import { useAuth } from '@/composables/useAuth'
+import {
+  getContaPorCpf,
+  getConta,
+  getExtrato,
+  depositar,
+  sacar,
+  transferir,
+  type MovimentacaoDTO,
+} from '@/services/accountService'
 
 export type OperationType = 'Depósito' | 'Transferência' | 'Saque'
 
@@ -12,77 +22,113 @@ export interface AccountTransaction {
   amount: number // positivo = entrada, negativo = saída
 }
 
-const ACCOUNT_NUMBER = '•••• 4829'
-export const OPENING_BALANCE = 8000
-
-const today = DateTime.now().startOf('day')
-
-function daysAgo(days: number, hour: number, minute: number): { date: string; time: string } {
-  const dt = today.minus({ days }).set({ hour, minute })
-  return { date: dt.toFormat('dd/MM/yyyy'), time: dt.toFormat('HH:mm') }
+const OPERATION_LABEL: Record<MovimentacaoDTO['type'], OperationType> = {
+  DEPOSIT: 'Depósito',
+  WITHDRAW: 'Saque',
+  TRANSFER: 'Transferência',
 }
 
-// Histórico mockado (fará o papel do MS Conta enquanto o back-end não está integrado).
-const transactions = reactive<AccountTransaction[]>([
-  { id: 1, ...daysAgo(12, 8, 12), operation: 'Depósito', party: 'Ana Silva', amount: 2500.75 },
-  { id: 2, ...daysAgo(12, 9, 47), operation: 'Transferência', party: 'Helena Rocha', amount: 450.0 },
-  { id: 3, ...daysAgo(12, 10, 5), operation: 'Transferência', party: 'Juliana Ferreira', amount: 1200.0 },
-  { id: 4, ...daysAgo(10, 10, 33), operation: 'Saque', party: 'Fernanda Lima', amount: -800.0 },
-  { id: 5, ...daysAgo(10, 11, 2), operation: 'Depósito', party: 'Carlos Mendes', amount: 300.0 },
-  { id: 6, ...daysAgo(10, 11, 18), operation: 'Transferência', party: 'Carlos Mendes', amount: -150.0 },
-  { id: 7, ...daysAgo(8, 12, 40), operation: 'Transferência', party: 'Helena Rocha', amount: 340.2 },
-  { id: 8, ...daysAgo(8, 13, 15), operation: 'Transferência', party: 'Juliana Ferreira', amount: 0.0 },
-  { id: 9, ...daysAgo(8, 13, 52), operation: 'Transferência', party: 'Ana Silva', amount: 780.5 },
-  { id: 10, ...daysAgo(5, 14, 9), operation: 'Transferência', party: 'Ana Silva', amount: 150.0 },
-  { id: 11, ...daysAgo(5, 14, 47), operation: 'Transferência', party: 'Carlos Mendes', amount: 900.0 },
-  { id: 12, ...daysAgo(5, 15, 21), operation: 'Transferência', party: 'Beatriz Santos', amount: -250.5 },
-  { id: 13, ...daysAgo(3, 15, 58), operation: 'Transferência', party: 'Beatriz Santos', amount: 450.0 },
-  { id: 14, ...daysAgo(3, 16, 14), operation: 'Transferência', party: 'Fernanda Lima', amount: 690.0 },
-  { id: 15, ...daysAgo(3, 16, 39), operation: 'Transferência', party: 'Helena Rocha', amount: 120.0 },
-  { id: 16, ...daysAgo(1, 17, 3), operation: 'Transferência', party: 'Juliana Ferreira', amount: 1800.0 },
-  { id: 17, ...daysAgo(1, 17, 26), operation: 'Transferência', party: 'Carlos Mendes', amount: -350.0 },
-  { id: 18, ...daysAgo(0, 8, 2), operation: 'Transferência', party: 'Ana Silva', amount: 1200.0 },
-  { id: 19, ...daysAgo(0, 9, 47), operation: 'Transferência', party: 'Beatriz Santos', amount: 50.0 },
-  { id: 20, ...daysAgo(0, 10, 30), operation: 'Transferência', party: 'Fernanda Lima', amount: -300.0 }
-])
+const accountNumber = ref('')
+const balance = ref(0)
+const loaded = ref(false)
 
-let nextId = transactions.length + 1
+function parseValor(v: string | number): number {
+  return typeof v === 'number' ? v : parseFloat(v)
+}
 
-const balance = computed(() => transactions.reduce((sum, tx) => sum + tx.amount, OPENING_BALANCE))
+function toTransaction(mov: MovimentacaoDTO, cpfProprio: string): AccountTransaction {
+  // o backend grava createdAt em UTC (container sem TZ) sem indicar o fuso na
+  // string; sem isso o Luxon assumiria que já está no fuso local do navegador
+  const dt = DateTime.fromISO(mov.createdAt, { zone: 'utc' }).toLocal()
+  const abs = Math.abs(parseValor(mov.amount))
 
-function registerTransaction(operation: OperationType, party: string, amount: number) {
-  const now = DateTime.now()
-  transactions.unshift({
-    id: nextId++,
-    date: now.toFormat('dd/MM/yyyy'),
-    time: now.toFormat('HH:mm'),
-    operation,
+  let amount = abs
+  let party = ''
+
+  if (mov.type === 'DEPOSIT') {
+    amount = abs
+    party = 'Depósito em conta'
+  } else if (mov.type === 'WITHDRAW') {
+    amount = -abs
+    party = 'Saque em conta'
+  } else {
+    // TRANSFER: o lado do extrato (origem/destino) indica se é entrada ou saída pra essa conta
+    const souOrigem = mov.originClientCPF === cpfProprio
+    amount = souOrigem ? -abs : abs
+    party = souOrigem ? (mov.destinationClientName ?? 'Conta destino') : (mov.originClientName ?? 'Conta origem')
+  }
+
+  return {
+    id: mov.historyId,
+    date: dt.toFormat('dd/MM/yyyy'),
+    time: dt.toFormat('HH:mm'),
+    operation: OPERATION_LABEL[mov.type],
     party,
-    amount
-  })
+    amount,
+  }
 }
 
-function deposit(amount: number) {
-  registerTransaction('Depósito', 'Depósito em conta', amount)
+async function loadAccount() {
+  const { usuario } = useAuth()
+  if (!usuario.value) return
+  const conta = await getContaPorCpf(usuario.value.cpf)
+  accountNumber.value = conta.numero
+  balance.value = parseValor(conta.saldo)
+  loaded.value = true
 }
 
-function withdraw(amount: number) {
-  if (amount > balance.value) throw new Error('Saldo insuficiente')
-  registerTransaction('Saque', 'Saque em caixa eletrônico', -amount)
+// Reconsulta o saldo algumas vezes com pequenos intervalos: o lado de leitura
+// (CQRS) é assíncrono e pode demorar alguns instantes para refletir a operação.
+async function refreshBalance() {
+  if (!accountNumber.value) return
+  const before = balance.value
+  for (let tentativa = 0; tentativa < 6; tentativa++) {
+    const conta = await getConta(accountNumber.value)
+    balance.value = parseValor(conta.saldo)
+    if (balance.value !== before) return
+    await new Promise((resolve) => setTimeout(resolve, 400))
+  }
 }
 
-function transfer(destinationAccount: string, amount: number) {
-  if (amount > balance.value) throw new Error('Saldo insuficiente')
-  registerTransaction('Transferência', `Conta ${destinationAccount}`, -amount)
+async function deposit(amount: number) {
+  await depositar(accountNumber.value, amount.toFixed(2))
+  await refreshBalance()
+}
+
+async function withdraw(amount: number) {
+  await sacar(accountNumber.value, amount.toFixed(2))
+  await refreshBalance()
+}
+
+async function transfer(destinationAccount: string, amount: number) {
+  await transferir(accountNumber.value, destinationAccount, amount.toFixed(2))
+  await refreshBalance()
+}
+
+interface Extrato {
+  saldoAbertura: number
+  transactions: AccountTransaction[]
+}
+
+async function fetchExtrato(inicio?: string, fim?: string): Promise<Extrato> {
+  const { usuario } = useAuth()
+  if (!accountNumber.value || !usuario.value) return { saldoAbertura: 0, transactions: [] }
+  const extrato = await getExtrato(accountNumber.value, inicio, fim)
+  return {
+    saldoAbertura: parseValor(extrato.saldoAbertura),
+    transactions: extrato.movimentacoes.map((mov) => toTransaction(mov, usuario.value!.cpf)),
+  }
 }
 
 export function useAccount() {
   return {
-    accountNumber: ACCOUNT_NUMBER,
-    transactions,
+    accountNumber: computed(() => accountNumber.value),
     balance,
+    loaded: computed(() => loaded.value),
+    loadAccount,
     deposit,
     withdraw,
-    transfer
+    transfer,
+    fetchExtrato,
   }
 }

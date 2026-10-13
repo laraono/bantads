@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { logout as logoutBackend } from '../services/authService'
 
 interface SidebarUser {
   fullName: string
@@ -9,7 +10,7 @@ interface SidebarUser {
   initials: string
 }
 
-type ClientNavKey = 'home' | 'extrato' | 'config'
+type ClientNavKey = 'home' | 'extrato'
 type ManagerNavKey = 'aprovacoes' | 'clientes' | 'relatorio' | 'gerentes'
 type NavKey = ClientNavKey | ManagerNavKey
 type NavIcon = 'home' | 'chart' | 'gear' | 'clock' | 'users' | 'report' | 'shield-user'
@@ -36,8 +37,7 @@ const { logout } = useAuth()
 
 const clientNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
   { key: 'home', label: 'Home', to: '/home', icon: 'home' },
-  { key: 'extrato', label: 'Extrato detalhado', to: '/extrato', icon: 'chart' },
-  { key: 'config', label: 'Configurações', to: '', icon: 'gear' }
+  { key: 'extrato', label: 'Extrato detalhado', to: '/extrato', icon: 'chart' }
 ]
 
 const managerNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
@@ -53,7 +53,8 @@ function go(to: string) {
   if (to) router.push(to)
 }
 
-function handleLogout() {
+async function handleLogout() {
+  await logoutBackend()
   logout()
   emit('logout')
   router.push('/login')

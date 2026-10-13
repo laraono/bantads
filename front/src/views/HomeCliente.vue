@@ -1,34 +1,58 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { DateTime } from 'luxon'
 import TransactionModal from '../components/TransactionModal.vue'
 import Sidebar from '../components/Sidebar.vue'
 import { useAccount, type AccountTransaction } from '../composables/useAccount'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const { accountNumber, transactions, balance, deposit, withdraw, transfer } = useAccount()
+const { accountNumber, balance, loadAccount, deposit, withdraw, transfer, fetchExtrato } = useAccount()
+const { usuario } = useAuth()
 
 type ModalTab = 'transferencia' | 'saque' | 'depositar'
 
 const RECENT_COUNT = 5
 
-const user = {
-  name: 'John',
-  fullName: 'John Doe',
-  email: 'john@example.com',
-  initials: 'AD'
-}
+const user = computed(() => {
+  const nome = usuario.value?.nome ?? ''
+  const primeiroNome = nome.split(' ')[0] || 'Cliente'
+  const iniciais = nome
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join('') || 'CL'
+  return {
+    name: primeiroNome,
+    fullName: nome || 'Cliente',
+    email: usuario.value?.email ?? '',
+    initials: iniciais,
+  }
+})
+
+const transactions = ref<AccountTransaction[]>([])
+const loadingData = ref(true)
 
 function parseTxDateTime(tx: AccountTransaction): DateTime {
   return DateTime.fromFormat(`${tx.date} ${tx.time}`, 'dd/MM/yyyy HH:mm')
 }
 
 const recentTransactions = computed(() =>
-  [...transactions]
+  [...transactions.value]
     .sort((a, b) => parseTxDateTime(b).toMillis() - parseTxDateTime(a).toMillis())
     .slice(0, RECENT_COUNT)
 )
+
+onMounted(async () => {
+  try {
+    await loadAccount()
+    transactions.value = (await fetchExtrato()).transactions
+  } finally {
+    loadingData.value = false
+  }
+})
 
 function iconFor(operation: AccountTransaction['operation']): 'deposit' | 'withdraw' | 'transfer' {
   if (operation === 'Depósito') return 'deposit'
@@ -64,23 +88,33 @@ function openModal(tab: ModalTab | null) {
 }
 
 const balanceLoading = ref(false)
+const errorMessage = ref('')
+const hasError = computed({
+  get: () => errorMessage.value !== '',
+  set: (val: boolean) => {
+    if (!val) errorMessage.value = ''
+  },
+})
 
-// Simula o tempo de processamento da saga antes da operação ser confirmada.
-function simulateProcessing(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 900))
+function extractErrorMessage(err: unknown): string {
+  const anyErr = err as { response?: { data?: { error?: string } } }
+  return anyErr.response?.data?.error || 'Não foi possível concluir a operação.'
 }
 
 async function handleTransaction(payload: { tab: ModalTab; amount: number; account?: string }) {
   balanceLoading.value = true
+  errorMessage.value = ''
   try {
-    await simulateProcessing()
     if (payload.tab === 'depositar') {
-      deposit(payload.amount)
+      await deposit(payload.amount)
     } else if (payload.tab === 'saque') {
-      withdraw(payload.amount)
+      await withdraw(payload.amount)
     } else {
-      transfer(payload.account ?? '', payload.amount)
+      await transfer(payload.account ?? '', payload.amount)
     }
+    transactions.value = (await fetchExtrato()).transactions
+  } catch (err) {
+    errorMessage.value = extractErrorMessage(err)
   } finally {
     balanceLoading.value = false
   }
@@ -148,7 +182,7 @@ const formattedBalance = computed(() => `R$${balance.value.toLocaleString('pt-BR
         <section class="transactions-card">
           <div class="transactions-header">
             <span class="section-title">Transações recentes</span>
-            <a href="#" class="ver-todos">Ver Todos</a>
+            <a href="#" class="ver-todos" @click.prevent="router.push('/extrato')">Ver Todos</a>
           </div>
 
           <ul class="transaction-list">
@@ -178,6 +212,10 @@ const formattedBalance = computed(() => `R$${balance.value.toLocaleString('pt-BR
       @close="modalOpen = false"
       @submit="handleTransaction"
     />
+
+    <v-snackbar v-model="hasError" color="error" timeout="4000" location="top">
+      {{ errorMessage }}
+    </v-snackbar>
   </div>
 </template>
 
