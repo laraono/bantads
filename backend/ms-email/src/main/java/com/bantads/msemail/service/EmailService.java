@@ -28,14 +28,13 @@ public class EmailService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.MS_EMAIL_CMD)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleAccountCommand(Map<String, Object> command) {
 
-        String type = String.valueOf(command.getType());
-        Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
+        String type = String.valueOf(command.get("type"));
+        Map<String, String> emailObject = (Map<String, String>) command.get("email");
 
         if(type.contains("enviar-senha")) {
             try {
-                Map<String, String> emailObject = (Map<String, String>) command.getPayload().get("email");
                 String clientEmail = emailObject.get("email");
                 String password = emailObject.get("senha");
 
@@ -49,10 +48,10 @@ public class EmailService {
 
         if(type.contains("novo-gerente")) {
             try {
-                Map<String, String> gerente = (Map<String, String>) command.getPayload().get("email");
+                Map<String, String> gerente = (Map<String, String>) command.get("gerente");
                 String managerName = gerente.get("nome");
-                String clientEmail = command.getPayload().get("email").toString();
-                String clientName = command.getPayload().get("nome").toString();
+                String clientEmail = emailObject.get("email").toString();
+                String clientName = emailObject.get("nome").toString();
 
                 this.sendEmail(clientEmail, "Novo gerente", "Olá, " + clientName + "Seu novo gerente é:  " + managerName);
 
@@ -63,11 +62,11 @@ public class EmailService {
         }
 
         if (type.contains("enviar-rejeicao")) {
-            String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
-            if (email.get("motivo") != null) {
-                text += " Motivo: " + email.get("motivo");
+            String text = "Olá " + emailObject.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
+            if (emailObject.get("motivo") != null) {
+                text += " Motivo: " + emailObject.get("motivo");
             }
-            this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
+            this.sendEmail(emailObject.get("email"), "Solicitação rejeitada", text);
         }
 
     }

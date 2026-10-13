@@ -11,6 +11,6 @@ import java.math.BigDecimal;
 @Builder
 public class AccountsByManagerDTO {
     private String managerCPF;
-    private int totalAccounts;
+    private Long totalAccounts;
     private BigDecimal totalBalance;
 }

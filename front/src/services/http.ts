@@ -11,7 +11,7 @@ export const http = axios.create({
 http.interceptors.request.use((config) => {
   const { token } = useAuth()
   if (token.value) {
-    config.headers.Authorization = `Bearer ${token.value}`
+    config.headers['x-access-token'] = token.value
   }
   return config
 })

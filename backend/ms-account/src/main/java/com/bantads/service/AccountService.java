@@ -119,14 +119,21 @@ public class AccountService {
             EventType eventType = body.getType();
 
             String accountNumber = body.getAccountNumber();
-            String textValue = String.valueOf(payload.get("valor"));
+
+            // transferências carregam o valor dentro de "origem" (payload completo
+            // com origem+destino); depósito/saque têm "valor" direto na raiz
+            Map<?, ?> originForValue = (Map<?, ?>) payload.get("origem");
+            Object rawValue = (originForValue != null && originForValue.get("valor") != null)
+                    ? originForValue.get("valor")
+                    : payload.get("valor");
+            String textValue = rawValue != null ? String.valueOf(rawValue) : null;
 
             RabbitQueryDTO answer = RabbitQueryDTO.builder()
                 .type(body.getType())
                 .build();
 
             if (
-                textValue == null || eventType == null || accountNumber.isEmpty() || accountNumber == null
+                textValue == null || eventType == null || accountNumber == null || accountNumber.isEmpty()
             ) {
                 answer.setError("missing information");
                 answer.setStatus(Status.FALHA);
@@ -193,7 +200,7 @@ public class AccountService {
                 return answer;
             }
 
-            if(eventType == EventType.UPDATEMANAGER) {
+            if(eventType != EventType.UPDATEMANAGER) {
                 answer.setError("wrong request");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -261,10 +268,14 @@ public class AccountService {
         Map<?, ?> destination = (Map<?, ?>) payload.get("destino");
 
         String originClientName = (origin != null) ? String.valueOf(origin.get("nome")) : null;
-        String originClientCpf = payload.get("clienteCpf") != null ? String.valueOf(payload.get("clienteCpf")) : null;
+        // numa transferência, origin.cpf é sempre quem enviou (independente de qual
+        // lado da conta está processando o evento); depósito/saque não tem "origem"
+        // encapsulada, então usa o dono da conta (clienteCpf) direto
+        String originClientCpf = (origin != null && origin.get("cpf") != null)
+                ? String.valueOf(origin.get("cpf"))
+                : (payload.get("clienteCpf") != null ? String.valueOf(payload.get("clienteCpf")) : null);
 
         String destinationClientName = (destination != null) ? String.valueOf(destination.get("nome")) : null;
-        String destinationClientAccount = (destination != null) ? String.valueOf(destination.get("conta")) : null;
         String destinationClientCpf = (destination != null) ? String.valueOf(destination.get("cpf")) : null;
 
         Object rawValue = (origin != null && origin.get("valor") != null) 
@@ -290,14 +301,6 @@ public class AccountService {
 
         this.accountHistoryService.createAcountHistory(ac);
 
-        if (destinationClientAccount != null && ac.getType() == TransactionType.TRANSFER) {
-            ac.setAccountNumber(destinationClientAccount);
-            ac.setManagerName("");
-            ac.setManagerCPF("");
-
-            this.accountHistoryService.createAcountHistory(ac);
-        }
-
         return "";
     }
 
@@ -305,6 +308,7 @@ public class AccountService {
         return this.accountHistoryService.getExtract(accountNumber, start, end, userCPF);
     }
 
+    @Transactional()
     @RabbitListener(queues = RabbitMQConfig.EVENT_QUEUE)
     public void handleReadModelCommand(RabbitCommandDTO command) {
 
@@ -341,13 +345,18 @@ public class AccountService {
         requestRepository.save(req);
     }
 
-    public GetAccountDTO getAccountDataByCpf(String cpf) {
+    public GetAccountDTO getAccountDataByCpf(String cpf, String headerCpf) {
+        if(!cpf.equals(headerCpf)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não pode acessar conta que não é sua.");
+        }
+
         AccountData account = this.accountDataService.getAccountDataByCpf(cpf);
 
         return GetAccountDTO.builder()
             .numero(account.getAccountNumber())
             .cpfCliente(account.getClientCPF())
             .saldo(account.getBalance().toPlainString())
+            .cpfGerente(account.getManagerCPF())
             .build();
     }
     

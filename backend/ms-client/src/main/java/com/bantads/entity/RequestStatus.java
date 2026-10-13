@@ -3,7 +3,7 @@ package com.bantads.entity;
 public enum RequestStatus {
     PENDENTE("PENDENTE"),
     APROVADA("APROVADO"),
-    NÃO_APROVADA("NAO_APROVADO");
+    NAO_APROVADA("NAO_APROVADO");
 
     private final String label;
 

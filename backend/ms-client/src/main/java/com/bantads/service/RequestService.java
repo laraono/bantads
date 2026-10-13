@@ -13,6 +13,7 @@ import com.bantads.repository.ClientRepository;
 import com.bantads.repository.RequestRepository;
 import com.bantads.repository.StateRepository;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.amqp.autoconfigure.RabbitConnectionDetails;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -31,12 +32,6 @@ public class RequestService {
 
     @Autowired
     private RequestRepository requestRepository;
-
-    @Autowired 
-    private AddressRepository addressRepository;
-
-    @Autowired 
-    private ClientRepository clientRepository;
 
     @Autowired 
     private StateRepository stateRepository;
@@ -106,15 +101,18 @@ public class RequestService {
         requestRepository.save(request);
     }
 
-    public void rejectRequest(String cpf, String rejectReason) {
-        Request request = requestRepository.findByCpf(cpf);
+    public RequestStatus rejectRequest(String cpf, String rejectReason) {
+        Request request = this.getRequestByCpf(cpf);
 
         request.setRejectionReason(rejectReason);
-        request.setStatus(RequestStatus.NÃO_APROVADA);
+        request.setStatus(RequestStatus.NAO_APROVADA);
 
         requestRepository.save(request);
+
+        return request.getStatus();
     }
 
+    @Transactional
     public void compensateRequestStatus(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 
