@@ -23,5 +23,7 @@ public class RabbitAnswer implements Serializable {
 
     private Status status;
 
+    private String stepIndex;
+
     private String error;
 }

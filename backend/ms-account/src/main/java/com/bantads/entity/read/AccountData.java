@@ -5,6 +5,9 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
+import java.util.Date;
+
+import org.hibernate.annotations.SQLRestriction;                 
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLRestriction("deleted_at IS NULL")
 public class AccountData {
     @Id
     @Column(name = "account_number")
@@ -28,6 +32,9 @@ public class AccountData {
     @Column(nullable = false)
     private BigDecimal balance;
 
+    @Column(name = "deleted_at")
+    private Date deletedAt;
+    
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -6,6 +6,7 @@ import com.bantads.dto.event.RabbitCommandDTO;
 import com.bantads.dto.event.ReturnTransferDTO;
 import com.bantads.entity.event.Event;
 import com.bantads.entity.event.EventType;
+import com.bantads.entity.read.AccountData;
 import com.bantads.repository.event.EventRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -20,10 +21,15 @@ import java.util.*;
 
 @Service
 @Transactional
+
+// Serviço de alterações (eventos)
 public class EventService {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private AccountDataService accountDataService;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -78,13 +84,12 @@ public class EventService {
         this.sendReadModelCommand(command, userCPF);
     }
 
-    public void updateManager(String managerCpf, String objectId) {
+    public void updateManager(CreateEventDTO event, String objectId) {
         if(!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("cpfGerente", managerCpf);
+        Map<String, Object> payload = event.getPayload();
 
         Event newEvent = Event.builder()
                 .payload(payload)
@@ -96,11 +101,13 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
-        payload.putIfAbsent("version", newEvent.getVersion());
-        payload.putIfAbsent("eventId", newEvent.getEventId());
+        Map<String, Object> newPayload = newEvent.getPayload();
+
+        newPayload.putIfAbsent("eventId", newEvent.getEventId());
+        newPayload.putIfAbsent("version", newEvent.getVersion());
 
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(payload)
+                .payload(newPayload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
                 .type(EventType.UPDATEMANAGER)
@@ -172,6 +179,36 @@ public class EventService {
         this.sendReadModelCommand(command, "");
 
         return newEvent;
+    }
+
+    public List<String> deleteManager(Map<String, Object> payload) {
+        String cpfGerente = String.valueOf(payload.get("cpfGerente"));
+
+        List<String> gerentes = new ArrayList<>(this.accountDataService.getAllManagersCpf());
+
+        if (gerentes.size() <= 1) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Não é possível remover o último gerente");
+        }
+
+        gerentes.remove(cpfGerente);
+
+        String newManager = this.accountDataService.getManagerWithLowestAccount(gerentes);
+
+        List<String> movedAccounts = new ArrayList<>();
+
+        for (AccountData conta : this.accountDataService.getAccountsByManager(cpfGerente)) {
+            this.moveAccountToManager(conta.getAccountNumber(), newManager);
+            movedAccounts.add(conta.getAccountNumber());
+        }
+
+        return movedAccounts;
+    }
+
+    public void moveAccountToManager(String accountNumber, String managerCpf) {
+        Map<String, Object> eventPayload = new HashMap<>();
+        eventPayload.put("cpfGerente", managerCpf);
+
+        this.updateManager(new CreateEventDTO(eventPayload), accountNumber);
     }
 
     public String createObjectId() {
@@ -327,7 +364,8 @@ public class EventService {
     }
 
     public boolean doesAccountExists(String objectId) {
-        return this.eventRepository.existsByObjectIdAndEventType(objectId, EventType.CREATED);
+        return this.eventRepository.existsByObjectIdAndEventType(objectId, EventType.CREATED)
+                && !this.eventRepository.existsByObjectIdAndEventType(objectId, EventType.DELETED);
     }
 
     public void sendReadModelCommand(RabbitCommandDTO command, String cpf) {

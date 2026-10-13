@@ -13,11 +13,7 @@ const target = `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}`;
 
 router.get('/', authGatewayFilter('GERENTE'), clientController.listClients);
 
-router.post('/', createProxyMiddleware({
-    target,
-    changeOrigin: true,
-    pathRewrite: { '^/': '/clients/' }
-}));
+router.post('/', clientController.createClient);
 
 router.get('/:cpf', authGatewayFilter(), clientController.getClient);
 

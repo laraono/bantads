@@ -267,6 +267,8 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
+      ORCHESTRATION_HOST: orchestration
+      ORCHESTRATION_PORT: 8085
     command: node --max-old-space-size=192 server.js
     ports:
       - "3000:3000"
@@ -274,6 +276,7 @@ services:
       - redis-app
       - rabbitmq
       - ms-auth
+      - orchestration
     mem_limit: 256m
     restart: always
     healthcheck:

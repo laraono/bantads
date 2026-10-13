@@ -20,6 +20,8 @@ import java.math.BigDecimal;
 import java.util.*;
 
 @Service
+
+// Serviço de leitura (consultas)
 public class AccountService {
 
     @Autowired
@@ -334,6 +336,9 @@ public class AccountService {
         switch (eventType) {
             case EventType.CREATED:
                 this.createAccountData(command);
+                break;
+            case EventType.DELETED:
+                this.accountDataService.deleteAccountData(command.getAccountNumber());
                 break;
             case EventType.UPDATEMANAGER:
                 this.updateAccountManager(command);

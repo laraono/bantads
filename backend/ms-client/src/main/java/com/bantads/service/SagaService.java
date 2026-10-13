@@ -1,8 +1,10 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
-import com.bantads.entity.Client;
 import com.bantads.entity.Rabbit;
+import com.bantads.handlers.SagaStepHandler;
+import com.bantads.model.RabbitAnswer;
+import com.bantads.model.RabbitRequest;
 import com.bantads.entity.Request;
 import com.bantads.model.Status;
 import com.bantads.repository.RabbitRepository;
@@ -10,11 +12,13 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class SagaService {
@@ -31,78 +35,75 @@ public class SagaService {
     @Autowired
     private RabbitRepository rabbitRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final Map<String, SagaStepHandler> handlers;
+
+    public SagaService(List<SagaStepHandler> handlersToInject) {
+        this.handlers = handlersToInject.stream()
+                .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
+    }
 
     @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE)
-    public void handleClientCQueue(Map<String, Object> command) {
-        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
-        String type = command.get("type").toString();
+    public void handleClientCQueue(RabbitRequest command) {
 
-        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
+        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
+                command.getType(), command.isCompensation());
 
         if (alreadyProcessed) {
             return;
         }
 
+        String action = command.getType();
+
+        if (!this.handlers.containsKey(action)) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        }
+
+        SagaStepHandler handler = this.handlers.get(action);
+
+        Map<String, Object> payload = new HashMap<>();
+
+        Status status = Status.SUCESSO;
+        String error = null;
+        try {
+            if (command.isCompensation()) {
+                handler.compensate(command.getPayload());
+            } else {
+                payload = handler.execute(command.getPayload());
+                status = Status.SUCESSO;
+            }
+        } catch (Exception e) {
+            status = Status.FALHA;
+            error = e.getMessage();
+            e.printStackTrace();
+        }
         Rabbit req = Rabbit.builder()
-                .sagaId(sagaId)
-                .type(type)
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .compensation(command.isCompensation())
                 .build();
 
-        if(type.contains("criar-cliente")) {
-            try {
-                Object requisicaoObj = command.get("requisicao");
-                Request request = objectMapper.convertValue(requisicaoObj, Request.class);
+        RabbitAnswer answer = RabbitAnswer.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .error(error)
+                .status(status)
+                .stepIndex(command.getStepIndex())
+                .build();
 
-                command.put("tipo", "cliente");
-                this.clientService.createClient(request);
-                rabbitRepository.save(req);
-            } catch (Exception e) {
-                command.put("status", Status.FALHA);
-                command.put("timestamp", new Date());
-                e.printStackTrace();
-                throw e;
-            }
+        Map<String, Object> reply = new HashMap<>();
+        reply.put("sagaId", answer.getSagaId());
+        reply.put("type", answer.getType());
+        reply.put("stepIndex", answer.getStepIndex());
+        reply.put("attempt", command.getAttempt());
+        reply.put("status", status.toString());
+        reply.put("error", error);
+        reply.put("timestamp", new Date());
+        reply.put("payload", payload);
+
+        this.sendCommand(reply);
+        if (status == Status.SUCESSO) {
+            rabbitRepository.save(req);
         }
-
-        if(type.contains("aprovar-solicitacao")) {
-            try {
-                String id = (String) command.get("idSolicitacao");
-                this.requestService.approveRequest(id);
-                Request request = this.requestService.getRequestByCpf(id);
-                command.put("cpfCliente", request.getCpf());
-                command.put("requisicao", request);
-                rabbitRepository.save(req);
-            } catch (Exception e) {
-                command.put("status", Status.FALHA);
-                command.put("timestamp", new Date());
-                e.printStackTrace();
-                throw e;
-            }
-        }
-
-        if(type.contains("obter-dados")) {
-            try {
-                String cpf = (String) command.get("cpfCliente");
-                Client client = this.clientService.getClient(cpf);
-
-                command.put("nome", client.getName());
-                command.put("email", client.getEmail());
-
-                rabbitRepository.save(req);
-            } catch (Exception e) {
-                command.put("status", Status.FALHA);
-                command.put("timestamp", new Date());
-                e.printStackTrace();
-                throw e;
-            }
-        }
-
-        command.put("status", "SUCESSO");
-        command.put("timestamp", new Date());
-
-        this.sendCommand(command);
     }
 
     @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE_DLQ)
@@ -122,8 +123,7 @@ public class SagaService {
 
 
         if(type.contains("criar-cliente")) {
-            String cpf = (String) command.get("cpfCliente");
-            this.clientService.deleteByCpf(cpf);
+            this.clientService.deleteClient(command);
         }
 
         if(type.contains("aprovar-solicitacao")) {

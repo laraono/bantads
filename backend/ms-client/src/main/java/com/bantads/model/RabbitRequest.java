@@ -15,6 +15,12 @@ public class RabbitRequest {
 
     private String type;
 
+    private boolean compensation;
+
+    private int stepIndex;
+
+    private int attempt;
+
     private Map<String, Object> payload;
 
     private String status;

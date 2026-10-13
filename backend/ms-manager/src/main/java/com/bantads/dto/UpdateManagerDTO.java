@@ -12,4 +12,5 @@ public class UpdateManagerDTO {
     private String telefone;
     private String email;
     private String cpf;
+    private Boolean ativo;
 }

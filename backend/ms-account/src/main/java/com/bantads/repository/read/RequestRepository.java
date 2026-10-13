@@ -8,6 +8,6 @@ import java.util.UUID;
 public interface RequestRepository extends JpaRepository<Request, Long> {
     boolean existsByVersionAndEventId(long version, UUID eventId);
 
-    boolean existsBySagaIdAndType(UUID sagaId, String type);
+    boolean existsBySagaIdAndTypeAndCompensation(UUID sagaId, String type, boolean compensation);
 
 }

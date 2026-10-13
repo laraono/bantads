@@ -1,9 +1,11 @@
 package com.bantads.entity;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum RequestStatus {
     PENDENTE("PENDENTE"),
-    APROVADA("APROVADO"),
-    NAO_APROVADA("NAO_APROVADO");
+    APROVADA("APROVADA"),
+    REJEITADA("NAO_APROVADA");
 
     private final String label;
 
@@ -11,6 +13,7 @@ public enum RequestStatus {
         this.label = label;
     }
 
+    @JsonValue
     public String getLabel() {
         return label;
     }

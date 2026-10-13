@@ -14,7 +14,7 @@ db.auths.insertMany([
     _id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     login: 'ger1@bantads.com.br',
     password: '$argon2id$v=19$m=15360,t=2,p=1$GIZ82+S79Qk7eo2xAq8TRz3AzoAT8ylxSr56unqmpBArfDlCwetryG4FImbv68djG/lo2zeQhbYkZwX1J6zRpw$eGisoeMmgtOZ/Lgkx6dBX4ppQHUiJPnFA1hHITyCGnM',
-    user_cpf: '98765432100',
+    user_cpf: '98574307084',
     user_type: 'GERENTE',
     is_active: true,
     _class: 'com.bantads.entity.Auth'

@@ -16,6 +16,13 @@ public enum SagaSteps {
             new StepDefinition(RabbitMQConfig.MS_EMAIL_CMD, "email.enviar-senha")
     )),
 
+    DELETAR_GERENTE(List.of(
+            new StepDefinition(RabbitMQConfig.MS_GERENTE_CMD, "gerente.deletar-gerente"),
+            new StepDefinition(RabbitMQConfig.MS_CONTA_CMD, "conta.deletar-gerente"),
+            new StepDefinition(RabbitMQConfig.MS_CLIENTE_CMD, "cliente.obter-email-clientes"),
+            new StepDefinition(RabbitMQConfig.MS_EMAIL_CMD, "email.enviar-avisar-delecao"),
+            new StepDefinition(RabbitMQConfig.MS_AUTH_CMD, "auth.deletar-gerente"))),
+
     INSERIR_GERENTE(List.of(
             new StepDefinition(RabbitMQConfig.MS_GERENTE_CMD, "gerente.inserir-gerente"),
             new StepDefinition(RabbitMQConfig.MS_AUTH_CMD, "auth.criar-auth"),
