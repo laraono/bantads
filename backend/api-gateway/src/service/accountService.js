@@ -126,6 +126,7 @@ class AccountService {
 
     async getAccount(id, headers) {
         try {
+            console.log('on service')
             const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`, {
                 headers: { 'x-user-cpf': headers['x-user-cpf']}
             })
@@ -148,13 +149,11 @@ class AccountService {
         }
     }
 
-    async getAccountByCpf(cpf) {
-        try {
-            const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`)
     async getAccountByCpf(cpf, headers) {
-        const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`, {
-            headers: { 'x-user-cpf': headers['x-user-cpf']}
-        })
+        try {
+            const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']}
+            })
 
             if(!accountAnswer.data) {
                 const error = new Error('Conta não encontrado');

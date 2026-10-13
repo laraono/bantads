@@ -58,7 +58,7 @@ class AccountController {
 
     async getAccountByCpf(req, res) {
         try {
-            const account = await accountService.getAccountByCpf(req.params.cpf);
+            const account = await accountService.getAccountByCpf(req.params.cpf, req.headers);
             return res.status(200).json(account);
         } catch (err) {
             const status = err.status || 500;

@@ -27,27 +27,27 @@ export interface ExtratoDTO {
   movimentacoes: MovimentacaoDTO[]
 }
 
-export function getContaPorCpf(cpf: string) {
+export async function getContaPorCpf(cpf: string) {
   return http.get<ContaDTO>(`/contas/cpf/${cpf}`).then((r) => r.data)
 }
 
-export function getConta(numero: string) {
+export async function getConta(numero: string) {
   return http.get<ContaDTO>(`/contas/${numero}`).then((r) => r.data)
 }
 
-export function depositar(numero: string, valor: string) {
+export async function depositar(numero: string, valor: string) {
   return http.post(`/contas/${numero}/deposito`, { valor })
 }
 
-export function sacar(numero: string, valor: string) {
+export async function sacar(numero: string, valor: string) {
   return http.post(`/contas/${numero}/saque`, { valor })
 }
 
-export function transferir(numero: string, contaDestino: string, valor: string) {
+export async function transferir(numero: string, contaDestino: string, valor: string) {
   return http.post(`/contas/${numero}/transferencia`, { contaDestino, valor })
 }
 
-export function getExtrato(numero: string, inicio?: string, fim?: string) {
+export async function getExtrato(numero: string, inicio?: string, fim?: string) {
   return http
     .get<ExtratoDTO>(`/contas/${numero}/extrato`, { params: { inicio, fim } })
     .then((r) => r.data)
