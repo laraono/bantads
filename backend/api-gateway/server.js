@@ -30,12 +30,7 @@ app.use('', rebootRoutes);
 
 app.use('/clientes', clientRoutes);
 
-app.use('/solicitacoes', createProxyMiddleware({
-    target: `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}`,
-    changeOrigin: true,
-    pathRewrite: (path) => '/requests' + (path === '/' ? '' : path),
-    on: { proxyReq: fixRequestBody }
-}));
+app.use('/solicitacoes', requestRoutes);
 
 app.use('/contas', accountRoutes);
 
