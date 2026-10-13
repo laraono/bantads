@@ -78,6 +78,14 @@ function onAmountInput(target: 'transferencia' | 'saque' | 'depositar', event: E
   input.value = formatted
 }
 
+function onAccountInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  const digits = input.value.replace(/\D/g, '').slice(0, 4)
+
+  transferAccount.value = digits
+  input.value = digits
+}
+
 function submit() {
   const raw = props.tab === 'transferencia' ? transferValue.value : props.tab === 'saque' ? saqueValue.value : depositoValue.value
   const amount = parseAmount(raw)
@@ -142,7 +150,14 @@ function submit() {
             </label>
             <label class="field">
               <span class="field-label">Conta corrente</span>
-              <input v-model="transferAccount" type="text" placeholder="XXXXX-X" />
+              <input
+                :value="transferAccount"
+                @input="onAccountInput"
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                placeholder="0000"
+              />
             </label>
           </div>
 

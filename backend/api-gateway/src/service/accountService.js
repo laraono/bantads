@@ -5,154 +5,194 @@ const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || '8083';
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
 
+// repassa o status e a mensagem reais de um erro do axios (por padrão o axios
+// não expõe err.status, só err.response.status) em vez de sempre cair em 500
+function rethrow(err) {
+    if (err.response) {
+        const data = err.response.data;
+        const message = (typeof data === 'object' && (data?.detail || data?.message)) || err.message;
+        const error = new Error(message);
+        error.status = err.response.status;
+        throw error;
+    }
+    throw err;
+}
+
 class AccountService {
 
     async listAccounts(cpf) {
-        const params = new URLSearchParams()
-        if (cpf) params.append('cpf', cpf)
-        const query = params.toString() ? `?${params}` : ''
-        const accounts = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts${query}`);
-        return accounts.data
+        try {
+            const params = new URLSearchParams()
+            if (cpf) params.append('cpf', cpf)
+            const query = params.toString() ? `?${params}` : ''
+            const accounts = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts${query}`);
+            return accounts.data
+        } catch (err) {
+            rethrow(err);
+        }
     }
 
     async transfer(id, body, headers) {
-        const msBody = { contaDestino: body.contaDestino, valor: body.valor };
+        try {
+            const msBody = { contaDestino: body.contaDestino, valor: body.valor };
 
-        const destinationCPF = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${msBody.contaDestino}/cpf`, {
-            headers: { 'x-user-cpf': headers['x-user-cpf']}
-        });
+            const destinationCPF = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${msBody.contaDestino}/cpf`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']}
+            });
 
-        const cpf = destinationCPF.data;
+            const cpf = destinationCPF.data;
 
-
-        if (!cpf ) {
-            const error = new Error('Conta não existe');
-            error.status = 422;
-            throw error;
-        }
-
-        const originClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${headers['x-user-cpf']}/cpf`, {
-            headers: { 'x-user-cpf': headers['x-user-cpf']}
-        })
-
-        if(!originClient.data) {
-            const error = new Error('Usuário não encontrado');
-            error.status = 404;
-            throw error;
-        }
-
-        const destinationClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}/cpf`, {
-            headers: { 'x-user-cpf': headers['x-user-cpf']}
-        })
-
-        if(!destinationClient.data) {
-            const error = new Error('Usuário não existe');
-            error.status = 422;
-            throw error;
-        }
-
-        const payload = {
-            destino: {
-                conta: msBody.contaDestino,
-                nome: destinationClient.data,
-                cpf
-            },
-            origem: {
-                nome: originClient.data,
-                valor: msBody.valor
+            if (!cpf) {
+                const error = new Error('Conta não existe');
+                error.status = 422;
+                throw error;
             }
-        }
 
-        const transferAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/transfer`, {
-                payload
-            },
-            { headers: { 'x-user-cpf': headers['x-user-cpf']} }
-        );
+            const originClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${headers['x-user-cpf']}`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']}
+            })
 
-        if(!transferAnswer.data) {
-            const error = new Error('Transferência não finalizada');
-            error.status = 500;
-            throw error;
+            if(!originClient.data?.name) {
+                const error = new Error('Usuário não encontrado');
+                error.status = 404;
+                throw error;
+            }
+
+            const destinationClient = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']}
+            })
+
+            if(!destinationClient.data?.name) {
+                const error = new Error('Usuário não existe');
+                error.status = 422;
+                throw error;
+            }
+
+            const payload = {
+                destino: {
+                    conta: msBody.contaDestino,
+                    nome: destinationClient.data.name,
+                    cpf
+                },
+                origem: {
+                    nome: originClient.data.name,
+                    valor: msBody.valor
+                }
+            }
+
+            const transferAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/transfer`, {
+                    payload
+                },
+                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+            );
+
+            if(!transferAnswer.data) {
+                const error = new Error('Transferência não finalizada');
+                error.status = 500;
+                throw error;
+            }
+
+            return transferAnswer.data;
+        } catch (err) {
+            rethrow(err);
         }
-        
-        return transferAnswer.data;
     }
 
     async withdraw(id, body, headers) {
-        const withdrawAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/withdraw`,
-            {payload: body},
-            { headers: { 'x-user-cpf': headers['x-user-cpf']} }
-        )
+        try {
+            const withdrawAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/withdraw`,
+                {payload: body},
+                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+            )
 
-        return withdrawAnswer.data
+            return withdrawAnswer.data
+        } catch (err) {
+            rethrow(err);
+        }
     }
 
     async deposit(id, body, headers) {
-        const depositAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
-            {payload: body},
-            { headers: { 'x-user-cpf': headers['x-user-cpf']} }
-        )
+        try {
+            const depositAnswer = await axios.post(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
+                {payload: body},
+                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
+            )
 
-        return depositAnswer.data        
+            return depositAnswer.data
+        } catch (err) {
+            rethrow(err);
+        }
     }
 
     async getAccount(id, headers) {
-        const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`, {
-            headers: { 'x-user-cpf': headers['x-user-cpf']}
-        })
+        try {
+            const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']}
+            })
 
-        if(!accountAnswer.data) {
-            const error = new Error('Conta não encontrado');
-            error.status = 404;
-            throw error;
+            if(!accountAnswer.data) {
+                const error = new Error('Conta não encontrado');
+                error.status = 404;
+                throw error;
+            }
+
+            if(!accountAnswer.data.numero || !accountAnswer.data.saldo || !accountAnswer.data.cpfCliente) {
+                const error = new Error('Erro no servidor');
+                error.status = 500;
+                throw error;
+            }
+
+            return accountAnswer.data
+        } catch (err) {
+            rethrow(err);
         }
-
-        if(!accountAnswer.data.numero || !accountAnswer.data.saldo || !accountAnswer.data.cpfCliente) {
-            const error = new Error('Erro no servidor');
-            error.status = 500;
-            throw error;
-        }
-
-        return accountAnswer.data        
     }
 
     async getAccountByCpf(cpf) {
-        const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`)
+        try {
+            const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/cpf/${cpf}`)
 
-        if(!accountAnswer.data) {
-            const error = new Error('Conta não encontrado');
-            error.status = 404;
-            throw error;
+            if(!accountAnswer.data) {
+                const error = new Error('Conta não encontrado');
+                error.status = 404;
+                throw error;
+            }
+
+            if(!accountAnswer.data.numero || !accountAnswer.data.saldo || !accountAnswer.data.cpfCliente) {
+                const error = new Error('Erro no servidor');
+                error.status = 500;
+                throw error;
+            }
+
+            return accountAnswer.data
+        } catch (err) {
+            rethrow(err);
         }
-
-        if(!accountAnswer.data.numero || !accountAnswer.data.saldo || !accountAnswer.data.cpfCliente) {
-            const error = new Error('Erro no servidor');
-            error.status = 500;
-            throw error;
-        }
-
-        return accountAnswer.data        
     }
 
     async getExtract(id, query, headers) {
-        const extractAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}/extract`, {
-            headers: { 'x-user-cpf': headers['x-user-cpf']},
-            params: query
-        });
+        try {
+            const extractAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}/extract`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']},
+                params: query
+            });
 
-        if(!extractAnswer.data) {
-            const error = new Error('Conta não encontrado');
-            error.status = 404;
-            throw error;
+            if(!extractAnswer.data) {
+                const error = new Error('Conta não encontrado');
+                error.status = 404;
+                throw error;
+            }
+
+            if(!extractAnswer.data.saldoAbertura || !extractAnswer.data.movimentacoes) {
+                const error = new Error('Erro no servidor');
+                error.status = 500;
+                throw error;
+            }
+
+            return extractAnswer.data
+        } catch (err) {
+            rethrow(err);
         }
-
-        if(!extractAnswer.data.saldoAbertura || !extractAnswer.data.movimentacoes) {
-            const error = new Error('Erro no servidor');
-            error.status = 500;
-            throw error;
-        }
-
-        return extractAnswer.data
     }
 
 }

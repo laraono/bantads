@@ -59,9 +59,9 @@ services:
     mem_limit: 384m
     restart: always
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
 
   redis-app:
