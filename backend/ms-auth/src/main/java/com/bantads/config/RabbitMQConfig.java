@@ -15,6 +15,7 @@ import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 public class RabbitMQConfig {
 
     public static final String AUTH_QUEUE = "ms.auth.cmd";
+    public static final String AUTH_QUEUE_DLQ = "ms.auth.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
 
     private static final int MAX_TENTATIVAS = 3;
@@ -22,12 +23,15 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue authQueue() {
-        return commandQueue(AUTH_QUEUE);
+        return QueueBuilder.durable(AUTH_QUEUE)
+            .withArgument("x-dead-letter-exchange", "")
+            .withArgument("x-dead-letter-routing-key", AUTH_QUEUE + ".dlq")
+            .build();
     }
 
     @Bean
     public Queue authQueueDlq() {
-        return dlq(AUTH_QUEUE);
+        return QueueBuilder.durable(AUTH_QUEUE_DLQ).build();
     }
 
     @Bean

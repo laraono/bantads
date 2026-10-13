@@ -12,7 +12,9 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
 
     List<AccountData> findAllByManagerCPF(String managerCPF);
 
-    @Query("SELECT new com.bantads.dto.read.AccountsByManagerDTO(managerCPF, COUNT(accountNumber), SUM(balance)) FROM AccountData GROUP BY managerCPF")
+    List<AccountData> findAllByManagerCPFOrderByBalanceAsc(String managerCPF);
+
+    @Query("SELECT managerCPF, COUNT(accountNumber) as totalAccounts, SUM(balance) as totalBalance FROM AccountData GROUP BY managerCPF")
     List<AccountsByManagerDTO> getAccountCountGroupByManager();
 
     @Query("SELECT new com.bantads.dto.read.AccountsByManagerDTO(managerCPF, COUNT(accountNumber), SUM(balance)) FROM AccountData WHERE managerCPF = :cpf GROUP BY managerCPF")
@@ -29,4 +31,8 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     @Query("SELECT DISTINCT a.managerCPF FROM AccountData a")
     List<String> findAllUniqueManagerCPF();
 
+    @Query("SELECT a.managerCPF FROM AccountData a GROUP BY a.managerCPF HAVING COUNT(a) > 1 ORDER BY COUNT(a) ASC")
+    List<String> findManagersWithMultipleAccountsOrderedByCount();
+
+    void deleteByClientCPF(String CPF);
 }

@@ -20,4 +20,6 @@ public class RabbitRequest {
     private boolean compensation;
     
     private String stepIndex;
+    
+    private String status;
 }

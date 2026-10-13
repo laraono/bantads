@@ -8,6 +8,8 @@ import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
 import HomeGerente from '../views/HomeGerente.vue'
 import Cadastro from '../views/Cadastro.vue'
 import CadastroEndereco from '../views/CadastroEndereco.vue'
+import ClienteConfig from '@/views/ClienteConfig.vue'
+import ClienteList from '@/views/ClienteList.vue'
 import ListagemGerente from '@/views/ListagemGerente.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -54,6 +56,18 @@ const routes: Array<RouteRecordRaw> = [
     name: 'gerente',
     component: HomeGerente,
     meta: { requiresAuth: true, role: 'gerente'} // Somente gerentes têm acesso
+  },
+  {
+    path: '/clienteconfig',
+    name: 'clienteconfig',
+    component: ClienteConfig,
+    meta: { requiresAuth: true, role: 'cliente' } 
+  },
+  {
+    path: '/clientelist',
+    name: 'clientelist',
+    component: ClienteList,
+    meta: { requiresAuth: true, role: 'gerente'} 
   },
   {
     path: '/listagem',

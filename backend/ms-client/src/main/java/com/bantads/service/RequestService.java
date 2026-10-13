@@ -4,7 +4,6 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.AddressDTO;
 import com.bantads.dto.RequestDTO;
-import com.bantads.entity.Address;
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
@@ -20,10 +19,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class RequestService {
@@ -49,6 +50,10 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
         }
 
+        if(requestRepository.existsByCpf(requestDTO.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+        }
+
         if(requestDTO.getEmail() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail não informado");
         }
@@ -69,32 +74,26 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
         }
 
-        AddressDTO addressDTO = requestDTO.getEndereco();
+        if(requestDTO.getCpf().length() < 11) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
+        }
 
-        Address addressEntity = Address.builder()
-            .additionalInfo(addressDTO.getComplemento())
-            .cep(addressDTO.getCep())
-            .city(addressDTO.getCidade())
-            .state(stateRepository.findByUf(addressDTO.getUf()))
-            .city(addressDTO.getCidade())
-            .number(addressDTO.getNumero())
-            .street(addressDTO.getLogradouro())
-            .build();
+        AddressDTO addressDTO = requestDTO.getEndereco();
+        BigDecimal salary = new BigDecimal(requestDTO.getSalario());
 
         Request requestEntity = Request.builder()
-            .status(RequestStatus.PENDING.getLabel())
+            .status(RequestStatus.PENDENTE)
             .additionalInfo(addressDTO.getComplemento())
             .cep(addressDTO.getCep())
             .city(addressDTO.getCidade())
             .state(stateRepository.findByUf(addressDTO.getUf()))
-            .city(addressDTO.getCidade())
             .number(addressDTO.getNumero())
             .street(addressDTO.getLogradouro())
             .cpf(requestDTO.getCpf())
             .email(requestDTO.getEmail())
             .name(requestDTO.getNome())
             .phone(requestDTO.getTelefone())
-            .salary(requestDTO.getSalario())
+            .salary(salary)
             .build();
 
         requestRepository.save(requestEntity);
@@ -102,11 +101,11 @@ public class RequestService {
         return requestEntity;
     }
 
-    public void approveRequest(Long id) {
-        Request request = requestRepository.getReferenceById(id);
+    public void approveRequest(String cpf) {
+        Request request = requestRepository.findByCpf(cpf);
 
         request.setApprovedAt(new Date());
-        request.setStatus(RequestStatus.APPROVED.getLabel());
+        request.setStatus(RequestStatus.APROVADA);
 
         requestRepository.save(request);
     }
@@ -123,7 +122,18 @@ public class RequestService {
         }
 
         request.setRejectionReason(rejectReason);
-        request.setStatus(RequestStatus.REJECTED.getLabel());
+        request.setStatus(RequestStatus.REJEITADA);
+
+        requestRepository.save(request);
+
+        return request;
+    }
+
+    public void compensateRequestStatus(String cpf) {
+        Request request = requestRepository.findByCpf(cpf);
+
+        request.setApprovedAt(null);
+        request.setStatus(RequestStatus.PENDENTE);
         request.setRejectionAt(new Date());
 
         requestRepository.save(request);
@@ -167,11 +177,4 @@ public class RequestService {
         return requestRepository.getReferenceById(id);
     }
 
-    public void associateRequestToClient(Long id, Client client) {
-        Request request = requestRepository.getReferenceById(id);
-
-        request.setClient(client);
-
-        requestRepository.save(request);
-    }
 }

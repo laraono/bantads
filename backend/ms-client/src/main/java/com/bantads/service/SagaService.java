@@ -2,6 +2,7 @@ package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.RequestDTO;
+import com.bantads.entity.Client;
 import com.bantads.entity.Rabbit;
 import com.bantads.handlers.SagaStepHandler;
 import com.bantads.model.RabbitAnswer;
@@ -12,12 +13,12 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.bantads.entity.Client;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,7 +44,7 @@ public class SagaService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleClientCQueue(RabbitRequest command) {
 
         boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
                 command.getType(), command.isCompensation());
@@ -90,14 +91,51 @@ public class SagaService {
                 .stepIndex(command.getStepIndex())
                 .build();
 
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
+        Map<String, Object> reply = new HashMap<>();
+        reply.put("sagaId", answer.getSagaId());
+        reply.put("type", answer.getType());
+        reply.put("stepIndex", answer.getStepIndex());
+        reply.put("attempt", command.getAttempt());
+        reply.put("status", status.toString());
+        reply.put("error", error);
+        reply.put("timestamp", new Date());
+        reply.put("payload", payload);
 
-        this.sendReadModelCommand(answer);
+        this.sendCommand(reply);
+        if (status == Status.SUCESSO) {
+            rabbitRepository.save(req);
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.CLIENT_QUEUE_DLQ)
+    public void handlDlqQueue(Map<String, Object> command) {
+        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
+        String type = command.get("type").toString();
+
+        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
+        if (alreadyProcessed) {
+            return;
+        }
+
+        Rabbit req = Rabbit.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build();
+
+
+        if(type.contains("criar-cliente")) {
+            this.clientService.deleteClient(command);
+        }
+
+        if(type.contains("aprovar-solicitacao")) {
+            String id = (String) command.get("idSolicitacao");
+            this.requestService.compensateRequestStatus(id);
+        }
+
         rabbitRepository.save(req);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    public void sendCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

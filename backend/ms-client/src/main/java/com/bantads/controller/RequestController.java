@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +30,15 @@ public class RequestController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public EntityModel<Request> createRequest(@Valid @RequestBody RequestDTO requestDTO) {
-        Request newRequest = this.requestService.createRequest(requestDTO);
-        return assembler.toModel(newRequest);
+    public
+    ResponseEntity<Request> createRequest(@RequestBody RequestDTO requestDTO) {
+        try {
+            Request newRequest = this.requestService.createRequest(requestDTO);
+            return ResponseEntity.ok().body(newRequest);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @PostMapping("/{id}/aprovacao")

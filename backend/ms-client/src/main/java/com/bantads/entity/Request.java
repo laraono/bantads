@@ -26,12 +26,11 @@ public class Request {
     private Long requestId;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "client_id")
+    @JoinColumn(name = "client_id", nullable = true)
     private Client client;
 
     @Column(nullable = false)
-    @Builder.Default
-    private String status = RequestStatus.PENDING.getLabel();
+    private RequestStatus status;
 
     @JsonProperty("motivo")
     @Column(nullable = true, length = 255, name = "rejection_reason")

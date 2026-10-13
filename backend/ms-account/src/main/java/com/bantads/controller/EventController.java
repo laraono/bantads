@@ -42,17 +42,6 @@ public class EventController {
         }
     }
 
-    @PostMapping("/{objectId}/updateManager")
-    ResponseEntity changeManager(@PathVariable String objectId, @RequestBody CreateEventDTO event) {
-        try {
-            this.eventService.updateManager(event, objectId);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
-        } catch (Exception e) {
-            e.printStackTrace(); 
-            throw e;
-        }
-    }
-
     @PostMapping("/{objectId}/transfer")
     ResponseEntity<Map<String, ReturnTransferDTO>> transfer(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String objectId, @RequestBody CreateEventDTO event) {
         try {

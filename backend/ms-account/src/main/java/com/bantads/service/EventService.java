@@ -84,12 +84,13 @@ public class EventService {
         this.sendReadModelCommand(command, userCPF);
     }
 
-    public void updateManager(CreateEventDTO event, String objectId) {
+    public void updateManager(String managerCpf, String objectId) {
         if(!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
-        Map<String, Object> payload = event.getPayload();
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("cpfGerente", managerCpf);
 
         Event newEvent = Event.builder()
                 .payload(payload)
@@ -101,13 +102,9 @@ public class EventService {
 
         this.eventRepository.save(newEvent);
 
-        Map<String, Object> newPayload = newEvent.getPayload();
-
-        newPayload.putIfAbsent("eventId", newEvent.getEventId());
-        newPayload.putIfAbsent("version", newEvent.getVersion());
 
         RabbitCommandDTO command = RabbitCommandDTO.builder()
-                .payload(newPayload)
+                .payload(payload)
                 .accountNumber(objectId)
                 .timestamp(new Date())
                 .type(EventType.UPDATEMANAGER)
@@ -386,6 +383,10 @@ public class EventService {
         command.setPayload(payload);
 
         rabbitTemplate.convertAndSend(RabbitMQConfig.EVENT_QUEUE, command);
+    }
+
+    public void deleteByObjectId(String objectId) {
+        this.eventRepository.deleteByObjectId(objectId);
     }
 
 }

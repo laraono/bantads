@@ -1,6 +1,7 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
+import com.bantads.entity.event.Event;
 import com.bantads.entity.read.Request;
 import com.bantads.handlers.SagaStepHandler;
 import com.bantads.model.RabbitAnswer;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class SagaService {
@@ -41,7 +43,7 @@ public class SagaService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.ACCOUNT_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleAccountQueue(RabbitRequest command) {
 
         boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
                 command.getType(), command.isCompensation());
@@ -88,14 +90,44 @@ public class SagaService {
                 .stepIndex(command.getStepIndex())
                 .build();
 
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
+        this.sendCommand(payload);
 
-        this.sendReadModelCommand(answer);
-        requestRepository.save(req);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    @RabbitListener(queues = RabbitMQConfig.ACCOUNT_QUEUE_DLQ)
+    public void handleDlq(Map<String, Object> command) {
+        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
+        String type = command.get("type").toString();
+
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type, true);
+        if (alreadyProcessed) {
+            return;
+        }
+
+        Request req = Request.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build();
+
+        if(type.contains("criar-conta")) {
+            String cpfCliente = String.valueOf(command.get("cpf"));
+            String numeroConta = String.valueOf(command.get("numeroConta"));
+
+            this.accountService.deleteAccountByCPF(cpfCliente);
+            this.eventService.deleteByObjectId(numeroConta);
+            requestRepository.save(req);
+        }
+
+        if(type.contains("associar-gerente")) {
+            String managerCpf = (String) command.get("gerenteAntigo");
+            String accountNumber = (String) command.get("numeroConta");
+            this.eventService.moveAccountToManager(accountNumber, managerCpf);
+            requestRepository.save(req);
+        }
+
+    }
+
+    public void sendCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

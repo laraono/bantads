@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.bantads.orchestration.model.StepDefinition;
+import org.jspecify.annotations.NonNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,14 +22,11 @@ import com.bantads.orchestration.model.SagaSteps;
 @Service 
 public class OrchestrationService {
 
-    private final RedisTemplate<String, Serializable> redisTemplate;
-    private final RabbitTemplate rabbitTemplate;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
-    public OrchestrationService(RedisTemplate<String, Serializable> redisTemplate, RabbitTemplate rabbitTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.rabbitTemplate = rabbitTemplate;
-    }
+    private RabbitTemplate rabbitTemplate;
 
     public UUID startSaga(SagaSteps step, Map<String, Object> payload) {
         final UUID sagaId = UUID.randomUUID();
@@ -46,13 +44,17 @@ public class OrchestrationService {
         return sagaId;
     }
 
-    public void publishSagaCmd(SagaStates sagaStates) {
-        Map<String, Object> cmd = new HashMap<>();
+    public void publishSagaCmd(@NonNull SagaStates sagaStates) {
+        Map<String, Object> cmd = sagaStates.getPayload();
+
         cmd.put("sagaId", sagaStates.getSagaId());
         cmd.put("stepIndex", sagaStates.getStepIndex());
         cmd.put("type", sagaStates.getType());
         cmd.put("compensation", false);
         cmd.put("payload", sagaStates.getPayload());
+
+        int attempt = (int) cmd.getOrDefault("attempt", 0);
+        cmd.put("attempt", attempt);
 
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);
@@ -73,6 +75,8 @@ public class OrchestrationService {
         if (sagaStates == null) return;
 
         String status = reply.get("status").toString();
+        int attempt = (int) reply.get("attempt");
+        int stepIndex = Integer.parseInt(reply.get("stepIndex").toString()); 
 
         if (sagaStates.getStatus() == SagaStatus.COMPENSACAO || sagaStates.getStatus() == SagaStatus.FALHA) {
             return;
@@ -93,10 +97,17 @@ public class OrchestrationService {
                 publishSagaCmd(sagaStates);
             }
         } else if ("FALHA".equals(status)) {
-            sagaStates.setStatus(SagaStatus.COMPENSACAO);
-            sagaStates.setError(reply.getOrDefault("error", "ERRO_DESCONHECIDO").toString());
-            redisTemplate.opsForValue().set(sagaKey, sagaStates);
-            compensate(sagaStates);
+            if(attempt < 3) {
+                reply.put("attempt", attempt  + 1);
+                sagaStates.setStepIndex(sagaStates.getStepIndex());
+                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                publishSagaCmd(sagaStates);
+            } else {
+                sagaStates.setStatus(SagaStatus.COMPENSACAO);
+                sagaStates.setError(reply.getOrDefault("error", "ERRO_DESCONHECIDO").toString());
+                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                compensate(sagaStates);
+            }
         }
     }
 
@@ -136,7 +147,7 @@ public class OrchestrationService {
         if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size()) return;
 
         StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
-        String queue = step.getQueue();
+        String queue = step.getQueue() + ".dql";
 
         Map<String, Object> comp = new HashMap<>();
         comp.put("sagaId", sagaStates.getSagaId());

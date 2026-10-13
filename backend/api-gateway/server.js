@@ -7,6 +7,7 @@ const accountRoutes = require('./src/routes/accountRoutes');
 const managerRoutes = require('./src/routes/managerRoutes');
 const rebootRoutes = require('./src/routes/rebootRoutes');
 const clientRoutes = require('./src/routes/clientRoutes');
+const requestRoutes = require('./src/routes/requestRoutes');
 const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
 const app = express();

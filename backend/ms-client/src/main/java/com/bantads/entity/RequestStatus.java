@@ -1,9 +1,9 @@
 package com.bantads.entity;
 
 public enum RequestStatus {
-    PENDING("PENDENTE"),
-    APPROVED("APROVADO"),
-    REJECTED("NAO_APROVADA");
+    PENDENTE("PENDENTE"),
+    APROVADA("APROVADA"),
+    REJEITADA("NAO_APROVADA");
 
     private final String label;
 

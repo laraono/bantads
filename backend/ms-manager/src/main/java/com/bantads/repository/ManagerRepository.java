@@ -11,4 +11,6 @@ public interface ManagerRepository extends JpaRepository<Manager, Long> {
     Manager findByCpf(String cpf);
 
     Manager findByCpfAndIsActive(String cpf, boolean isActive);
+
+    void deleteByCpf(String cpf);
 }

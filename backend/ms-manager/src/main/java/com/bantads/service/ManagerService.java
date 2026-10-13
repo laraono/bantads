@@ -6,7 +6,7 @@ import com.bantads.dto.ManagerDTO;
 import com.bantads.dto.UpdateManagerDTO;
 import com.bantads.entity.Manager;
 import com.bantads.entity.Request;
-import com.bantads.model.RabbitAnswer;
+import com.bantads.handlers.SagaStepHandler;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.ManagerRepository;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ManagerService {
@@ -31,6 +32,14 @@ public class ManagerService {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    private Map<String, SagaStepHandler> handlers = new HashMap<>();
+
+    @Autowired
+    public void setHandlers(List<SagaStepHandler> handlersToInject) {
+        this.handlers = handlersToInject.stream()
+                .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
+    }
 
     public Manager createManager(CreateManagerDTO createManagerDTO) {
         Manager manager = Manager.builder()
@@ -119,8 +128,12 @@ public class ManagerService {
                 .build();
     }
 
+    public void deleteByCpf(String cpf) {
+        this.managerRepository.deleteByCpf(cpf);
+    }
+
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
-    public void handleAccountCommand(RabbitRequest command) {
+    public void handleManagerQueue(RabbitRequest command) {
 
         boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
 
@@ -128,61 +141,70 @@ public class ManagerService {
             return;
         }
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .build();
+        String action = command.getType();
 
-        Request req = Request.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .build();
+        if (!this.handlers.containsKey(action)) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        }
 
-        String type = String.valueOf(command.getType());
+        SagaStepHandler handler = this.handlers.get(action);
 
         Map<String, Object> payload = new HashMap<>();
+        Status status = Status.SUCESSO;
+        String error = null;
 
-        if (type.contains("listar-gerentes")) {
-            try {
-                List<ManagerDTO> gerentes = this.list();
-                payload.put("gerentes", gerentes);
-
-            } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
-                e.printStackTrace();
-                throw e;
+        try {
+            if (command.isCompensation()) {
+                handler.compensate(command.getPayload());
+            } else {
+                payload = handler.execute(command.getPayload());
             }
-        }
-        if(type.contains("gerente.deletar-gerente")) { 
-            String cpfGerente = String.valueOf(payload.get("cpfGerente"));
-            Manager gerente = this.getManager(cpfGerente);
 
-            try {
-                if(answer.getStatus() != Status.SUCESSO) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falha no servidor");
-                } else {
-                    gerente.setActive(false);
-                    managerRepository.save(gerente);
-                }
-            } catch (Exception e) {
-                answer.setStatus(Status.FALHA);
-                answer.setTimestamp(new Date());
-                e.printStackTrace();
-                gerente.setActive(true);
-                managerRepository.save(gerente);
-                throw e;
-            }
+            requestRepository.save(Request.builder()
+                    .sagaId(command.getSagaId())
+                    .type(command.getType())
+                    .build());
+        } catch (Exception e) {
+            status = Status.FALHA;
+            error = e.getMessage();
+            e.printStackTrace();
         }
 
-        answer.setPayload(payload);
-        answer.setTimestamp(new Date());
+        Map<String, Object> reply = new HashMap<>();
+        reply.put("sagaId", command.getSagaId());
+        reply.put("type", command.getType());
+        reply.put("stepIndex", command.getStepIndex());
+        reply.put("attempt", command.getAttempt());
+        reply.put("status", status.toString());
+        reply.put("error", error);
+        reply.put("timestamp", new Date());
+        reply.put("payload", payload);
 
-        this.sendReadModelCommand(answer);
-        requestRepository.save(req);
+        this.sendReadModelCommand(reply);
     }
 
-    public void sendReadModelCommand(RabbitAnswer answer) {
+    @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
+    public void handleDlqQueue(Map<String, Object> payload) {
+        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
+        String type = payload.get("type").toString();
+
+        if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
+            return;
+        }
+
+        SagaStepHandler handler = this.handlers.get(type);
+
+        if (handler != null) {
+            handler.compensate(payload);
+        }
+
+        requestRepository.save(Request.builder()
+                .sagaId(sagaId)
+                .type(type)
+                .build());
+    }
+
+    public void sendReadModelCommand(Map<String, Object> answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }
