@@ -1,8 +1,18 @@
 package com.bantads.service;
+import com.bantads.config.RabbitMQConfig;
 import com.bantads.entity.Auth;
+import com.bantads.entity.Request;
+import com.bantads.handlers.SagaStepHandler;
+import com.bantads.model.RabbitAnswer;
+import com.bantads.model.RabbitRequest;
+import com.bantads.model.Status;
 import com.bantads.repository.AuthRepository;
+import com.bantads.repository.RequestRepository;
 import com.password4j.Password;
 
+import org.bson.types.ObjectId;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
@@ -11,17 +21,28 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private RequestRepository requestRepository;
 
     @Autowired
     private ReactiveStringRedisTemplate redisTemplate;
 
     private final AuthRepository authRepository;
 
-    public AuthService(AuthRepository authRepository) 
+    private final Map<String, SagaStepHandler> handlers;
+
+    public AuthService(AuthRepository authRepository, List<SagaStepHandler> handlersToInject) 
     {
+        this.handlers = handlersToInject.stream()
+                .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
         this.authRepository = authRepository;
     }
 
@@ -78,8 +99,6 @@ public class AuthService {
 
         auth.setPassword(hash);
 
-        authRepository.save(auth);
-
         return password;
 
     }
@@ -115,5 +134,59 @@ public class AuthService {
         }
 
         return sb.toString();
+    }
+
+
+    @RabbitListener(queues = RabbitMQConfig.AUTH_QUEUE)
+    public void handleAccountCommand(RabbitRequest command) {
+
+        boolean is_compensation = command.isCompensation();
+
+        String action = command.getType();
+
+        if (!this.handlers.containsKey(action)) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        }
+
+        SagaStepHandler handler = this.handlers.get(action);
+
+        Map<String, Object> payload = new HashMap<>();
+
+        Status status = Status.SUCESSO;
+        String error = null;
+        try {
+            if (command.isCompensation()) {
+                handler.compensate(command.getPayload());
+            } else {
+                payload = handler.execute(command.getPayload());
+                status = Status.SUCESSO;
+            }
+        } catch (Exception e) {
+            status = Status.FALHA;
+            error = e.getMessage();
+        }
+        Request req = Request.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .compensation(command.isCompensation())
+                .build();
+
+        RabbitAnswer answer = RabbitAnswer.builder()
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .error(error)
+                .status(status)
+                .stepIndex(command.getStepIndex())
+                .build();
+
+        answer.setPayload(payload);
+        answer.setTimestamp(new Date());
+
+        this.sendReadModelCommand(answer);
+        requestRepository.save(req);
+    }
+
+    public void sendReadModelCommand(RabbitAnswer answer) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }

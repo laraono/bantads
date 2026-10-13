@@ -355,7 +355,7 @@ public class AccountService {
             .saldo(account.getBalance().toPlainString())
             .build();
     }
-
+    
     public String findManager(Map<String, Object> payload) {
         List<String> managersCPF = (List<String>) payload.get("gerentes");
         return this.accountDataService.getManagerWithLowestAccount(managersCPF);
