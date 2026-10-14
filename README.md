@@ -27,9 +27,13 @@ Crie um arquivo `.env` na raiz com as variáveis abaixo (valores à sua escolha)
 
 ```
 POSTGRES_USER=  POSTGRES_PASS=
+
 MONGO_USER=     MONGO_PASS=
+
 RABBITMQ_USER=  RABBITMQ_PASS=
+
 MS_AUTH_HOST=ms-auth    MS_AUTH_PORT=8081
+
 SMTP_USER=  SMTP_PASS=
 ```
 
