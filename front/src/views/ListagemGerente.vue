@@ -123,15 +123,15 @@ const rules = {
                     <div class="filtroEstatus">
                         <v-btn-toggle v-model="filtroSelecionado" class="estatus">
                             <v-btn class="buttonStatus" value="all">
-                                <span>All</span>
+                                <span>Todos</span>
                                 <span class="quantidade">10</span>
                             </v-btn>
                             <v-btn class="buttonStatus" value="active">
-                                <span>Active</span>
+                                <span>Ativos</span>
                                 <span class="quantidade">9</span>
                             </v-btn>
                             <v-btn class="buttonStatus" value="inactive">
-                                <span>Inactive</span>
+                                <span>Inativos</span>
                                 <span class="quantidade">1</span>
                             </v-btn>
                         </v-btn-toggle>
@@ -185,10 +185,10 @@ const rules = {
                                 <v-card-actions class="justify-end">
                                     <div class="card-actions">
                                         <v-btn variant="text" color="primary" prepend-icon="mdi-eye-outline" to="">
-                                            View
+                                            Ver
                                         </v-btn>
                                         <v-btn variant="text" color="primary" prepend-icon="mdi-pencil-outline" @click="editarGerente = true">
-                                            Edit
+                                            Editar
                                         </v-btn>
                                     </div>
                                 </v-card-actions>
