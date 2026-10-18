@@ -12,11 +12,11 @@ GRR 20234968
 Cauã Henrique Dias Barbosa
 GRR 20230951
 
-Ender Efrain Ruiz Carrosco 
+Ender Efrain Ruiz Carrasco 
 GRR 20250037
 
 Disciplina:
-DAC
+DAC - Desenvolvimento de Aplicações Corporativas
 
 2026
 UFPR
