@@ -1,150 +1,41 @@
 <script setup lang="ts">
 
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import Sidebar from '../components/Sidebar.vue'
-
-interface Client {
-  cpf: string
-  name: string
-  city: string
-  state: string
-  balance: number
-}
-
-const user = {
-  fullName: 'Gerente',
-  email: 'gerente@bantads.com.br',
-  initials: 'GE'
-}
+import { listarClientes, type ClienteDTO } from '../services/clientService'
+import { formatCpf, formatMoeda, isNegativo, mensagemErro, somenteDigitos } from '../utils/format'
 
 const search = ref('')
+const clients = ref<ClienteDTO[]>([])
+const carregando = ref(true)
+const erro = ref('')
 
-const clients: Client[] = [
-  {
-    cpf: '111.222.333-44',
-    name: 'Amanda Rodrigues Silva',
-    city: 'São Paulo',
-    state: 'SP',
-    balance: 5200.50
-  },
-  {
-    cpf: '222.333.444-55',
-    name: 'Bruno Henrique Costa',
-    city: 'Rio de Janeiro',
-    state: 'RJ',
-    balance: -850.00
-  },
-  {
-    cpf: '333.444.555-66',
-    name: 'Camila Fernandes Souza',
-    city: 'Belo Horizonte',
-    state: 'MG',
-    balance: 12400.75
-  },
-  {
-    cpf: '444.555.666-77',
-    name: 'Daniel Alves Pereira',
-    city: 'Curitiba',
-    state: 'PR',
-    balance: 320.00
-  },
-  {
-    cpf: '555.666.777-88',
-    name: 'Eduarda Santos Lima',
-    city: 'Porto Alegre',
-    state: 'RS',
-    balance: 8900.25
-  },
-  {
-    cpf: '666.777.888-99',
-    name: 'Felipe Oliveira Martins',
-    city: 'Brasília',
-    state: 'DF',
-    balance: -1200.50
-  },
-  {
-    cpf: '777.888.999-00',
-    name: 'Gabriela Mendes Rocha',
-    city: 'Salvador',
-    state: 'BA',
-    balance: 3450.00
-  },
-  {
-    cpf: '888.999.000-11',
-    name: 'Henrique Barbosa Dias',
-    city: 'Fortaleza',
-    state: 'CE',
-    balance: 1850.75
-  },
-  {
-    cpf: '999.000.111-22',
-    name: 'Isabela Carvalho Nunes',
-    city: 'Recife',
-    state: 'PE',
-    balance: 7200.00
-  },
-  {
-    cpf: '000.111.222-33',
-    name: 'João Pedro Araújo',
-    city: 'Manaus',
-    state: 'AM',
-    balance: -450.25
-  },
-  {
-    cpf: '111.333.555-77',
-    name: 'Larissa Gomes Ferreira',
-    city: 'Goiânia',
-    state: 'GO',
-    balance: 2100.50
-  },
-  {
-    cpf: '222.444.666-88',
-    name: 'Marcelo Teixeira Santos',
-    city: 'Belém',
-    state: 'PA',
-    balance: 9800.00
-  },
-  {
-    cpf: '333.555.777-99',
-    name: 'Natália Ribeiro Alves',
-    city: 'São Luís',
-    state: 'MA',
-    balance: 680.75
-  },
-  {
-    cpf: '444.666.888-00',
-    name: 'Otávio Moreira Castro',
-    city: 'Natal',
-    state: 'RN',
-    balance: 6300.25
-  },
-  {
-    cpf: '555.777.999-11',
-    name: 'Patrícia Vieira Lopes',
-    city: 'João Pessoa',
-    state: 'PB',
-    balance: -320.00
+async function carregar() {
+  erro.value = ''
+  carregando.value = true
+  try {
+    clients.value = await listarClientes()
+  } catch (err) {
+    erro.value = mensagemErro(err, 'Não foi possível carregar os clientes.')
+  } finally {
+    carregando.value = false
   }
-]
+}
 
+onMounted(carregar)
+
+// busca por parte do CPF (com ou sem pontuação) ou parte do nome
 const filteredClients = computed(() => {
   const value = search.value.toLowerCase().trim()
-  
-  if (!value) {return clients}
-  return clients.filter(client =>client.cpf.toLowerCase().includes(value)||client.name.toLowerCase().includes(value)
+  if (!value) return clients.value
+
+  const digitos = somenteDigitos(value)
+  return clients.value.filter(
+    (client) =>
+      client.nome.toLowerCase().includes(value) || (digitos !== '' && client.cpf.includes(digitos))
   )
 })
-
-function formatBalance(value: number): string {
-  const formatted = Math.abs(value).toLocaleString('pt-BR', 
-  {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-
-  return value < 0 ? `- R$ ${formatted}` : `R$ ${formatted}`
-}
 
 </script>
 <template>
@@ -153,7 +44,6 @@ function formatBalance(value: number): string {
     <Sidebar
       active="clientes"
       role="gerente"
-      :user="user"
     />
     <div class="main">
       <header class="topbar">
@@ -178,14 +68,14 @@ function formatBalance(value: number): string {
         <div class="page-heading">
           <h1 class="title">Todos os Clientes</h1>
         </div>
-        <p class="subtitle">Lista completa de clientes sob sua gestão</p>
+        <p class="subtitle">Lista completa de clientes do banco, ordenada por nome</p>
         <div class="search-box">
-          <svg viewBox="0 0 24 24"class="search-icon">
+          <svg viewBox="0 0 24 24" class="search-icon">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-4-4" />
           </svg>
 
-          <input v-model="search"type="text"placeholder="Buscar por CPF ou Nome..."/>
+          <input v-model="search" type="text" placeholder="Buscar por CPF ou Nome..."/>
 
         </div>
 
@@ -205,26 +95,39 @@ function formatBalance(value: number): string {
 
             <tbody>
 
-              <tr v-for="client in filteredClients":key="client.cpf">
+              <tr v-if="carregando">
+                <td colspan="5" class="estado-tabela">Carregando clientes...</td>
+              </tr>
+              <tr v-else-if="erro">
+                <td colspan="5" class="estado-tabela estado-erro">
+                  {{ erro }}
+                  <button class="retry-btn" @click="carregar">Tentar novamente</button>
+                </td>
+              </tr>
+              <tr v-else-if="filteredClients.length === 0">
+                <td colspan="5" class="estado-tabela">Nenhum cliente encontrado.</td>
+              </tr>
+
+              <tr v-for="client in filteredClients" v-else :key="client.cpf">
                 <td class="cell-muted">
-                  {{ client.cpf }}
+                  {{ formatCpf(client.cpf) }}
                 </td>
 
                 <td class="cell-name">
-                  {{ client.name }}
+                  {{ client.nome }}
                 </td>
 
                 <td class="cell-muted">
-                  {{ client.city }}
+                  {{ client.cidade }}
                 </td>
 
                 <td class="cell-muted">
-                  {{ client.state }}
+                  {{ client.uf }}
                 </td>
 
                 <td
-                  class="align-right balance":class="{ negative: client.balance < 0 }">
-                  {{ formatBalance(client.balance) }}
+                  class="align-right balance" :class="{ negative: isNegativo(client.saldo) }">
+                  {{ formatMoeda(client.saldo) }}
                 </td>
 
               </tr>
@@ -474,4 +377,24 @@ function formatBalance(value: number): string {
 
 }
 
+
+.estado-tabela {
+  text-align: center;
+  color: #6b7280;
+  padding: 32px 20px !important;
+}
+
+.estado-erro {
+  color: #dc2626;
+}
+
+.retry-btn {
+  margin-left: 12px;
+  border: none;
+  background: none;
+  color: #0d1b2a;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
 </style>

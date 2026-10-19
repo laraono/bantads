@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { logout as logoutBackend } from '../services/authService'
+import { iniciais } from '../utils/format'
 
 interface SidebarUser {
   fullName: string
@@ -24,7 +25,7 @@ const props = withDefaults(
   {
     active: 'home',
     role: 'cliente',
-    user: () => ({ fullName: 'John Doe', email: 'john@example.com', initials: 'AD' })
+    user: undefined
   }
 )
 
@@ -33,7 +34,16 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
-const { logout } = useAuth()
+const { logout, usuario } = useAuth()
+
+// sem a prop user, mostra o usuário logado
+const displayUser = computed<SidebarUser>(() =>
+  props.user ?? {
+    fullName: usuario.value?.nome ?? '',
+    email: usuario.value?.email ?? '',
+    initials: iniciais(usuario.value?.nome)
+  }
+)
 
 const clientNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
   { key: 'home', label: 'Home', to: '/home', icon: 'home' },
@@ -42,8 +52,8 @@ const clientNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[
 
 const managerNavItems: { key: NavKey; label: string; to: string; icon: NavIcon }[] = [
   { key: 'aprovacoes', label: 'Aprovações pendentes', to: '/gerentes', icon: 'clock' },
-  { key: 'clientes', label: 'Clientes', to: '/clientes', icon: 'users' },
-  { key: 'relatorio', label: 'Relatório de Cliente', to: '', icon: 'report' },
+  { key: 'clientes', label: 'Clientes', to: '/clientelist', icon: 'users' },
+  { key: 'relatorio', label: 'Relatório de Cliente', to: '/relatorio', icon: 'report' },
   { key: 'gerentes', label: 'Gerentes', to: '/listagem', icon: 'shield-user' }
 ]
 
@@ -88,10 +98,10 @@ async function handleLogout() {
     </nav>
 
     <div class="user-card">
-      <div class="avatar">{{ props.user.initials }}</div>
+      <div class="avatar">{{ displayUser.initials }}</div>
       <div class="user-info">
-        <span class="user-name">{{ props.user.fullName }}</span>
-        <span class="user-email">{{ props.user.email }}</span>
+        <span class="user-name">{{ displayUser.fullName }}</span>
+        <span class="user-email">{{ displayUser.email }}</span>
       </div>
       <svg viewBox="0 0 24 24" class="logout-icon" role="button" aria-label="Sair" @click="handleLogout">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" />
