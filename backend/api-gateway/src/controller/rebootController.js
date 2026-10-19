@@ -7,6 +7,8 @@ class RebootController {
             
             await rebootService.seedPostgres()
 
+            await rebootService.flushRedis()
+
             return res.status(200).json({ 
                 message: 'ok',
                 status: 'ok'
