@@ -4,17 +4,53 @@ const rabbitConnector = require('../connector/rabbitConnector')
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
 
+function rethrow(err) {
+    if (err.response) {
+        const data = err.response.data;
+        const message = (typeof data === 'object' && (data?.detail || data?.message)) || err.message;
+        const error = new Error(message);
+        error.status = err.response.status;
+        throw error;
+    }
+    throw err;
+}
+
+function toIso(date) {
+    return date ? new Date(date).toISOString() : null
+}
+
+// entidade Request do MS Cliente -> DTO da solicitação para o front (R8)
+function toRequestDTO(request) {
+    return {
+        cpf: request.cpf,
+        nome: request.name,
+        email: request.email,
+        salario: request.salary != null ? String(request.salary) : null,
+        status: request.status,
+        motivo: request.motivo ?? null,
+        dataDecisao: toIso(request.approvedAt ?? request.rejectionAt),
+        _links: request._links ?? request.links,
+    }
+}
 
 class RequestService {
-    async listRequests() {        
-        const requests = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`)
-        return {solicitacoes: requests.data}
+    async listRequests() {
+        try {
+            const response = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`)
+            const solicitacoes = response.data?.solicitacoes ?? []
+            return { solicitacoes: solicitacoes.map(toRequestDTO) }
+        } catch (err) {
+            rethrow(err);
+        }
     }
 
     async getRequest(cpf) {
-        const response = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`)
-     
-        return response.data
+        try {
+            const response = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`)
+            return toRequestDTO(response.data)
+        } catch (err) {
+            rethrow(err);
+        }
     }
 
     async createRequest(body) {
@@ -22,14 +58,7 @@ class RequestService {
             const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`, body)
             return response.data
         } catch (err) {
-            if (err.response) {
-                const data = err.response.data;
-                const message = (typeof data === 'object' && (data?.detail || data?.message)) || err.message;
-                const error = new Error(message);
-                error.status = err.response.status;
-                throw error;
-            }
-            throw err;
+            rethrow(err);
         }
     }
 
@@ -46,14 +75,19 @@ class RequestService {
             resourceId: cpf,
             erro: null
         }
-            
+
         return await rabbitConnector.startSaga(payload, job)
     }
 
     async rejectRequest(cpf, body) {
-        const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`, body)
-        
-        return response.data
+        try {
+            const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/rejeicao`, {
+                motivo: body?.motivo
+            })
+            return toRequestDTO(response.data)
+        } catch (err) {
+            rethrow(err);
+        }
     }
 }
 

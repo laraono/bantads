@@ -37,8 +37,7 @@ class RequestController {
     async approveRequest(req, res){
         try {
             const jobId = await requestService.approveRequest(req.params.id);
-            console.log('jobId' , jobId)
-            return res.status(202).json(jobId);
+            return res.status(202).json({ jobId });
         } catch (err) {
             const status = err.status || 500;
             console.log(err.message)
