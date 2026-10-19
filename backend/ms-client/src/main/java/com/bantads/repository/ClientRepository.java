@@ -24,5 +24,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
        "c.cpf LIKE CONCAT('%', :busca, '%')")
     List<Client> search(@Param("busca") String busca);
 
+    List<Client> findAllByOrderByNameAsc();
+
     void deleteByCpf(String cpf);
 }

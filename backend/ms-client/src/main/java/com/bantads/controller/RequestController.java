@@ -41,13 +41,7 @@ public class RequestController {
         }
     }
 
-    @PostMapping("/{cpf}/aprovacao")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void approveRequest(@PathVariable String cpf) {
-        this.requestService.approveRequest(cpf);
-    }
-
-    @PostMapping("/{cpf}/rejeicao")
+    @PostMapping("/{cpf}/reject")
     @ResponseStatus(HttpStatus.OK)
     public EntityModel<Request> rejectRequest(@PathVariable String cpf, @RequestBody RejectRequestDTO dto) {
         Request request = this.requestService.rejectRequest(cpf, dto.getMotivo());
