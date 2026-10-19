@@ -1,21 +1,33 @@
 const clientService = require('../service/clientService');
+const accountService = require('../service/accountService');
 
 class ClientController {
 
     async listClients(req, res) {
         try {
-            const clients = await clientService.listClients(req.query.busca);
+            // API Composition (R11): dados cadastrais do MS Cliente + saldo do MS Conta (query)
+            const [clients, accounts] = await Promise.all([
+                clientService.listClients(req.query.busca),
+                accountService.listAccounts(),
+            ]);
+
+            const contaPorCpf = new Map((accounts ?? []).map((a) => [a.clientCPF, a]));
 
             const clientes = clients
-                .map((c) => ({
-                    cpf: c.cpf,
-                    nome: c.name,
-                    email: c.email,
-                    telefone: c.phone,
-                    salario: c.salary,
-                    cidade: c.address?.city,
-                    uf: c.address?.state?.uf,
-                }))
+                .map((c) => {
+                    const conta = contaPorCpf.get(c.cpf);
+                    return {
+                        cpf: c.cpf,
+                        nome: c.name,
+                        email: c.email,
+                        telefone: c.phone,
+                        salario: c.salary != null ? String(c.salary) : null,
+                        cidade: c.address?.city,
+                        uf: c.address?.state?.uf,
+                        numeroConta: conta?.accountNumber ?? null,
+                        saldo: conta ? String(conta.balance) : null,
+                    };
+                })
                 .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
 
             return res.status(200).json({ clientes });

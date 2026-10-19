@@ -31,10 +31,15 @@ class RabbitConnector {
             throw new Error("RabbitMQ channel is not initialized. Call connect() first.")
         }
 
+        // jobId == sagaId (seção 5.8); a chave no Redis é "job-<sagaId>", que é
+        // a mesma que o orquestrador atualiza ao final da SAGA
         const sagaId = crypto.randomUUID()
         const jobKey = "job-" + sagaId
 
+        // "@class" é exigido pelo serializer JSON do Spring Data Redis usado no
+        // orquestrador para conseguir ler esse valor de volta como um Map
         await redis.set(jobKey, JSON.stringify({
+            "@class": "java.util.HashMap",
             ...job,
             jobId: sagaId
         }))
