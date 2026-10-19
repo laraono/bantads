@@ -17,11 +17,11 @@ class JobService {
             erro: null
         }
 
-        await redis.set(jobId, job)
+        await redis.set(jobId, JSON.stringify(job))
 
         this.makeReport(jobId)
 
-        return jobId
+        return {jobId}
     }
 
     async makeReport(jobId) {
@@ -32,49 +32,46 @@ class JobService {
 
             const accounts = []
 
-            const managersCPF = []
+            const managers = {}
 
-            const headers = {'x-user-cpf': cpf}
+            for(const client of clients) {
+                const headers = {'x-user-cpf': client.cpf}
 
-            const managers = []
-
-            clients.forEach(async client => {
                 const account = await accountService.getAccountByCpf(client.cpf, headers) 
                 accounts.push(account)
 
-                if(!managersCPF.includes(account.cpfGerente)) {
-                    managersCPF.push(account.cpfGerente)
-                    const manager = await managerService.getManager(cpf)
-                    managers.push(manager)
+                if (account.cpfGerente && !managers[account.cpfGerente]) {
+                    const manager = await managerService.getManager(account.cpfGerente)
+                    managers[account.cpfGerente] = manager
                 }
 
-                const managerName = managers.find(manager => manager.managerCPF === account.cpfGerente)
+                const managerObj = managers[account.cpfGerente];
 
                 const data = {
                     cpf: client.cpf, 
-                    nome: client.nome, 
+                    nome: client.name, 
                     email: client.email, 
-                    salario: client.salario, 
-                    numeroConta: account.numeroConta,
+                    salario: client.salary, 
+                    numeroConta: account.numero,
                     saldo: account.saldo, 
                     cpfGerente: account.cpfGerente, 
-                    nomeGerente: managerName.name
+                    nomeGerente: managerObj.name
                 }
 
                 report.push(data)
-            })
+            }
 
             const job = {
                 jobId,
-                status: "SUCESSO",
+                status: "CONCLUIDO",
                 resultType: "inline",
                 dominio: null,
                 resourceId: null,
                 erro: null,
-                resultado: report
+                resultado: {clientes: report}
             }
 
-            redis.set(jobId, job)
+            redis.set(jobId, JSON.stringify(job))
 
         } catch(err) {
             const job = {
