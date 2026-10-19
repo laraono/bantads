@@ -37,27 +37,9 @@ public class EmailService {
 
         try {
             this.processEmail(type, command);
-            this.reply(command, "SUCESSO", null);
         } catch (Exception e) {
             e.printStackTrace();
-            if (type.contains("enviar-avisar-delecao")) {
-                this.reply(command, "SUCESSO", null);
-            } else {
-                this.reply(command, "FALHA", e.getMessage());
-            }
         }
-    }
-
-    private void reply(RabbitRequest command, String status, String error) {
-        Map<String, Object> answer = new HashMap<>();
-        answer.put("sagaId", command.getSagaId());
-        answer.put("type", command.getType());
-        answer.put("status", status);
-        answer.put("error", error);
-        answer.put("stepIndex", command.getStepIndex());
-        answer.put("attempt", command.getAttempt());
-        answer.put("payload", command.getPayload());
-        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_REPLY, answer);
     }
 
     private void processEmail(String type, RabbitRequest command) {
@@ -93,8 +75,8 @@ public class EmailService {
         if (type.contains("enviar-rejeicao")) {
             Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
             String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
-            if (email.get("motivo") != null) {
-                text += " Motivo: " + email.get("motivo");
+            if (!command.getError().isBlank()) {
+                text += " Motivo: " + command.getError();
             }
             this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
         }
