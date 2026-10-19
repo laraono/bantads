@@ -4,16 +4,18 @@ const redis = require('../config/redis');
 
 let channel
 
-const amqpUrl = process.env.AMQP_URL || 'amqp://guest:guest@rabbitmq:5672'
-const sagaQueue = process.env.SAGA_CMD || 'saga.cmd'
+const RABBITMQ_USER = process.env.POSTGRES_USER || 'guest'
+const RABBITMQ_PASS = process.env.POSTGRES_PASS || 'guest'
+const RABBITMQ_URL = process.env.AMQP_URL || `amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672`
+const SAGA_CMD = process.env.SAGA_CMD || 'saga.cmd'
 
 class RabbitConnector {
     async connect(retries = 5, delay = 3000) {
         while (retries > 0) {
             try {
-                const connection = await amqp.connect(amqpUrl)
+                const connection = await amqp.connect(RABBITMQ_URL)
                 channel = await connection.createChannel()
-                await channel.assertQueue(sagaQueue)
+                await channel.assertQueue(SAGA_CMD)
                 console.log("Connectado ao RabbitMQ")
                 return channel
             } catch (err) {
@@ -38,7 +40,7 @@ class RabbitConnector {
         }))
 
         channel.sendToQueue(
-            sagaQueue,
+            SAGA_CMD,
             Buffer.from(
                 JSON.stringify({
                     ...payload,
@@ -47,7 +49,7 @@ class RabbitConnector {
             )
         )
 
-        return jobKey
+        return {jobId: jobKey}
     }
 }
 
