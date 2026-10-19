@@ -137,20 +137,20 @@ public class RequestService {
         request.setStatus(RequestStatus.REJEITADA);
 
         requestRepository.save(request);
+        this.sendRejectionEmail(request);
 
         return request;
     }
-
 
     private void sendRejectionEmail(Request request) {
         Map<String, Object> email = new HashMap<>();
         email.put("email", request.getEmail());
         email.put("nome", request.getName());
-        email.put("motivo", request.getRejectionReason());
 
         RabbitRequest command = RabbitRequest.builder()
                 .type("email.enviar-rejeicao")
                 .payload(Map.of("email", email))
+                .error(request.getRejectionReason())
                 .build();
         rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, command);
     }
