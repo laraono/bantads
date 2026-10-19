@@ -75,15 +75,11 @@ public class SagaService {
             error = e.getMessage();
             e.printStackTrace();
         }
-        Map<String, Object> reply = new HashMap<>();
-        reply.put("sagaId", command.getSagaId());
-        reply.put("type", command.getType());
-        reply.put("stepIndex", command.getStepIndex());
-        reply.put("attempt", command.getAttempt());
-        reply.put("status", status.toString());
-        reply.put("error", error);
-        reply.put("timestamp", new Date());
-        reply.put("payload", payload);
+
+        command.setStatus(status.toString());
+        command.setError(error);
+        command.setPayload(payload);
+        command.setTimestamp(new Date());
 
         if (status == Status.SUCESSO) {
             requestRepository.save(Request.builder()
@@ -93,23 +89,25 @@ public class SagaService {
                     .build());
         }
 
-        this.sendCommand(reply);
+        this.sendCommand(command);
     }
 
     @RabbitListener(queues = RabbitMQConfig.ACCOUNT_QUEUE_DLQ)
-    public void handleDlq(Map<String, Object> command) {
-        UUID sagaId = UUID.fromString(command.get("sagaId").toString());
-        String type = command.get("type").toString();
+    public void handleDlq(RabbitRequest command) {
+        UUID sagaId = command.getSagaId();
+        String type = command.getType();
 
         boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type, true);
         if (alreadyProcessed) {
             return;
         }
 
+        Map<String, Object> payload = command.getPayload();
+
         SagaStepHandler handler = this.handlers.get(type);
 
         if (handler != null) {
-            handler.compensate(command);
+            handler.compensate(payload);
         }
 
         requestRepository.save(Request.builder()
@@ -119,7 +117,7 @@ public class SagaService {
                 .build());
     }
 
-    public void sendCommand(Map<String, Object> answer) {
+    public void sendCommand(RabbitRequest answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }
