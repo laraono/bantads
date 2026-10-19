@@ -10,6 +10,7 @@ class ClientService {
         const clients = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients`, {
             params: { busca }
         })
+
         return clients.data._embedded?.clientList ?? []
     }
 

@@ -16,8 +16,8 @@ class MangerService {
 
   async getManager(id) {
     const managerAnswer = await axios.get(
-      `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
-    );
+      `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`
+    )
 
     return managerAnswer.data;
   }
@@ -40,29 +40,29 @@ class MangerService {
     }
   }
 
-  async deleteManager(id, headers) {
-    try {
-      const deleteAnswer = await axios.post(
-        `http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/delete-manager`,
-        { cpfGerente: id },
-        { headers: { "x-user-cpf": headers["x-user-cpf"] } },
-      );
-      return deleteAnswer.data;
-    } catch (err) {
-      if (err.response) {
-        const error = new Error(err.response.data?.message || err.message);
-        error.status = err.response.status;
-        throw error;
-      }
-      throw err;
+  async deleteManager(id) {
+    const payload = {
+      cpfGerente: id,
+      type: 'DELETAR_GERENTE'
     }
+
+    const job = {
+      status: "PENDENTE",
+      resultType: "inline",
+      dominio: null,
+      resourceId: id,
+      erro: null
+    }
+      
+    return await rabbitConnector.startSaga(payload, job)
+    
   }
 
   
   async createManager(gerente) {
     try {
       const payload = {
-        ...gerente,
+        gerente,
         type: "INSERIR_GERENTE",
       };
 

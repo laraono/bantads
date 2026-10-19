@@ -5,11 +5,17 @@ const { MongoClient } = require('mongodb');
 const { Client } = require('pg');
 const fs = require('fs/promises');
 const redis = require('../config/redis');
+const axios = require('axios');
 
-const MONGO_USER = process.env.MONGO_USER || 'admin';
-const MONGO_PASS = process.env.MONGO_PASS || 'password';
-const POSTGRES_USER = process.env.POSTGRES_USER || 'user';
-const POSTGRES_PASS = process.env.POSTGRES_PASS || 'password';
+const MONGO_USER = process.env.MONGO_USER || 'admin'
+const MONGO_PASS = process.env.MONGO_PASS || 'password'
+const POSTGRES_USER = process.env.POSTGRES_USER || 'user'
+const POSTGRES_PASS = process.env.POSTGRES_PASS || 'password'
+
+const RABBITMQ_USER = process.env.POSTGRES_USER || 'guest'
+const RABBITMQ_PASS = process.env.POSTGRES_PASS || 'guest'
+const RABBITMQ_PORT = process.env.RABBITMQ_PORT || '15672';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || `'http://rabbitmq:${RABBITMQ_PORT}/api'`
 
 const MONGO_URI = `mongodb://${MONGO_USER}:${MONGO_PASS}@mongodb:27017`;
 
@@ -175,9 +181,8 @@ class RebootService {
                 
                 console.log(`Successfully seeded ${dbName}`);
             } catch (err) {
-                const error = new Error(`Seeding failed for ${dbName}: ${err.message}`);
+                const error = new Error(err);
                 error.status = 500;
-                throw error;
             } finally {
                 await client.end();
             }
@@ -185,8 +190,9 @@ class RebootService {
     }
 
     async flushRedis() {
-        await redis.flushAll()
+        await redis.flushall()
     }
+
 }
 
 module.exports = new RebootService()
