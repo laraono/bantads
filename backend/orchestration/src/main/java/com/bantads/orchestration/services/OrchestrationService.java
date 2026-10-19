@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.bantads.orchestration.model.StepDefinition;
+import com.bantads.orchestration.model.*;
 import org.jspecify.annotations.NonNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -15,9 +15,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.bantads.orchestration.config.RabbitMQConfig;
-import com.bantads.orchestration.model.SagaStates;
-import com.bantads.orchestration.model.SagaStatus;
-import com.bantads.orchestration.model.SagaSteps;
 import tools.jackson.databind.ObjectMapper;
 
 @Service 
@@ -43,112 +40,177 @@ public class OrchestrationService {
                 .build();
 
         redisTemplate.opsForValue().set("saga:" + sagaId, sagaStates);
-        publishSagaCmd(sagaStates);
+
+        RabbitRequest request = new RabbitRequest();
+        request.setAttempt(0);
+        publishSagaCmd(sagaStates, request);
     }
 
-    public void publishSagaCmd(@NonNull SagaStates sagaStates) {
+    public void publishSagaCmd(@NonNull SagaStates sagaStates, RabbitRequest request) {
         Map<String, Object> cmd = sagaStates.getPayload();
-
-        cmd.put("sagaId", sagaStates.getSagaId());
-        cmd.put("stepIndex", sagaStates.getStepIndex());
-        cmd.put("type", sagaStates.getType());
         cmd.put("compensation", false);
-        cmd.put("payload", sagaStates.getPayload());
 
+        StepDefinition step = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
 
+        request.setSagaId(sagaStates.getSagaId());
+        request.setType(step.getActionType());
+        request.setPayload(cmd);
+        request.setStepIndex(sagaStates.getStepIndex());
 
         String queue = sagaStates.currentStep();
-        rabbitTemplate.convertAndSend(queue, cmd);
+        rabbitTemplate.convertAndSend(queue, request);
 
         Map<String, Object> timeoutToken = new HashMap<>();
         timeoutToken.put("sagaId", sagaStates.getSagaId());
-        timeoutToken.put("stepIndex", sagaStates.getStepIndex()); 
-        
+        timeoutToken.put("stepIndex", sagaStates.getStepIndex());
+
         rabbitTemplate.convertAndSend(queue + ".wait", timeoutToken);
     }
 
+    public int dealWithEmail(SagaStates sagaStates, RabbitRequest reply) {
+        StepDefinition step = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
+
+        if(step.getActionType().contains("email.")) {
+            String sagaKey = "saga:" + sagaStates.getSagaId();
+
+            this.publishSagaCmd(sagaStates, reply);
+
+            redisTemplate.opsForValue().set(sagaKey, sagaStates);
+
+            if (sagaStates.isLastStep()) {
+
+                sagaStates.setStatus(SagaStatus.CONCLUIDO);
+
+                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                redisTemplate.expire(sagaKey, Duration.ofHours(24));
+
+                updateJob(sagaStates.getSagaId(), "CONCLUIDO");
+
+                return 0;
+            }
+            return sagaStates.getStepIndex() + 1;
+
+        }
+
+        return sagaStates.getStepIndex();
+    }
+
     @RabbitListener(queues = RabbitMQConfig.ORQUESTRADOR_REPLY)
-    public void handleReply(Map<String, Object> reply) {
-        UUID sagaId = UUID.fromString(reply.get("sagaId").toString());
+    public void handleReply(RabbitRequest reply) {
+        UUID sagaId = reply.getSagaId();
         String sagaKey = "saga:" + sagaId;
-        SagaStates sagaStates = (SagaStates) redisTemplate.opsForValue().get(sagaKey);
+
+        Object object = redisTemplate.opsForValue().get(sagaKey);
+        if (object == null) return;
+        SagaStates sagaStates = objectMapper.convertValue(object, SagaStates.class);
 
         if (sagaStates == null) return;
 
-        String status = reply.get("status").toString();
-        int attempt = (int) reply.get("attempt");
-        int stepIndex = Integer.parseInt(reply.get("stepIndex").toString());
+        String status = reply.getStatus();
+        int attempt = reply.getAttempt();
 
-        String accountNumber = reply.getOrDefault("numeroConta", "").toString();
+        Map<String, Object> payload = reply.getPayload();
 
-        if(accountNumber != null && accountNumber.isEmpty()) {
-            sagaStates.setStatus(SagaStatus.CONCLUIDO);
-            redisTemplate.opsForValue().set(sagaKey, sagaStates);
-            redisTemplate.expire(sagaKey, Duration.ofHours(24));
-            return;
-        }
-
-        if (sagaStates.getStatus() == SagaStatus.COMPENSACAO || sagaStates.getStatus() == SagaStatus.FALHA) {
+        if (sagaStates.getStatus() == SagaStatus.COMPENSACAO) {
             return;
         }
 
         if ("SUCESSO".equals(status)) {
-            if (reply.get("payload") instanceof Map<?, ?> stepPayload) {
-                stepPayload.forEach((k, v) -> sagaStates.getPayload().put(String.valueOf(k), v));
-            }
 
             if (sagaStates.isLastStep()) {
                 sagaStates.setStatus(SagaStatus.CONCLUIDO);
-                sagaStates.setPayload(reply);
+                sagaStates.setPayload(payload);
+
                 redisTemplate.opsForValue().set(sagaKey, sagaStates);
                 redisTemplate.expire(sagaKey, Duration.ofHours(24));
 
-                Object jobObject = redisTemplate.opsForValue().get("job-" + sagaId);
-                Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
-                job.put("status", "SUCESSO");
-                redisTemplate.opsForValue().set("job-" + sagaId, job);
-            } else {
-                sagaStates.setStepIndex(sagaStates.getStepIndex() + 1);
-                sagaStates.setPayload(reply);
-                publishSagaCmd(sagaStates);
+                updateJob(sagaId, "CONCLUIDO");
 
-                reply.put("email", "");
-                sagaStates.setPayload(reply);
-                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                sagaStates.setPayload(payload);
+                publishSagaCmd(sagaStates, reply);
+            } else {
+                reply.setAttempt(0);
+                if(SagaSteps.INSERIR_GERENTE == sagaStates.getStep()) {
+                    String accountNumber = payload.getOrDefault("numeroConta", "sem-resposta").toString();
+                    if(accountNumber != null && accountNumber.isEmpty()) {
+                        sagaStates.setStatus(SagaStatus.CONCLUIDO);
+                        redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                        redisTemplate.expire(sagaKey, Duration.ofHours(24));
+
+                        updateJob(sagaId, "CONCLUIDO");
+                        return;
+                    }
+                }
+
+                int nextStep = sagaStates.getStepIndex() + 1;
+
+                sagaStates.setStepIndex(nextStep);
+                sagaStates.setPayload(payload);
+
+                StepDefinition step = sagaStates.getStep().getSteps().get(nextStep);
+
+                if(step.getActionType().contains("email.")) {
+                    nextStep = this.dealWithEmail(sagaStates, reply);
+                }
+
+                if(nextStep > 0) {
+                    sagaStates.setStepIndex(nextStep);
+                    publishSagaCmd(sagaStates, reply);
+
+                    this.updateRedis(sagaStates);
+                }
             }
         } else if ("FALHA".equals(status)) {
             if(attempt < 3) {
-                reply.put("attempt", attempt  + 1);
-                sagaStates.setPayload(reply);
-                sagaStates.setStepIndex(sagaStates.getStepIndex());
-                publishSagaCmd(sagaStates);
+                if(reply.getError().equals("CONTA JÁ EXISTE")) {
 
-                reply.put("email", "");
-                sagaStates.setPayload(reply);
-                redisTemplate.opsForValue().set(sagaKey, sagaStates);
+                    this.updateJob(sagaId, "FALHA");
+
+                    sagaStates.setStatus(SagaStatus.COMPENSACAO);
+                    sagaStates.setError(reply.getError());
+
+                    compensate(sagaStates);
+
+                    this.updateRedis(sagaStates);
+                } else {
+                    reply.setAttempt(attempt  + 1);
+                    sagaStates.setPayload(payload);
+                    sagaStates.setStepIndex(sagaStates.getStepIndex());
+                    publishSagaCmd(sagaStates, reply);
+
+                    this.updateRedis(sagaStates);
+                }
             } else {
                 sagaStates.setStatus(SagaStatus.COMPENSACAO);
-                sagaStates.setError(reply.getOrDefault("error", "ERRO_DESCONHECIDO").toString());
+                sagaStates.setError(reply.getError().isBlank() ? "ERRO-DESCONHECIDO" : reply.getError());
 
-                Object jobObject = redisTemplate.opsForValue().get("job-" + sagaId);
-                Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
-                job.put("status", "FALHA");
-                redisTemplate.opsForValue().set("job-" + sagaId, job);
+                this.updateJob(sagaId, "FALHA");
+                this.updateRedis(sagaStates);
 
                 compensate(sagaStates);
-
-                reply.put("email", "");
-                sagaStates.setPayload(reply);
-                redisTemplate.opsForValue().set(sagaKey, sagaStates);
             }
         }
+    }
+
+    public void updateRedis(SagaStates sagaStates) {
+        Map<String, Object> payload = sagaStates.getPayload();
+
+        payload.put("email", "");
+        sagaStates.setPayload(payload);
+
+        redisTemplate.opsForValue().set("saga:" + sagaStates.getSagaId(), sagaStates);
+    }
+
+    public void updateJob(UUID sagaId, String status) {
+        Object jobObject = redisTemplate.opsForValue().get("job-" + sagaId);
+        Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
+        job.put("status", status);
+        redisTemplate.opsForValue().set("job-" + sagaId, job);
     }
 
     @RabbitListener(queues = RabbitMQConfig.SAGA_CMD)
     public void handleSagaQueue(Map<String, Object> payload) {
         UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
-
-        payload.put("attempt", 0);
 
         String type = payload.get("type").toString();
 
@@ -158,6 +220,9 @@ public class OrchestrationService {
                 break;
             case "INSERIR_GERENTE":
                 this.startSaga(SagaSteps.INSERIR_GERENTE, payload, sagaId);
+                break;
+            case "DELETAR_GERENTE":
+                this.startSaga(SagaSteps.DELETAR_GERENTE, payload, sagaId);
                 break;
             default:
                 break;
@@ -170,7 +235,8 @@ public class OrchestrationService {
         int timeoutStepIndex = Integer.parseInt(timedOut.get("stepIndex").toString());
 
         String sagaKey = "saga:" + sagaId;
-        SagaStates sagaStates = (SagaStates) redisTemplate.opsForValue().get(sagaKey);
+        Object object = redisTemplate.opsForValue().get(sagaKey);
+        SagaStates sagaStates = objectMapper.convertValue(object, SagaStates.class);
 
         if (sagaStates == null) return;
 
@@ -185,7 +251,7 @@ public class OrchestrationService {
     }
 
     public void compensate(SagaStates sagaStates) {  
-        for (int i = sagaStates.getStepIndex(); i >= 0; i--) {
+        for (int i = sagaStates.getStepIndex() - 1; i >= 0; i--) {
             compensateSingleStep(sagaStates, i);
         }
 
@@ -202,14 +268,27 @@ public class OrchestrationService {
         StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
         String queue = step.getQueue() + ".dql";
 
-        Map<String, Object> comp = new HashMap<>();
-        comp.put("sagaId", sagaStates.getSagaId());
-        comp.put("stepIndex", stepIndex);
-        comp.put("type", step.getActionType());
+        Map<String, Object> comp = sagaStates.getPayload();
         comp.put("compensation", true);
-        comp.put("payload", sagaStates.getPayload());
 
-        rabbitTemplate.convertAndSend(queue, comp);
+        RabbitRequest request = new RabbitRequest();
+
+
+        request.setSagaId(sagaStates.getSagaId());
+        request.setType(step.getActionType());
+        request.setPayload(comp);
+        request.setStepIndex(sagaStates.getStepIndex());
+
+        rabbitTemplate.convertAndSend(queue, request);
+
+        if(sagaStates.isLastStep() && sagaStates.getStep() == SagaSteps.CRIACAO_CONTA) {
+            request.setSagaId(sagaStates.getSagaId());
+            request.setType("email.enviar-rejeicao");
+            request.setPayload(comp);
+            request.setStepIndex(sagaStates.getStepIndex());
+
+            rabbitTemplate.convertAndSend(RabbitMQConfig.MS_EMAIL_CMD + ".dql", request);
+        }
     }
 
 }
