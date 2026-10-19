@@ -23,7 +23,7 @@ public class AccountHistoryDTO {
 
     private String destinationClientName;
 
-    private BigDecimal amount;
+    private BigDecimal amount; // não é string pois não vai ao json e front
 
     private String managerCPF;
 

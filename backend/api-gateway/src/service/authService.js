@@ -13,7 +13,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta';
 
 class AuthService {
     async authenticate(body) {
-        const msBody = { login: body.email, password: body.senha };
+        if (!body.email || !body.senha) {
+            const error = new Error('Email e/ou senha não informados');
+            error.status = 400;
+            throw error;
+        }
+
+        const msBody = { email: body.email, senha: body.senha };
         const authResponse = await axios.post(`http://${MS_AUTH_HOST}:${MS_AUTH_PORT}/auth/login`, msBody);
         const data = authResponse.data;
 
@@ -29,8 +35,6 @@ class AuthService {
 
         await redis.set(`sessao:${jti}`, 'ativo', 'EX', 1800);
 
-        // API Composition: o MS Auth não guarda nome/e-mail, então busca no
-        // MS Cliente ou MS Gerente (conforme o tipo) pelo CPF
         const usuario = await this.composeUsuario(data.cpf, data.tipo);
 
         return { auth: true, token, tipo: data.tipo, usuario };
@@ -42,11 +46,10 @@ class AuthService {
                 const { data } = await axios.get(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${cpf}`);
                 return { cpf: data.cpf, nome: data.name ?? data.nome, email: data.email };
             }
-            const { data } = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`);
+            const { data } = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`);
             return { cpf: data.cpf, nome: data.name ?? data.nome, email: data.email };
         } catch (err) {
-            // sem nome/e-mail, mas o login não deve falhar por causa disso
-            return { cpf, nome: '', email: '' };
+           return { cpf, nome: '', email: '' };
         }
     }
 

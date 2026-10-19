@@ -44,9 +44,9 @@ public class InsertManagerHandler implements SagaStepHandler {
 
         Map<String, String> requisicao = new HashMap<>();
         requisicao.put("email", manager.getEmail());
-        requisicao.put("cpf", manager.getCpf());
         requisicao.put("tipo", "gerente");
-        requisicao.put("id", manager.getCpf());
+        requisicao.put("id", manager.getManagerId().toString());
+        requisicao.put("cpf", manager.getCpf());
         requisicao.put("senha", managerDTO.getSenha());
 
         payload.put("gerente", gerente);

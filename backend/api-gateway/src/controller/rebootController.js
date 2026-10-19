@@ -3,14 +3,18 @@ const rebootService = require('../service/rebootService');
 class RebootController {
     async reboot(req, res) {
         try {
-            await rebootService.seedAuth()
+            const result = await rebootService.seedAuth();
             
             await rebootService.seedPostgres()
 
             return res.status(200).json({ 
                 message: 'ok',
-                status: 'ok'
+                status: 'ok',
+                clientes: result.clientes,
+                gerentes: result.gerentes,
+                contas: result.contas,
             });
+            
         } catch (err) {
             const status = err.status || 500;
             console.log(err)

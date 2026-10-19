@@ -25,10 +25,11 @@ public class RabbitMQConfig {
     public Queue managerQueue() {
         return QueueBuilder.durable(MANAGER_QUEUE)
             .withArgument("x-dead-letter-exchange", "")
-            .withArgument("x-dead-letter-routing-key", MANAGER_QUEUE + ".dlq")
+            .withArgument("x-dead-letter-routing-key", MANAGER_QUEUE_DLQ)
             .build();
     }
 
+    // Fila se erros
     @Bean
     public Queue managerQueueDlq() {
         return QueueBuilder.durable(MANAGER_QUEUE_DLQ).build();
@@ -54,21 +55,11 @@ public class RabbitMQConfig {
         return factory;
     }
 
+    // Tenta enviar MAX_TENTATIVAS vezes e se der errado dá dlq
     private RetryOperationsInterceptor retryInterceptor() {
         return RetryInterceptorBuilder.stateless()
                 .maxAttempts(MAX_TENTATIVAS)
                 .backOffOptions(INTERVALO_RETRY_MS, 1.0, INTERVALO_RETRY_MS)
                 .build();
-    }
-
-    private static Queue commandQueue(String name) {
-        return QueueBuilder.durable(name)
-                .withArgument("x-dead-letter-exchange", "")
-                .withArgument("x-dead-letter-routing-key", name + ".dlq")
-                .build();
-    }
-
-    private static Queue dlq(String name) {
-        return QueueBuilder.durable(name + ".dlq").build();
     }
 }

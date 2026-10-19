@@ -12,11 +12,11 @@ import java.util.UUID;
 public interface AuthRepository extends MongoRepository<Auth, String> 
 {
 
-    Optional<Auth> findByLogin(String login);
+    Optional<Auth> findByEmail(String email);
 
-    boolean existsByLogin(String login);
+    boolean existsByEmail(String email);
 
     Auth findByCpf(String cpf);
     
-    void deleteByLogin(String login);
+    void deleteByEmail(String email);
 }

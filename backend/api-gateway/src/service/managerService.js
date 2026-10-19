@@ -42,12 +42,21 @@ class MangerService {
 
   async deleteManager(id, headers) {
     try {
-      const deleteAnswer = await axios.post(
-        `http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/delete-manager`,
-        { cpfGerente: id },
-        { headers: { "x-user-cpf": headers["x-user-cpf"] } },
-      );
-      return deleteAnswer.data;
+      const payload = {
+        cpfGerente: id,
+        cpfSolicitante: headers["x-user-cpf"],
+        type: "DELETAR_GERENTE",
+      };
+
+      const job = {
+        status: "PENDENTE",
+        resultType: "resource",
+        dominio: "gerentes",
+        resourceId: id,
+        erro: null,
+      };
+
+      return await rabbitConnector.startSaga(payload, job);
     } catch (err) {
       if (err.response) {
         const error = new Error(err.response.data?.message || err.message);
@@ -58,7 +67,6 @@ class MangerService {
     }
   }
 
-  
   async createManager(gerente) {
     try {
       const payload = {

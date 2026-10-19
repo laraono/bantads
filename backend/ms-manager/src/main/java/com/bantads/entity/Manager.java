@@ -22,7 +22,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@SQLRestriction("is_active = true")
 
 public class Manager {
     @Id

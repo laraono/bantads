@@ -15,6 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+// Gerencia uma saga só
 public class SagaStates implements Serializable{
     private UUID sagaId;
     private SagaStatus status;

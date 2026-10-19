@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/clients")
+@RequestMapping("/clientes")
 public class ClientController {
     
     @Autowired
@@ -32,8 +32,9 @@ public class ClientController {
 
     @GetMapping("/{cpf}")
     public 
-    EntityModel<Client> getClient(@PathVariable String cpf) {
+    EntityModel<Client> getClient(@PathVariable String cpf, @RequestHeader("x-user-tipo") String tipo) {
         Client client = clientService.getClient(cpf);
+        assembler.setTipo(tipo);
         return assembler.toModel(client);
     }
 

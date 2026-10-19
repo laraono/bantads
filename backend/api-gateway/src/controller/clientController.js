@@ -8,6 +8,7 @@ class ClientController {
 
             const clientes = clients
                 .map((c) => ({
+                    _links: clientService.rewriteLinks(c._links),
                     cpf: c.cpf,
                     nome: c.name,
                     email: c.email,
@@ -29,16 +30,6 @@ class ClientController {
         try {
             const client = await clientService.getClient(req.params.cpf, req.headers);
             return res.status(200).json(client);
-        } catch (err) {
-            const status = err.status || 500;
-            return res.status(status).json({ error: err.message || 'Erro no servidor' });
-        }
-    }
-
-    async createClient(req, res) {
-        try {
-            const client = await clientService.createClient(req.body.targetCpf, req.headers);
-            return res.status(201).json(client);
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });

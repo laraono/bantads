@@ -1,7 +1,11 @@
 package com.bantads.controller;
 
+import com.bantads.dto.LoginDTO;
 import com.bantads.entity.Auth;
 import com.bantads.service.AuthService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,20 +31,20 @@ public class AuthController
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) 
+    public ResponseEntity<Map<String, Object>> login(@RequestBody @Valid LoginDTO login) 
     {
 
-        String login = request.get("login");
-        String password = request.get("password");
+        String email = login.getEmail();
+        String password = login.getSenha();
 
-        Auth auth = authService.authenticate(login, password);
+        Auth auth = authService.authenticate(email, password);
 
         Map<String, Object> response = new HashMap<>();
 
         response.put("auth", true);
         response.put("cpf", auth.getCpf());
         response.put("tipo", auth.getType());
-        response.put("login", auth.getLogin());
+        response.put("login", auth.getEmail());
 
         return ResponseEntity.ok(response);
     }
@@ -52,7 +56,7 @@ public class AuthController
                 auth.getUserId(),
                 auth.getCpf(),
                 auth.getType(),
-                auth.getLogin(),
+                auth.getEmail(),
                 auth.getPassword(),
                 auth.getActive()
         );

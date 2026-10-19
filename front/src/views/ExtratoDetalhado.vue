@@ -214,20 +214,6 @@ function formatCurrency(value: number): string {
             </tr>
           </tbody>
         </table>
-
-        <div class="table-footer">
-          <span class="footer-count">{{ transactions.length }} movimentações no período</span>
-          <div class="pagination">
-            <button class="page-btn" disabled>
-              <svg viewBox="0 0 24 24" class="page-icon"><path d="m15 18-6-6 6-6" /></svg>
-              Previous
-            </button>
-            <button class="page-btn">
-              Next
-              <svg viewBox="0 0 24 24" class="page-icon"><path d="m9 18 6-6-6-6" /></svg>
-            </button>
-          </div>
-        </div>
       </div>
     </main>
   </div>

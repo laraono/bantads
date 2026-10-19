@@ -50,7 +50,11 @@ public class EventService {
         }
     }
 
-    public void deposit(String userCPF, CreateEventDTO event, String objectId) {
+    public Event deposit(String userCPF, CreateEventDTO event, String objectId) {
+
+        if(event.getPayload().get("valor") == null || event.getPayload().get("valor").toString().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor não informado");
+        }
         if(!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
@@ -59,6 +63,14 @@ public class EventService {
 
         Map<String, Object> payload = event.getPayload();
 
+        String nome = payload.get("nome").toString();
+        String cpf = payload.get("cpfCliente").toString();
+        String valor = payload.get("valor").toString();
+
+        if(nome.isEmpty() || cpf.isEmpty() || valor.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Campos obrigatórios");
+        }
+        
         Event newEvent = Event.builder()
                 .payload(payload)
                 .objectId(objectId)
@@ -70,7 +82,7 @@ public class EventService {
         this.eventRepository.save(newEvent);
 
         Map<String, Object> newPayload = newEvent.getPayload();
-
+        
         newPayload.putIfAbsent("eventId", newEvent.getEventId());
         newPayload.putIfAbsent("version", newEvent.getVersion());
 
@@ -82,6 +94,8 @@ public class EventService {
                 .build();
 
         this.sendReadModelCommand(command, userCPF);
+        
+        return newEvent;
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {
@@ -116,7 +130,7 @@ public class EventService {
         this.sendReadModelCommand(command, "");
     }
 
-    public void withdraw(String userCPF, CreateEventDTO event, String objectId) {
+    public Event withdraw(String userCPF, CreateEventDTO event, String objectId) {
         if(!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
@@ -150,6 +164,8 @@ public class EventService {
                 .build();
 
         this.sendReadModelCommand(command, userCPF);
+
+        return newEvent;
 }
 
     public Event createAccount(Map<String, Object> payload) {
@@ -351,6 +367,7 @@ public class EventService {
         String nome = String.valueOf(destination.get("nome"));
 
         return ReturnTransferDTO.builder().nome(nome).build();
+        
     }
 
     public void checkBalance(String objectId, Map<String, Object> payload) {
