@@ -119,7 +119,6 @@ public class ManagerService {
 
         manager.setName(updateManagerDTO.getNome());
         manager.setPhone(updateManagerDTO.getTelefone());
-        manager.setActive(updateManagerDTO.getAtivo());
 
         Manager saved = managerRepository.save(manager);
 
@@ -175,29 +174,26 @@ public class ManagerService {
             e.printStackTrace();
         }
 
-        Map<String, Object> reply = new HashMap<>();
-        reply.put("sagaId", command.getSagaId());
-        reply.put("type", command.getType());
-        reply.put("stepIndex", command.getStepIndex());
-        reply.put("attempt", command.getAttempt());
-        reply.put("status", status.toString());
-        reply.put("error", error);
-        reply.put("timestamp", new Date());
-        reply.put("payload", payload);
+        command.setPayload(payload);
+        command.setStatus(status.toString());
+        command.setError(error);
+        command.setTimestamp(new Date());
 
-        this.sendReadModelCommand(reply);
+        this.sendReadModelCommand(command);
     }
 
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
-    public void handleDlqQueue(Map<String, Object> payload) {
-        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
-        String type = payload.get("type").toString();
+    public void handleDlqQueue(RabbitRequest command) {
+        UUID sagaId = command.getSagaId();
+        String type = command.getType();
 
         if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
             return;
         }
 
         SagaStepHandler handler = this.handlers.get(type);
+
+        Map<String, Object> payload = command.getPayload();
 
         if (handler != null) {
             handler.compensate(payload);
@@ -209,7 +205,7 @@ public class ManagerService {
                 .build());
     }
 
-    public void sendReadModelCommand(Map<String, Object> answer) {
+    public void sendReadModelCommand(RabbitRequest answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
     }
 }
