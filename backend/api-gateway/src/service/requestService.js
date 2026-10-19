@@ -81,7 +81,7 @@ class RequestService {
 
     async rejectRequest(cpf, body) {
         try {
-            const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/rejeicao`, {
+            const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`, {
                 motivo: body?.motivo
             })
             return toRequestDTO(response.data)

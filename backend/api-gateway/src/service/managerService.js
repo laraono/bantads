@@ -45,9 +45,10 @@ class MangerService {
   }
 
   async getManager(id) {
-    const managerAnswer = await axios.get(
-      `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`
-    )
+    try{
+      const managerAnswer = await axios.get(
+        `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`
+      )
 
       return managerAnswer.data;
     } catch (err) {
@@ -58,6 +59,18 @@ class MangerService {
   // R14: e-mail e CPF não podem ser alterados, então só nome e telefone seguem
   async updateManager(id, body, headers) {
     try {
+      if(body.email) {
+        const error = new Error('Não é possível alterar o email');
+        error.status = 400;
+        throw error;
+      }
+
+      if(body.cpf) {
+        const error = new Error('Não é possível alterar o CPF');
+        error.status = 400;
+        throw error;
+      }
+
       const updateAnswer = await axios.put(
         `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
         { nome: body.nome, telefone: body.telefone, ativo: true },
@@ -89,7 +102,6 @@ class MangerService {
 
   
   async createManager(gerente) {
-    try {
       const payload = {
         gerente,
         type: "INSERIR_GERENTE",

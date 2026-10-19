@@ -38,7 +38,7 @@ class ManagerController {
         }
         try {
             const jobId = await managerService.deleteManager(req.params.id);
-            return res.status(202).json({ jobId });
+            return res.status(202).json(jobId);
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
@@ -48,7 +48,7 @@ class ManagerController {
     async createManager(req, res) {
         try {
             const jobId = await managerService.createManager(req.body);
-            return res.status(202).json({ jobId });
+            return res.status(202).json(jobId);
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });

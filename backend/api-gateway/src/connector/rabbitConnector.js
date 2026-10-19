@@ -39,9 +39,9 @@ class RabbitConnector {
         // "@class" é exigido pelo serializer JSON do Spring Data Redis usado no
         // orquestrador para conseguir ler esse valor de volta como um Map
         await redis.set(jobKey, JSON.stringify({
-            "@class": "java.util.HashMap",
             ...job,
-            jobId: sagaId
+            jobId: sagaId,
+            "@class": "java.util.HashMap"
         }))
 
         channel.sendToQueue(
