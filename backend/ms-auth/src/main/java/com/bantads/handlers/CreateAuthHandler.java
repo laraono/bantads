@@ -22,10 +22,8 @@ public class CreateAuthHandler implements SagaStepHandler {
     @Override
     public Map<String, Object> execute(Map<String, Object> payload) {
         Map<String, Object> request = (Map<String, Object>) payload.get("requisicao");
-        String id = request.get("id") != null ? String.valueOf(request.get("id")) : null;
         Object tipo = request.getOrDefault("tipo", payload.get("tipo"));
         String password = this.authService.create(
-                id,
                 String.valueOf(request.get("cpf")),
                 String.valueOf(tipo),
                 String.valueOf(request.get("email")),

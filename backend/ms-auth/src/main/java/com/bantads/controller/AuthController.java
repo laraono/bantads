@@ -27,8 +27,7 @@ public class AuthController
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) 
-    {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> request) {
 
         String login = request.get("login");
         String password = request.get("password");
@@ -43,19 +42,6 @@ public class AuthController
         response.put("login", auth.getLogin());
 
         return ResponseEntity.ok(response);
-    }
-
-    @PostMapping
-    public void createAuth(@RequestBody Auth auth)
-    {
-        authService.create(
-                auth.getUserId(),
-                auth.getCpf(),
-                auth.getType(),
-                auth.getLogin(),
-                auth.getPassword(),
-                auth.getActive()
-        );
     }
 
     @GetMapping
