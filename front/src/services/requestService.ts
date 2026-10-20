@@ -19,3 +19,30 @@ export interface SolicitacaoPayload {
 export function criarSolicitacao(payload: SolicitacaoPayload) {
   return http.post('/solicitacoes', payload).then((r) => r.data)
 }
+
+export type StatusSolicitacao = 'PENDENTE' | 'APROVADA' | 'NAO_APROVADA'
+
+export interface SolicitacaoDTO {
+  cpf: string
+  nome: string
+  email: string
+  salario: string | null
+  status: StatusSolicitacao
+  motivo: string | null
+  dataDecisao: string | null
+}
+
+// R8
+export function listarSolicitacoes() {
+  return http.get<{ solicitacoes: SolicitacaoDTO[] }>('/solicitacoes').then((r) => r.data.solicitacoes)
+}
+
+// R9 — inicia a SAGA; responde 202 { jobId }
+export function aprovarSolicitacao(cpf: string) {
+  return http.post<{ jobId?: string }>(`/solicitacoes/${cpf}/aprovacao`)
+}
+
+// R10 — síncrona (200)
+export function rejeitarSolicitacao(cpf: string, motivo: string) {
+  return http.post<SolicitacaoDTO>(`/solicitacoes/${cpf}/rejeicao`, { motivo }).then((r) => r.data)
+}

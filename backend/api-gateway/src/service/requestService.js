@@ -4,6 +4,37 @@ const rabbitConnector = require("../connector/rabbitConnector");
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
 
+function rethrow(err) {
+  if (err.response) {
+    const data = err.response.data;
+    const message =
+      (typeof data === "object" && (data?.detail || data?.message)) ||
+      err.message;
+    const error = new Error(message);
+    error.status = err.response.status;
+    throw error;
+  }
+  throw err;
+}
+
+function toIso(date) {
+  return date ? new Date(date).toISOString() : null;
+}
+
+// entidade Request do MS Cliente -> DTO da solicitação para o front (R8)
+function toRequestDTO(request) {
+  return {
+    cpf: request.cpf,
+    nome: request.name,
+    email: request.email,
+    salario: request.salary != null ? String(request.salary) : null,
+    status: request.status,
+    motivo: request.motivo ?? null,
+    dataDecisao: toIso(request.approvedAt ?? request.rejectionAt),
+    _links: request._links ?? request.links,
+  };
+}
+
 class RequestService {
   mapLinks(cpf, status, gatewayUrl = GATEWAY_URL) {
     const base = `${gatewayUrl}/solicitacoes`;
@@ -18,85 +49,27 @@ class RequestService {
 
     return links;
   }
-
   async listRequests() {
-    const requestsList = await axios.get(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`,
-    );
-
-    const response = response.data._embedded?.requestsList ?? [];
-
-    return {
-      solicitacoes: requests.map((c) => ({
-        _links: this.mapLinks(response.data.cpf, response.data.status),
-        status: response.data.status,
-        id: response.data.requestId,
-        motivo: response.data.rejectionReason,
-        aprovadoEm: response.data.approvedAt,
-        nome: response.data.name,
-        email: response.data.email,
-        cpf: response.data.cpf,
-        telefone: response.data.phone,
-        salario: response.data.salary,
-        cep: response.data.cep,
-        cidade: response.data.city,
-        uf: response.data.uf,
-        endereco: {
-          logradouro: response.data.street,
-          numero: response.data.number,
-          complemento: response.data.additionalInfo,
-        },
-        cliente: {
-          nome: response.data.client?.name,
-          email: response.data.client?.email,
-          cpf: response.data.client?.cpf,
-          telefone: response.data.client?.phone,
-          endereco: {
-            logradouro: response.data.client?.street,
-            numero: response.data.client?.number,
-            complemento: response.data.client?.additionalInfo,
-          },
-        },
-      })),
-    };
+    try {
+      const response = await axios.get(
+        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`,
+      );
+      const solicitacoes = response.data?.solicitacoes ?? [];
+      return { solicitacoes: solicitacoes.map(toRequestDTO) };
+    } catch (err) {
+      rethrow(err);
+    }
   }
 
   async getRequest(cpf) {
-    const response = await axios.get(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`,
-    );
-
-    return {
-      _links: this.mapLinks(response.data.cpf, response.data.status),
-      status: response.data.status,
-      id: response.data.requestId,
-      motivo: response.data.rejectionReason,
-      aprovadoEm: response.data.approvedAt,
-      nome: response.data.name,
-      email: response.data.email,
-      cpf: response.data.cpf,
-      telefone: response.data.phone,
-      salario: response.data.salary,
-      cep: response.data.cep,
-      cidade: response.data.city,
-      uf: response.data.uf,
-      endereco: {
-        logradouro: response.data.street,
-        numero: response.data.number,
-        complemento: response.data.additionalInfo,
-      },
-      cliente: {
-        nome: response.data.client?.name,
-        email: response.data.client?.email,
-        cpf: response.data.client?.cpf,
-        telefone: response.data.client?.phone,
-        endereco: {
-          logradouro: response.data.client?.street,
-          numero: response.data.client?.number,
-          complemento: response.data.client?.additionalInfo,
-        },
-      },
-    };
+    try {
+      const response = await axios.get(
+        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`,
+      );
+      return toRequestDTO(response.data);
+    } catch (err) {
+      rethrow(err);
+    }
   }
 
   async createRequest(body) {
@@ -107,16 +80,33 @@ class RequestService {
       );
       return response.data;
     } catch (err) {
-      if (err.response) {
-        const data = err.response.data;
-        const message =
-          (typeof data === "object" && (data?.detail || data?.message)) ||
-          err.message;
-        const error = new Error(message);
-        error.status = err.response.status;
-        throw error;
-      }
-      throw err;
+      rethrow(err);
+    }
+
+    const response = response.data._embedded?.requestsList ?? [];
+
+    const job = {
+      status: "PENDENTE",
+      resultType: "resource",
+      dominio: "clientes",
+      resourceId: cpf,
+      erro: null,
+    };
+
+    return await rabbitConnector.startSaga(payload, job);
+  }
+
+  async rejectRequest(cpf, body) {
+    try {
+      const response = await axios.post(
+        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/rejeicao`,
+        {
+          motivo: body?.motivo,
+        },
+      );
+      return toRequestDTO(response.data);
+    } catch (err) {
+      rethrow(err);
     }
   }
 
