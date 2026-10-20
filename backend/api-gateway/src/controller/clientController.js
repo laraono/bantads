@@ -5,21 +5,7 @@ class ClientController {
     async listClients(req, res) {
         try {
             const clients = await clientService.listClients(req.query.busca);
-
-            const clientes = clients
-                .map((c) => ({
-                    _links: clientService.rewriteLinks(c._links),
-                    cpf: c.cpf,
-                    nome: c.name,
-                    email: c.email,
-                    telefone: c.phone,
-                    salario: c.salary,
-                    cidade: c.address?.city,
-                    uf: c.address?.state?.uf,
-                }))
-                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
-
-            return res.status(200).json({ clientes });
+            return res.status(200).json({ clients });
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });

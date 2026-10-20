@@ -5,44 +5,68 @@ const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
 const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
 
 class ClientService {
-  rewriteLinks(links = {}, gatewayUrl = GATEWAY_URL) {
-    // converte _link do controller para _links do gateway
-    return Object.fromEntries(
-      Object.entries(links).map(([rel, link]) => [
-        rel,
-        { ...link, href: link.href.replace(/^https?:\/\/[^/]+/, gatewayUrl) },
-      ]),
-    );
+  // monta os _links com os paths públicos do gateway e não os do ms-client
+  mapLinks(cpf, isGerente, gatewayUrl = GATEWAY_URL) {
+    const base = `${gatewayUrl}/clientes`;
+    const links = {
+      self: { href: `${base}/${cpf}` },
+      conta: { href: `${base}/${cpf}/conta` },
+    };
+
+    if (isGerente) {
+      links.clientes = { href: base };
+    }
+
+    return links;
   }
 
   async listClients(busca) {
-    const clients = await axios.get(
+    const response = await axios.get(
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes`,
       {
         params: { busca },
       },
     );
-    return clients.data._embedded?.clientList ?? [];
+
+  const clients = response.data._embedded?.clientList ?? [];
+
+    return clients
+      .map((c) => ({
+        _links: this.mapLinks(c.cpf, true),
+        cpf: c.cpf,
+        nome: c.name,
+        email: c.email,
+        telefone: c.phone,
+        salario: c.salary,
+        cidade: c.address?.city,
+        uf: c.address?.state?.uf,
+      }))
+      .sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+      );
   }
 
   async getClient(cpf, headers) {
     const response = await axios.get(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`, { headers: { "x-user-tipo": headers["x-user-tipo"] } },
+      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
+      { headers: { "x-user-tipo": headers["x-user-tipo"] } },
     );
 
+    const isGerente = headers["x-user-tipo"] === "GERENTE";
+
     return {
-        cpf: response.data.cpf,
-        nome: response.data.name,
-        email: response.data.email,
+      cpf: response.data.cpf,
+      nome: response.data.name,
+      email: response.data.email,
       telefone: response.data.phone,
       salario: response.data.salary,
       endereco: {
-          cidade: response.data.address.city,
-          estado: {
+        cidade: response.data.address.city,
+        estado: {
           uf: response.data.address.state.uf,
         },
       },
-      _links: this.rewriteLinks(response.data._links, GATEWAY_URL),
+      _links: this.mapLinks(response.data.cpf, isGerente),
     };
   }
 }

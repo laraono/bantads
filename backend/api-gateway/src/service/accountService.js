@@ -4,9 +4,20 @@ const MS_ACCOUNT_HOST = process.env.MS_ACCOUNT_HOST || "ms-account";
 const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || "8083";
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
+const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
 
-// repassa o status e a mensagem reais de um erro do axios (por padrão o axios
-// não expõe err.status, só err.response.status) em vez de sempre cair em 500
+// monta os _links com os paths públicos do gateway (/contas/...), não os do ms-account
+function mapLinks(numero, gatewayUrl = GATEWAY_URL) {
+  const base = `${gatewayUrl}/contas/${numero}`;
+  return {
+    self: { href: base },
+    extrato: { href: `${base}/extrato` },
+    depositar: { href: `${base}/deposito` },
+    sacar: { href: `${base}/saque` },
+    transferir: { href: `${base}/transferencia` },
+  };
+}
+
 function rethrow(err) {
   if (err.response) {
     const data = err.response.data;
@@ -145,7 +156,13 @@ class AccountService {
 
       const depositAnswer = await axios.post(
         `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
-        { payload: { valor: body.valor, nome: client.data.name, cpfCliente: cpf } },
+        {
+          payload: {
+            valor: body.valor,
+            nome: client.data.name,
+            cpfCliente: cpf,
+          },
+        },
         { headers: { "x-user-cpf": headers["x-user-cpf"] } },
       );
 
@@ -181,7 +198,15 @@ class AccountService {
         throw error;
       }
 
-      return accountAnswer.data;
+      const result = {
+        numero: accountAnswer.data.numero,
+        cpfCliente: accountAnswer.data.cpfCliente,
+        saldo: accountAnswer.data.saldo,
+        cpfGerente: accountAnswer.data.cpfGerente,
+        _links: mapLinks(accountAnswer.data.numero),
+      };
+
+      return result;
     } catch (err) {
       rethrow(err);
     }
@@ -212,7 +237,15 @@ class AccountService {
         throw error;
       }
 
-      return accountAnswer.data;
+      const result = {
+        numero: accountAnswer.data.numero,
+        cpfCliente: accountAnswer.data.cpfCliente,
+        saldo: accountAnswer.data.saldo,
+        cpfGerente: accountAnswer.data.cpfGerente,
+        _links: mapLinks(accountAnswer.data.numero),
+      };
+
+      return result;
     } catch (err) {
       rethrow(err);
     }
