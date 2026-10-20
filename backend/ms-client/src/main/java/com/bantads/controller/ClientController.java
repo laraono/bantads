@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/clientes")
+@RequestMapping("/clients")
 public class ClientController {
     
     @Autowired
@@ -38,7 +38,7 @@ public class ClientController {
         return assembler.toModel(client);
     }
 
-    @GetMapping("/{id}/solicitacoes")
+    @GetMapping("/{id}/requests")
     public
     Request getRequest(@PathVariable Long id) {
         return clientService.getRequestByClient(id);

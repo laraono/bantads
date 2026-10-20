@@ -41,7 +41,7 @@ public class ManagerService {
                 .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
     }
 
-    public Manager createManager(CreateManagerDTO createManagerDTO) {
+    public ManagerDTO createManager(CreateManagerDTO createManagerDTO) {
         Manager manager = Manager.builder()
                 .cpf(createManagerDTO.getCpf())
                 .email(createManagerDTO.getEmail())
@@ -50,7 +50,18 @@ public class ManagerService {
                 .isActive(true)
                 .build();
 
-        return managerRepository.save(manager);
+        ManagerDTO managerDto = ManagerDTO.builder()
+                .id(manager.getManagerId())
+                .ativo(manager.isActive())
+                .cpf(manager.getCpf())
+                .email(manager.getEmail())
+                .nome(manager.getName())
+                .telefone(manager.getPhone())
+                .build();
+
+        managerRepository.save(manager);
+
+        return managerDto;
     }
 
     public List<String> listManagerCPFs() {
@@ -80,8 +91,17 @@ public class ManagerService {
         return managerList;
     }
 
-    public Manager getManager(String cpf) {
-        return managerRepository.findByCpfAndIsActive(cpf, true);
+    public ManagerDTO getManager(String cpf) {
+        Manager manager = managerRepository.findByCpfAndIsActive(cpf, true);
+
+        return ManagerDTO.builder()
+                .id(manager.getManagerId())
+                .ativo(manager.isActive())
+                .cpf(manager.getCpf())
+                .email(manager.getEmail())
+                .nome(manager.getName())
+                .telefone(manager.getPhone())
+                .build();
     }
 
     public ManagerDTO updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
@@ -89,21 +109,27 @@ public class ManagerService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e CPF não podem ser alterados");
         }
 
-        Manager manager = this.getManager(managerCPF);
+        ManagerDTO managerDto = this.getManager(managerCPF);
 
-        manager.setName(updateManagerDTO.getNome());
-        manager.setPhone(updateManagerDTO.getTelefone());
-        manager.setActive(updateManagerDTO.getAtivo());
+        managerDto.setNome(updateManagerDTO.getNome());
+        managerDto.setTelefone(updateManagerDTO.getTelefone());
+        managerDto.setAtivo(updateManagerDTO.getAtivo());
 
-        Manager saved = managerRepository.save(manager);
+        Manager manager = new Manager();
+        manager.setManagerId(managerDto.getId());
+        manager.setName(managerDto.getNome());
+        manager.setPhone(managerDto.getTelefone());
+        manager.setActive(managerDto.getAtivo());
+
+        managerRepository.save(manager);
 
         return ManagerDTO.builder()
-                .id(saved.getManagerId())
-                .ativo(saved.isActive())
-                .cpf(saved.getCpf())
-                .email(saved.getEmail())
-                .nome(saved.getName())
-                .telefone(saved.getPhone())
+                .id(manager.getManagerId())
+                .ativo(manager.isActive())
+                .cpf(manager.getCpf())
+                .email(manager.getEmail())
+                .nome(manager.getName())
+                .telefone(manager.getPhone())
                 .build();
     }
     

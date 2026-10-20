@@ -27,10 +27,10 @@ public class ManagerController {
     private ManagerService managerService;
 
     @PostMapping()
-    @ResponseStatus (HttpStatus.CREATED)
-    public EntityModel<Manager> createManager(@RequestBody  CreateManagerDTO manager) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public EntityModel<ManagerDTO> createManager(@RequestBody CreateManagerDTO manager) {
         try {
-            Manager gerente = managerService.createManager(manager);
+            ManagerDTO gerente = managerService.createManager(manager);
             return assembler.toModel(gerente);
         } catch (Exception e) {
             e.printStackTrace();
@@ -39,10 +39,12 @@ public class ManagerController {
     }
 
     @PutMapping("/{cpf}")
-    public ResponseEntity<EntityModel<ManagerDTO>> updateManager(@PathVariable("cpf") String managerCPF, @RequestBody UpdateManagerDTO manager) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public EntityModel<ManagerDTO> updateManager(@PathVariable("cpf") String managerCPF,
+            @RequestBody UpdateManagerDTO manager) {
         try {
             ManagerDTO atualizado = managerService.updateManager(managerCPF, manager);
-            return ResponseEntity.status(HttpStatus.CREATED).body(assembler.toModel(atualizado));
+            return assembler.toModel(atualizado);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -50,15 +52,15 @@ public class ManagerController {
     }
 
     @GetMapping("/{cpf}")
-    @ResponseStatus (HttpStatus.OK)
-    public EntityModel<Manager> getManagerByCpf(@PathVariable String cpf) {
-        try{
-            Manager gerente = managerService.getManager(cpf);
+    @ResponseStatus(HttpStatus.OK)
+    public EntityModel<ManagerDTO> getManagerByCpf(@PathVariable String cpf) {
+        try {
+            ManagerDTO gerente = managerService.getManager(cpf);
             return assembler.toModel(gerente);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
     }
-    
+
 }
