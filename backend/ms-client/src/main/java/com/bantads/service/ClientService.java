@@ -2,12 +2,10 @@ package com.bantads.service;
 
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
-import com.bantads.model.Status;
 import com.bantads.repository.ClientRepository;
 import com.bantads.entity.*;
 import com.bantads.repository.AddressRepository;
 import com.bantads.repository.StateRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,7 +36,7 @@ public class ClientService {
 
     public List<Client> listClients(String busca) {
         if (busca == null || busca.isBlank()) {
-            return clientRepository.findAll();
+            return clientRepository.findAllByOrderByNameAsc();
         }
 
         return clientRepository.search(busca);

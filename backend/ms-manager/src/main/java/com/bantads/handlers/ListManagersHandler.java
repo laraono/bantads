@@ -22,7 +22,7 @@ public class ListManagersHandler implements SagaStepHandler {
 
     @Override
     public Map<String, Object> execute(Map<String, Object> payload) {
-        payload.put("gerentes", this.managerService.list());
+        payload.put("gerentes", this.managerService.listManagerCPFs());
         return payload;
     }
 

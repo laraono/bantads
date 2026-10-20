@@ -47,6 +47,8 @@ public class InsertManagerHandler implements SagaStepHandler {
         requisicao.put("tipo", "gerente");
         requisicao.put("id", String.valueOf(manager.getId()));
         requisicao.put("cpf", manager.getCpf());
+        requisicao.put("tipo", "GERENTE");
+        requisicao.put("id", manager.getCpf());
         requisicao.put("senha", managerDTO.getSenha());
 
         payload.put("gerente", gerente);

@@ -69,32 +69,28 @@ public class SagaService {
         }
 
         Request req = Request.builder()
-        .id(new ObjectId())
-        .sagaId(command.getSagaId())
-        .type(command.getType())
-        .compensation(command.isCompensation())
-        .build();
+            .id(new ObjectId())
+            .sagaId(command.getSagaId())
+            .type(command.getType())
+            .compensation(command.isCompensation())
+            .build();
+
+        command.setPayload(payload);
+        command.setStatus(status.toString());
+        command.setError(error);
+        command.setTimestamp(new Date());
 
         requestRepository.save(req);
 
-        RabbitAnswer answer = RabbitAnswer.builder()
-                .sagaId(command.getSagaId())
-                .type(command.getType())
-                .status(status)
-                .error(error)
-                .stepIndex(command.getStepIndex())
-                .attempt(command.getAttempt())
-                .payload(payload)
-                .timestamp(new Date())
-                .build();
-
-        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, command);
     }
 
     @RabbitListener(queues = RabbitMQConfig.AUTH_QUEUE_DLQ)
-    public void handleDlqQueue(Map<String, Object> payload) {
-        UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
-        String type = payload.get("type").toString();
+    public void handleDlqQueue(RabbitRequest command) {
+        UUID sagaId = command.getSagaId();
+        String type = command.getType();
+
+        Map<String, Object> payload = command.getPayload();
 
         if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
             return;

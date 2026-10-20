@@ -172,21 +172,17 @@ class AccountService {
     }
   }
 
-  async getAccount(id, headers) {
-    try {
-      console.log("on service");
-      const accountAnswer = await axios.get(
-        `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`,
-        {
-          headers: { "x-user-cpf": headers["x-user-cpf"] },
-        },
-      );
+    async getAccount(id, headers) {
+        try {
+            const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`, {
+                headers: { 'x-user-cpf': headers['x-user-cpf']}
+            })
 
-      if (!accountAnswer.data) {
-        const error = new Error("Conta não encontrado");
-        error.status = 404;
-        throw error;
-      }
+            if(!accountAnswer.data) {
+                const error = new Error('Conta não encontrado');
+                error.status = 404;
+                throw error;
+            }
 
       if (
         !accountAnswer.data.numero ||

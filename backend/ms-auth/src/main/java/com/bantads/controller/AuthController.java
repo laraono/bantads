@@ -53,7 +53,6 @@ public class AuthController
     public void createAuth(@RequestBody Auth auth)
     {
         authService.create(
-                auth.getUserId(),
                 auth.getCpf(),
                 auth.getType(),
                 auth.getEmail(),

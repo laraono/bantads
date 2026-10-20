@@ -65,10 +65,10 @@ class MangerService {
   }
 
   async getManager(id) {
-    try {
+    try{
       const managerAnswer = await axios.get(
-        `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
-      );
+        `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`
+      )
 
       return {
         id: managerAnswer.data.id,
@@ -87,6 +87,18 @@ class MangerService {
   // R14: e-mail e CPF não podem ser alterados, então só nome e telefone seguem
   async updateManager(id, body, headers) {
     try {
+      if(body.email) {
+        const error = new Error('Não é possível alterar o email');
+        error.status = 400;
+        throw error;
+      }
+
+      if(body.cpf) {
+        const error = new Error('Não é possível alterar o CPF');
+        error.status = 400;
+        throw error;
+      }
+
       const managerAnswer = await axios.put(
         `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
         { nome: body.nome, telefone: body.telefone, ativo: true },
@@ -115,15 +127,15 @@ class MangerService {
         type: "DELETAR_GERENTE",
       };
 
-      const job = {
-        status: "PENDENTE",
-        resultType: "resource",
-        dominio: "gerentes",
-        resourceId: id,
-        erro: null,
-      };
-
-      return await rabbitConnector.startSaga(payload, job);
+    const job = {
+      status: "PENDENTE",
+      resultType: "inline",
+      dominio: null,
+      resourceId: id,
+      erro: null
+    }
+      
+    return await rabbitConnector.startSaga(payload, job)
     } catch (err) {
       if (err.response) {
         const error = new Error(err.response.data?.message || err.message);
@@ -134,17 +146,12 @@ class MangerService {
     }
   }
 
+  
   async createManager(gerente) {
-    const payload = {
-      gerente: {
-        nome: gerente.nome,
-        email: gerente.email,
-        cpf: gerente.cpf,
-        telefone: gerente.telefone,
-        senha: gerente.senha,
-      },
-      type: "INSERIR_GERENTE",
-    };
+      const payload = {
+        gerente,
+        type: "INSERIR_GERENTE",
+      };
 
     const job = {
       status: "PENDENTE",

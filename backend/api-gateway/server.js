@@ -9,8 +9,8 @@ const rebootRoutes = require('./src/routes/rebootRoutes');
 const clientRoutes = require('./src/routes/clientRoutes');
 const requestRoutes = require('./src/routes/requestRoutes');
 const jobRoutes = require('./src/routes/jobRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
 const rabbitConnector = require('./src/connector/rabbitConnector');
-const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,8 +20,6 @@ app.use(express.json());
 
 const MS_EMAIL_HOST =process.env.MS_EMAIL_HOST || 'ms-email';
 const MS_EMAIL_PORT = process.env.MS_EMAIL_PORT || '8086';
-const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';
-const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || '8084';
 
 rabbitConnector.connect()
 
@@ -35,17 +33,9 @@ app.use('/contas', accountRoutes);
 
 app.use('/gerentes', managerRoutes);
 
-app.use('/relatorios', authGatewayFilter('GERENTE'), createProxyMiddleware({
-    target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/': '/relatorios/' }
-}));
+app.use('/relatorios', reportRoutes);
 
-app.use('/jobs', authGatewayFilter(), jobRoutes, createProxyMiddleware({
-    target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/': '/jobs/' }
-}));
+app.use('/jobs', jobRoutes);
 
 app.post('/login', (req, res) => authController.login(req, res));
 app.post('/logout', (req, res) => authController.logout(req, res));

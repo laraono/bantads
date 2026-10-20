@@ -48,15 +48,12 @@ public class AccountDataService {
     }
 
     public String getManagerWithLowestAccount(List<String> managerCPFs) {
-        String best = null;
         long lowestAccountAmount = Long.MAX_VALUE;
-        BigDecimal lowestTotalBalance = BigDecimal.ZERO;
 
         String firstCPF = managerCPFs.getFirst();
         AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
 
-        lowestAccountAmount = first.getTotalAccounts();
-        lowestTotalBalance = first.getTotalBalance();
+        BigDecimal lowestTotalBalance = first.getTotalBalance();
         int index = 0;
         int i = 0;
 
@@ -76,9 +73,11 @@ public class AccountDataService {
                 lowestTotalBalance = current.getTotalBalance();
                 index = i;
             }
+
+            i++;
         }
 
-        return best;
+        return managerCPFs.get(index);
     }
 
     public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {

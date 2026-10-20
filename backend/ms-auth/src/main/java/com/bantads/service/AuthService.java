@@ -44,12 +44,12 @@ public class AuthService {
     }
 
     public String create(
-            String userId,
             String cpf,
             String type,
             String login,
             String rawPassword,
-            Boolean active) {
+            Boolean active
+    ) {
 
         if (authRepository.existsByEmail(login)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
@@ -57,7 +57,7 @@ public class AuthService {
 
         Auth auth = new Auth();
 
-        auth.setUserId(userId != null ? userId : UUID.randomUUID().toString());
+        auth.setUserId(UUID.randomUUID().toString());
 
         auth.setCpf(cpf);
         auth.setType(type);

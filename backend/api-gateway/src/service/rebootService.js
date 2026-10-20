@@ -187,9 +187,10 @@ class RebootService {
     }
   }
 
-  async flushRedis() {
-    await redis.flushAll();
-  }
+    async flushRedis() {
+        await redis.flushall()
+    }
+
 }
 
 module.exports = new RebootService();

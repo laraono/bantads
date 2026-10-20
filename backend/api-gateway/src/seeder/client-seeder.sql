@@ -24,3 +24,14 @@ VALUES
 ('Catianna', 'cli3@bantads.com.br', '85733854057', '(41)92788-1163', 3000.0000, 3, 'APROVADO'),
 ('Cutardo', 'cli4@bantads.com.br', '58872160006', '(41)92572-2608', 500.0000, 4, 'APROVADO'),
 ('Coândrya', 'cli5@bantads.com.br', '76179646090', '(41)99844-6486', 1500.0000, 5, 'APROVADO');
+
+
+INSERT INTO request (
+    name, email, cpf, phone, salary, status, cep, city, state_id, street, number, additional_info
+)
+VALUES
+('Catharyna', 'cli1@bantads.com.br', '12912861012', '(41) 93355-4817', 10000.0000, 'APROVADA', '82720-140', 'Curitiba', 16, 'R. Jorn. Ali Chehayde Bark', 421, NULL),
+('Cleuddônio', 'cli2@bantads.com.br', '09506382000', '(41)97275-3686', 20000.0000, 'APROVADA', '80730-090', 'Curitiba', 16, 'R. Ferdinando Darif', 203, NULL),
+('Catianna', 'cli3@bantads.com.br', '85733854057', '(41)92788-1163', 3000.0000, 'APROVADA', '82010-060', 'Curitiba', 16, 'Rua Luiz Sieracki', 537, NULL),
+('Cutardo', 'cli4@bantads.com.br', '58872160006', '(41)92572-2608', 500.0000, 'APROVADA', '82590-300', 'Curitiba', 16, 'R. Rockefeller', 300, NULL),
+('Coândrya', 'cli5@bantads.com.br', '76179646090', '(41)99844-6486', 1500.0000, 'APROVADA','82010-280', 'Curitiba', 16, 'R. Simão Lissa', 71, NULL);

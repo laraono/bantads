@@ -22,4 +22,8 @@ public class RabbitRequest {
     private Map<String, Object> payload;
 
     private int attempt;
+
+    private String status;
+
+    private String error;
 }
