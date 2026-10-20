@@ -18,4 +18,6 @@ public interface ManagerRepository extends JpaRepository<Manager, Long> {
     Manager findByCpfAndIsActive(String cpf, boolean isActive);
 
     void deleteByCpf(String cpf);
+
+    Integer countByIsActive(boolean isActive);
 }

@@ -43,7 +43,15 @@ public class ClientService {
     }
 
     public Client getClient(String cpf) {
-        return clientRepository.findByCpf(cpf);
+        try {
+         Client client = clientRepository.findByCpf(cpf);
+         if (client == null) {
+             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado");
+         }
+         return client;
+        } catch (Exception e) {
+            throw e;
+        }
     }
 
     public Request getRequestByClient(Long id) {

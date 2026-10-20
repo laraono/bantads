@@ -32,8 +32,8 @@ const accountNumber = ref('')
 const balance = ref(0)
 const loaded = ref(false)
 
-function parseValor(v: string | number): number {
-  return typeof v === 'number' ? v : parseFloat(v)
+function parseValor(v: string): number {
+  return parseFloat(v)
 }
 
 function toTransaction(mov: MovimentacaoDTO, cpfProprio: string): AccountTransaction {

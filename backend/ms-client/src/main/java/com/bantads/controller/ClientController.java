@@ -32,12 +32,13 @@ public class ClientController {
 
     @GetMapping("/{cpf}")
     public 
-    EntityModel<Client> getClient(@PathVariable String cpf) {
+    EntityModel<Client> getClient(@PathVariable String cpf, @RequestHeader("x-user-tipo") String tipo) {
         Client client = clientService.getClient(cpf);
+        assembler.setTipo(tipo);
         return assembler.toModel(client);
     }
 
-    @GetMapping("/{id}/solicitacoes")
+    @GetMapping("/{id}/requests")
     public
     Request getRequest(@PathVariable Long id) {
         return clientService.getRequestByClient(id);

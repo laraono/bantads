@@ -1,6 +1,5 @@
 package com.bantads.service;
 
-
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.AddressDTO;
 import com.bantads.dto.RequestDTO;
@@ -25,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.List;
 
 @Service
 public class RequestService {
@@ -33,7 +31,7 @@ public class RequestService {
     @Autowired
     private RequestRepository requestRepository;
 
-    @Autowired 
+    @Autowired
     private StateRepository stateRepository;
 
     @Autowired
@@ -43,69 +41,77 @@ public class RequestService {
     private ClientRepository clientRepository;
 
     public Request createRequest(RequestDTO requestDTO) {
+        try {
+            if (requestDTO.getCpf() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
+            }
 
-        if(requestDTO.getCpf() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
+            if (requestRepository.existsByCpf(requestDTO.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+            }
+
+            if (requestDTO.getEmail() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail não informado");
+            }
+
+            if (stateRepository.findByUf(requestDTO.getEndereco().getUf()) == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
+            }
+
+            if (requestRepository.findByCpf(requestDTO.getCpf()) != null) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+            }
+
+            if (clientRepository.existsByCpf(requestDTO.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+            }
+
+            if (clientRepository.existsByEmail(requestDTO.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
+            }
+
+            if (requestDTO.getCpf().length() < 11) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
+            }
+
+            AddressDTO addressDTO = requestDTO.getEndereco();
+            BigDecimal salary = new BigDecimal(requestDTO.getSalario());
+
+            Request requestEntity = Request.builder()
+                    .status(RequestStatus.PENDENTE)
+                    .additionalInfo(addressDTO.getComplemento())
+                    .cep(addressDTO.getCep())
+                    .city(addressDTO.getCidade())
+                    .state(stateRepository.findByUf(addressDTO.getUf()))
+                    .number(addressDTO.getNumero())
+                    .street(addressDTO.getLogradouro())
+                    .cpf(requestDTO.getCpf())
+                    .email(requestDTO.getEmail())
+                    .name(requestDTO.getNome())
+                    .phone(requestDTO.getTelefone())
+                    .salary(salary)
+                    .build();
+
+            requestRepository.save(requestEntity);
+
+            return requestEntity;
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao criar solicitação");
         }
 
-        if(requestRepository.existsByCpf(requestDTO.getCpf())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
-        }
-
-        if(requestDTO.getEmail() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail não informado");
-        }
-
-        if(stateRepository.findByUf(requestDTO.getEndereco().getUf()) == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
-        }
-
-        if(requestRepository.findByCpf(requestDTO.getCpf()) != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
-        }
-
-        if(clientRepository.existsByCpf(requestDTO.getCpf())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
-        }
-
-        if(clientRepository.existsByEmail(requestDTO.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
-        }
-
-        if(requestDTO.getCpf().length() < 11) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
-        }
-
-        AddressDTO addressDTO = requestDTO.getEndereco();
-        BigDecimal salary = new BigDecimal(requestDTO.getSalario());
-
-        Request requestEntity = Request.builder()
-            .status(RequestStatus.PENDENTE)
-            .additionalInfo(addressDTO.getComplemento())
-            .cep(addressDTO.getCep())
-            .city(addressDTO.getCidade())
-            .state(stateRepository.findByUf(addressDTO.getUf()))
-            .number(addressDTO.getNumero())
-            .street(addressDTO.getLogradouro())
-            .cpf(requestDTO.getCpf())
-            .email(requestDTO.getEmail())
-            .name(requestDTO.getNome())
-            .phone(requestDTO.getTelefone())
-            .salary(salary)
-            .build();
-
-        requestRepository.save(requestEntity);
-
-        return requestEntity;
     }
 
-    public void approveRequest(String cpf) {
+    public Request approveRequest(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 
         request.setApprovedAt(new Date());
         request.setStatus(RequestStatus.APROVADA);
 
         requestRepository.save(request);
+
+        return request;
     }
 
     @Transactional
@@ -123,13 +129,13 @@ public class RequestService {
     }
 
     public Request rejectRequest(String cpf, String rejectReason) {
-        if(rejectReason == null || rejectReason.isBlank()) {
+        if (rejectReason == null || rejectReason.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Motivo não informado");
         }
 
         Request request = requestRepository.findByCpf(cpf);
 
-        if(request == null) {
+        if (request == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 
@@ -166,7 +172,7 @@ public class RequestService {
     public Request getRequestByCpf(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 
-        if(request == null) {
+        if (request == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 

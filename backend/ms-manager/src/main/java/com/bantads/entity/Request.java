@@ -26,7 +26,7 @@ public class Request {
     private Long requestId;
 
     @Column(nullable = false)
-    private String type;
+    private String type; // se tiver .comp no final, é uma compensação
 
     @Column(nullable = false, name = "saga_id")
     private UUID sagaId;

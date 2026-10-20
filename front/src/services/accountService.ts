@@ -16,7 +16,7 @@ export interface MovimentacaoDTO {
   originClientName: string | null
   destinationClientCPF: string | null
   destinationClientName: string | null
-  amount: number | string
+  amount: string
   createdAt: string
   managerCPF: string | null
   managerName: string | null
@@ -36,7 +36,7 @@ export async function getConta(numero: string) {
 }
 
 export async function depositar(numero: string, valor: string) {
-  return http.post(`/contas/${numero}/deposito`, { valor })
+  return http.post(`/contas/${numero}/deposito`, { headers:{'x-user-cpf': localStorage.getItem('cpf')}, valor })
 }
 
 export async function sacar(numero: string, valor: string) {

@@ -1,6 +1,5 @@
 package com.bantads.service;
 
-import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.repository.read.AccountDataRepository;

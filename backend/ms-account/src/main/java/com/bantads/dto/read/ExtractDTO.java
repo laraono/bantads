@@ -1,6 +1,5 @@
 package com.bantads.dto.read;
 
-import com.bantads.entity.read.AccountHistory;
 import lombok.*;
 
 import java.util.List;
@@ -12,5 +11,5 @@ import java.util.List;
 @Builder
 public class ExtractDTO {
     private String saldoAbertura;
-    private List<AccountHistory> movimentacoes;
+    private List<HistoryInstanceDTO> movimentacoes;
 }

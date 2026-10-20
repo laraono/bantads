@@ -27,7 +27,7 @@ public class AuthService {
 
     public Auth authenticate(String login, String password) {
 
-        Auth auth = authRepository.findByLogin(login)
+        Auth auth = authRepository.findByEmail(login)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NÃO AUTORIZADO"));
 
         if (!Boolean.TRUE.equals(auth.getActive())) {
@@ -51,7 +51,7 @@ public class AuthService {
             Boolean active
     ) {
 
-        if (authRepository.existsByLogin(login)) {
+        if (authRepository.existsByEmail(login)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
         }
 
@@ -61,7 +61,7 @@ public class AuthService {
 
         auth.setCpf(cpf);
         auth.setType(type);
-        auth.setLogin(login);
+        auth.setEmail(login);
         auth.setActive(active);
 
         String password = rawPassword.isEmpty() ? generateRandomPassword() : rawPassword;
@@ -89,6 +89,18 @@ public class AuthService {
         redisTemplate.opsForValue().set("bloqueado:" + cpf, "1").block();
     }
 
+    public void activateAuth(String cpf) {
+        Auth auth = authRepository.findByCpf(cpf);
+        if (auth == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado");
+        }
+
+        auth.setActive(true);
+        authRepository.save(auth);
+
+        redisTemplate.opsForValue().delete("bloqueado:").block();
+    }
+    
     public List<Auth> findAll() {
         return authRepository.findAll();
     }

@@ -22,8 +22,8 @@ public class Auth
     private String type;
 
     @Indexed(unique = true)
-    @Field("login")
-    private String login;
+    @Field("email")
+    private String email;
 
     @Field("password")
     private String password;

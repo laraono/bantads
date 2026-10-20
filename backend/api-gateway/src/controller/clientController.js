@@ -46,16 +46,6 @@ class ClientController {
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
     }
-
-    async createClient(req, res) {
-        try {
-            const client = await clientService.createClient(req.body.targetCpf, req.headers);
-            return res.status(201).json(client);
-        } catch (err) {
-            const status = err.status || 500;
-            return res.status(status).json({ error: err.message || 'Erro no servidor' });
-        }
-    }
 }
 
 module.exports = new ClientController();

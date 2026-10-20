@@ -23,4 +23,6 @@ echo "Subindo os containers..."
 echo "------------------------------------------"
 docker compose up -d
 
+curl -X POST http://localhost:3000/reboot
+
 echo " Ambiente iniciado com sucesso!"

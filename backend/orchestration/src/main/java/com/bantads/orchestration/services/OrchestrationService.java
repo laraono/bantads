@@ -266,7 +266,7 @@ public class OrchestrationService {
         if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size()) return;
 
         StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
-        String queue = step.getQueue() + ".dql";
+        String queue = step.getQueue() + ".dlq";
 
         Map<String, Object> comp = sagaStates.getPayload();
         comp.put("compensation", true);

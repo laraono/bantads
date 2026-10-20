@@ -2,6 +2,7 @@ package com.bantads.service;
 
 import com.bantads.dto.read.AccountHistoryDTO;
 import com.bantads.dto.read.ExtractDTO;
+import com.bantads.dto.read.HistoryInstanceDTO;
 import com.bantads.entity.event.Event;
 import com.bantads.entity.event.EventType;
 import com.bantads.entity.read.AccountHistory;
@@ -13,11 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -80,9 +83,27 @@ public class AccountHistoryService {
         BigDecimal balance = this.getInitialBalance(accountNumber, startDate, userCPF);
         extract.setSaldoAbertura(balance.toPlainString());
 
-        List<AccountHistory> history = this.accountHistoryRepository
+        List<AccountHistory> accountHistories = this.accountHistoryRepository
                 .findAllByAccountNumberAndCreatedAtBetween(accountNumber, startDate, endDate);
 
+        List<HistoryInstanceDTO> history = new ArrayList<>();
+        
+        for(AccountHistory accountHistory : accountHistories) {
+            HistoryInstanceDTO instance = HistoryInstanceDTO.builder()
+                    .historyId(accountHistory.getHistoryId())
+                    .accountNumber(accountNumber)
+                    .amount(accountHistory.getAmount().setScale(2, RoundingMode.HALF_EVEN).toPlainString())
+                    .createdAt(accountHistory.getCreatedAt())
+                    .destinationClientCPF(accountHistory.getDestinationClientCPF())
+                    .destinationClientName(accountHistory.getDestinationClientName())
+                    .managerCPF(accountHistory.getManagerCPF())
+                    .managerName(accountHistory.getManagerName())
+                    .originClientCPF(accountHistory.getOriginClientCPF())
+                    .originClientName(accountHistory.getOriginClientName())
+                    .type(accountHistory.getType())
+                    .build();
+            history.add(instance);
+        }
         extract.setMovimentacoes(history);
         return extract;
     }

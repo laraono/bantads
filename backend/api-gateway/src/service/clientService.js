@@ -1,53 +1,74 @@
-const axios = require('axios');
+const axios = require("axios");
 
-const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
-const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
-const ORCHESTRATION_HOST = process.env.ORCHESTRATION_HOST || 'orchestration';
-const ORCHESTRATION_PORT = process.env.ORCHESTRATION_PORT || '8085';
+const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
+const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
+const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
 
 class ClientService {
-    async listClients(busca) {
-        const clients = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients`, {
-            params: { busca }
-        })
+  // monta os _links com os paths públicos do gateway e não os do ms-client
+  mapLinks(cpf, isGerente, gatewayUrl = GATEWAY_URL) {
+    const base = `${gatewayUrl}/clientes`;
+    const links = {
+      self: { href: `${base}/${cpf}` },
+      conta: { href: `${base}/${cpf}/conta` },
+    };
 
-        return clients.data._embedded?.clientList ?? []
+    if (isGerente) {
+      links.clientes = { href: base };
     }
 
-    async getClient(cpf) {
-        const response = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`)
-     
-        return {
-            cpf: response.data.cpf,
-            nome: response.data.name,
-            email: response.data.email,
-            telefone: response.data.phone,
-            salario: response.data.salary,
-            endereco: {
-                cidade: response.data.address.city,
-                estado: {
-                    uf: response.data.address.state.uf
-                }
-            },
-        }
-    }
+    return links;
+  }
 
-    async createClient(targetCpf, headers) {
-        try {
-            const response = await axios.post(`http://${ORCHESTRATION_HOST}:${ORCHESTRATION_PORT}/orchestration/create-account`,
-                { cpfCliente: targetCpf },
-                { headers: { 'x-user-cpf': headers['x-user-cpf']} }
-            )
-            return response.data
-        } catch (err) {
-            if (err.response) {
-                const error = new Error(err.response.data?.message || err.message);
-                error.status = err.response.status;
-                throw error;
-            }
-            throw err;
-        }
-    }
+  async listClients(busca) {
+    const response = await axios.get(
+      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes`,
+      {
+        params: { busca },
+      },
+    );
+
+  const clients = response.data._embedded?.clientList ?? [];
+
+    return clients
+      .map((c) => ({
+        _links: this.mapLinks(c.cpf, true),
+        cpf: c.cpf,
+        nome: c.name,
+        email: c.email,
+        telefone: c.phone,
+        salario: c.salary,
+        cidade: c.address?.city,
+        uf: c.address?.state?.uf,
+      }))
+      .sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
+      );
+  }
+
+  async getClient(cpf, headers) {
+    const response = await axios.get(
+      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
+      { headers: { "x-user-tipo": headers["x-user-tipo"] } },
+    );
+
+    const isGerente = headers["x-user-tipo"] === "GERENTE";
+
+    return {
+      cpf: response.data.cpf,
+      nome: response.data.name,
+      email: response.data.email,
+      telefone: response.data.phone,
+      salario: response.data.salary,
+      endereco: {
+        cidade: response.data.address.city,
+        estado: {
+          uf: response.data.address.state.uf,
+        },
+      },
+      _links: this.mapLinks(response.data.cpf, isGerente),
+    };
+  }
 }
 
 module.exports = new ClientService();

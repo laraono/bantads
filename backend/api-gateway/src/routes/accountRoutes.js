@@ -1,5 +1,4 @@
 const { Router } = require('express');
-const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 const {authGatewayFilter} = require('../middlewares/authGatewayMiddleware');
 const accountController = require('../controller/accountController');
 

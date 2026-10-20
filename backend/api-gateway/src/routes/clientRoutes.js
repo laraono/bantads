@@ -7,8 +7,6 @@ const router = Router();
 
 router.get('/', authGatewayFilter('GERENTE'), clientController.listClients);
 
-router.post('/', clientController.createClient);
-
 router.get('/:cpf', authGatewayFilter(), clientController.getClient);
 
 router.get('/:cpf/conta', authGatewayFilter(), accountController.getAccountByCpf);

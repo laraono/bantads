@@ -84,7 +84,7 @@ public class ClienteReportService {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> buscarClientes() {
-        Map<String, Object> resposta = restTemplate.getForObject(msClientBaseUrl + "/clients", Map.class);
+        Map<String, Object> resposta = restTemplate.getForObject(msClientBaseUrl + "/clientes", Map.class);
         return extrairListaEmbutida(resposta);
     }
 
