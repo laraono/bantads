@@ -1,54 +1,30 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Sidebar from '../components/Sidebar.vue'
+import { gerarRelatorioClientes, type ClienteRelatorioDTO } from '../services/reportService'
+import { JobTimeoutError } from '../services/jobService'
+import { formatCpf, formatMoeda, isNegativo, mensagemErro } from '../utils/format'
 
-interface ClientReportRow {
-  id: number
-  cpf: string
-  name: string
-  email: string
-  salary: number
-  accountNumber: string
-  balance: number
-  managerCpf: string
-  managerName: string
+const clients = ref<ClienteRelatorioDTO[]>([])
+const carregando = ref(true)
+const erro = ref('')
+
+async function carregar() {
+  erro.value = ''
+  carregando.value = true
+  try {
+    clients.value = await gerarRelatorioClientes()
+  } catch (err) {
+    erro.value =
+      err instanceof JobTimeoutError
+        ? 'O relatório está demorando mais que o esperado. Tente novamente em instantes.'
+        : mensagemErro(err, 'Não foi possível gerar o relatório.')
+  } finally {
+    carregando.value = false
+  }
 }
 
-const user = {
-  fullName: 'Gerente',
-  email: 'gerente@bantads.com.br',
-  initials: 'GE'
-}
-
-// Dados mockados (farão o papel do relatório consolidado — MS Cliente + MS Conta + MS Gerente —
-// enquanto o back-end não expõe um endpoint único para o relatório).
-const clients = reactive<ClientReportRow[]>([
-  { id: 1, cpf: '333.444.555-66', name: 'Ana Carolina', email: 'ana@email.com', salary: 4200.0, accountNumber: '1003-1', balance: 12500.75, managerCpf: '111.222.333-44', managerName: 'Ana Silva' },
-  { id: 2, cpf: '899.909.010-12', name: 'Arthur Pendragon', email: 'arthur@email.com', salary: 3100.0, accountNumber: '1010-6', balance: 4500.0, managerCpf: '222.333.444-55', managerName: 'Helena Rocha' },
-  { id: 3, cpf: '809.859.121-23', name: 'Bruno Mars', email: 'bruno@email.com', salary: 9800.0, accountNumber: '1019-4', balance: 24000.0, managerCpf: '333.444.555-66', managerName: 'Juliana Ferreira' },
-  { id: 4, cpf: '155.666.777-88', name: 'Camila Torres', email: 'camila@email.com', salary: 2600.0, accountNumber: '1005-7', balance: -5000.0, managerCpf: '444.555.666-77', managerName: 'Fernanda Lima' },
-  { id: 5, cpf: '810.321.232-34', name: 'Clara Nunes', email: 'clara@email.com', salary: 1900.0, accountNumber: '1026-2', balance: 1200.0, managerCpf: '555.666.777-88', managerName: 'Carlos Mendes' },
-  { id: 6, cpf: '222.333.444-55', name: 'João Pedro', email: 'joao@email.com', salary: 3300.0, accountNumber: '1002-3', balance: -1200.0, managerCpf: '555.666.777-88', managerName: 'Carlos Mendes' },
-  { id: 7, cpf: '777.888.999-00', name: 'Larissa Manoela', email: 'larissa@email.com', salary: 5400.0, accountNumber: '1067-3', balance: 2340.2, managerCpf: '222.333.444-55', managerName: 'Helena Rocha' },
-  { id: 8, cpf: '888.999.000-11', name: 'Marcos Vinícius', email: 'marcos@email.com', salary: 2200.0, accountNumber: '1088-1', balance: 0.0, managerCpf: '333.444.555-66', managerName: 'Juliana Ferreira' },
-  { id: 9, cpf: '111.222.333-44', name: 'Maria Souza', email: 'maria@email.com', salary: 6700.0, accountNumber: '1001-5', balance: 5430.5, managerCpf: '111.222.333-44', managerName: 'Ana Silva' },
-  { id: 10, cpf: '999.000.111-22', name: 'Patrícia Lima', email: 'patricia@email.com', salary: 3900.0, accountNumber: '1009-9', balance: 1500.0, managerCpf: '111.222.333-44', managerName: 'Ana Silva' },
-  { id: 11, cpf: '666.777.888-99', name: 'Pedro Henrique', email: 'pedro@email.com', salary: 15000.0, accountNumber: '1006-5', balance: 50000.0, managerCpf: '555.666.777-88', managerName: 'Carlos Mendes' },
-  { id: 12, cpf: '800.111.222-33', name: 'Ricardo Oliveira', email: 'ricardo@email.com', salary: 2100.0, accountNumber: '1018-2', balance: -250.5, managerCpf: '666.777.888-99', managerName: 'Beatriz Santos' },
-  { id: 13, cpf: '444.555.666-77', name: 'Roberto Dias', email: 'roberto@email.com', salary: 1800.0, accountNumber: '1004-9', balance: 450.0, managerCpf: '666.777.888-99', managerName: 'Beatriz Santos' },
-  { id: 14, cpf: '121.232.343-45', name: 'Sofia Costa', email: 'sofia@email.com', salary: 4800.0, accountNumber: '1011-0', balance: 8900.0, managerCpf: '444.555.666-77', managerName: 'Fernanda Lima' },
-  { id: 15, cpf: '232.343.454-56', name: 'Thiago Silva', email: 'thiago@email.com', salary: 2900.0, accountNumber: '1032-8', balance: 120.0, managerCpf: '222.333.444-55', managerName: 'Helena Rocha' },
-  { id: 16, cpf: '343.454.565-67', name: 'Vanessa Santos', email: 'vanessa@email.com', salary: 7200.0, accountNumber: '1013-6', balance: 34000.0, managerCpf: '333.444.555-66', managerName: 'Juliana Ferreira' },
-  { id: 17, cpf: '454.565.676-78', name: 'Wagner Souza', email: 'wagner@email.com', salary: 2000.0, accountNumber: '1044-4', balance: -1500.0, managerCpf: '555.666.777-88', managerName: 'Carlos Mendes' },
-  { id: 18, cpf: '565.676.787-89', name: 'Xuxa Meneghel', email: 'xuxa@email.com', salary: 25000.0, accountNumber: '1053-2', balance: 1000000.0, managerCpf: '111.222.333-44', managerName: 'Ana Silva' },
-  { id: 19, cpf: '676.787.898-90', name: 'Yuri Gagarin', email: 'yuri@email.com', salary: 3500.0, accountNumber: '1038-8', balance: 50.0, managerCpf: '666.777.888-99', managerName: 'Beatriz Santos' },
-  { id: 20, cpf: '787.898.909-01', name: 'Zelda Fitzgerald', email: 'zelda@email.com', salary: 4100.0, accountNumber: '1037-0', balance: -300.0, managerCpf: '444.555.666-77', managerName: 'Fernanda Lima' }
-])
-
-function formatCurrency(value: number): string {
-  const formatted = Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  return `${value < 0 ? '-' : ''}R$ ${formatted}`
-}
+onMounted(carregar)
 
 const sortDirection = ref<'asc' | 'desc'>('asc')
 
@@ -58,7 +34,7 @@ function toggleSort() {
 
 // Ordenação crescente por nome do cliente (padrão do relatório)
 const sortedClients = computed(() => {
-  const list = [...clients].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+  const list = [...clients.value].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
   return sortDirection.value === 'asc' ? list : list.reverse()
 })
 
@@ -82,7 +58,7 @@ function goToNextPage() {
 
 <template>
   <div class="layout">
-    <Sidebar active="relatorio" role="gerente" :user="user" />
+    <Sidebar active="relatorio" role="gerente" />
 
     <div class="main">
       <header class="topbar">
@@ -118,18 +94,30 @@ function goToNextPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="client in pagedClients" :key="client.id">
+                <tr v-if="carregando">
+                  <td colspan="7" class="estado-tabela">Gerando relatório...</td>
+                </tr>
+                <tr v-else-if="erro">
+                  <td colspan="7" class="estado-tabela estado-erro">
+                    {{ erro }}
+                    <button class="retry-btn" @click="carregar">Tentar novamente</button>
+                  </td>
+                </tr>
+                <tr v-else-if="pagedClients.length === 0">
+                  <td colspan="7" class="estado-tabela">Nenhum cliente com conta aberta.</td>
+                </tr>
+                <tr v-for="client in pagedClients" v-else :key="client.cpf">
                   <td>
-                    <span class="cell-name">{{ client.name }}</span>
+                    <span class="cell-name">{{ client.nome }}</span>
                     <span class="cell-email">{{ client.email }}</span>
                   </td>
-                  <td class="cell-muted">{{ client.cpf }}</td>
-                  <td class="align-right cell-muted">{{ formatCurrency(client.salary) }}</td>
-                  <td><span class="pill">{{ client.managerName }}</span></td>
-                  <td class="cell-muted">{{ client.managerCpf }}</td>
-                  <td class="cell-muted">{{ client.accountNumber }}</td>
-                  <td class="align-right" :class="client.balance < 0 ? 'balance-negative' : 'balance-positive'">
-                    {{ formatCurrency(client.balance) }}
+                  <td class="cell-muted">{{ formatCpf(client.cpf) }}</td>
+                  <td class="align-right cell-muted">{{ formatMoeda(client.salario) }}</td>
+                  <td><span class="pill">{{ client.nomeGerente ?? "—" }}</span></td>
+                  <td class="cell-muted">{{ formatCpf(client.cpfGerente) }}</td>
+                  <td class="cell-muted">{{ client.numeroConta }}</td>
+                  <td class="align-right" :class="isNegativo(client.saldo) ? 'balance-negative' : 'balance-positive'">
+                    {{ formatMoeda(client.saldo) }}
                   </td>
                 </tr>
               </tbody>
@@ -382,5 +370,25 @@ function goToNextPage() {
 .page-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.estado-tabela {
+  text-align: center;
+  color: #6b7280;
+  padding: 32px 20px !important;
+}
+
+.estado-erro {
+  color: #dc2626;
+}
+
+.retry-btn {
+  margin-left: 12px;
+  border: none;
+  background: none;
+  color: #0d1b2a;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
 }
 </style>

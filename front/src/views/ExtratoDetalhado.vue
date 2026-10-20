@@ -4,6 +4,7 @@ import { DateTime } from 'luxon'
 import Sidebar from '../components/Sidebar.vue'
 import { useAccount, type AccountTransaction } from '../composables/useAccount'
 import { useAuth } from '../composables/useAuth'
+import { mensagemErro } from '../utils/format'
 
 type Transaction = AccountTransaction
 
@@ -104,19 +105,50 @@ const groupedByDay = computed(() => {
   return days.sort((a, b) => b.sortKey - a.sortKey)
 })
 
+// paginação pelos dias do período (o intervalo pode ter até 365 dias)
+const DAYS_PER_PAGE = 10
+const currentPage = ref(1)
+const totalPages = computed(() => Math.max(1, Math.ceil(groupedByDay.value.length / DAYS_PER_PAGE)))
+const pagedGroups = computed(() => {
+  const start = (currentPage.value - 1) * DAYS_PER_PAGE
+  return groupedByDay.value.slice(start, start + DAYS_PER_PAGE)
+})
+
+function goToPreviousPage() {
+  if (currentPage.value > 1) currentPage.value -= 1
+}
+
+function goToNextPage() {
+  if (currentPage.value < totalPages.value) currentPage.value += 1
+}
+
+const loadError = ref('')
+
 async function loadExtrato() {
   loading.value = true
+  loadError.value = ''
   try {
     const extrato = await fetchExtrato(appliedStart.value, appliedEnd.value)
     openingBalance.value = extrato.saldoAbertura
     transactions.value = extrato.transactions
+    currentPage.value = 1
+  } catch (err) {
+    transactions.value = []
+    loadError.value = mensagemErro(err, 'Não foi possível carregar o extrato.')
   } finally {
     loading.value = false
   }
 }
 
 onMounted(async () => {
-  await loadAccount()
+  loading.value = true
+  try {
+    await loadAccount()
+  } catch (err) {
+    loadError.value = mensagemErro(err, 'Não foi possível carregar sua conta.')
+    loading.value = false
+    return
+  }
   await loadExtrato()
 })
 
@@ -189,7 +221,20 @@ function formatCurrency(value: number): string {
               <th class="align-right">Valor</th>
             </tr>
           </thead>
-          <tbody v-for="group in groupedByDay" :key="group.key">
+          <tbody v-if="loading">
+            <tr class="empty-row">
+              <td colspan="4" class="state-cell">Carregando extrato...</td>
+            </tr>
+          </tbody>
+          <tbody v-else-if="loadError">
+            <tr>
+              <td colspan="4" class="state-cell state-error">
+                {{ loadError }}
+                <button class="retry-btn" @click="loadExtrato">Tentar novamente</button>
+              </td>
+            </tr>
+          </tbody>
+          <tbody v-for="group in pagedGroups" v-else :key="group.key">
             <tr class="day-row">
               <td colspan="3" class="day-label">{{ group.label }}</td>
               <td class="align-right day-balance">
@@ -199,7 +244,7 @@ function formatCurrency(value: number): string {
             <tr v-if="group.items.length === 0" class="empty-row">
               <td colspan="4">Nenhuma movimentação</td>
             </tr>
-            <tr v-for="tx in group.items" :key="tx.id">
+            <tr v-for="tx in group.items" :key="tx.id" :class="tx.amount < 0 ? 'row-saida' : 'row-entrada'">
               <td class="cell-date">
                 <span class="cell-date-day">{{ tx.date }}</span>
                 <span class="cell-date-time">{{ tx.time }}</span>
@@ -218,12 +263,13 @@ function formatCurrency(value: number): string {
         <div class="table-footer">
           <span class="footer-count">{{ transactions.length }} movimentações no período</span>
           <div class="pagination">
-            <button class="page-btn" disabled>
+            <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+            <button class="page-btn" :disabled="loading || currentPage === 1" @click="goToPreviousPage">
               <svg viewBox="0 0 24 24" class="page-icon"><path d="m15 18-6-6 6-6" /></svg>
-              Previous
+              Anterior
             </button>
-            <button class="page-btn">
-              Next
+            <button class="page-btn" :disabled="loading || currentPage === totalPages" @click="goToNextPage">
+              Próxima
               <svg viewBox="0 0 24 24" class="page-icon"><path d="m9 18 6-6-6-6" /></svg>
             </button>
           </div>
@@ -423,6 +469,30 @@ function formatCurrency(value: number): string {
   font-weight: 500;
 }
 
+/* R7: o registro inteiro em vermelho (saída: saque/transferência enviada)
+   ou em azul (entrada: depósito/transferência recebida) */
+.table tbody tr.row-saida td,
+.table tbody tr.row-saida .cell-date-day,
+.table tbody tr.row-saida .cell-date-time,
+.table tbody tr.row-saida .party-pill {
+  color: #dc2626;
+}
+
+.table tbody tr.row-entrada td,
+.table tbody tr.row-entrada .cell-date-day,
+.table tbody tr.row-entrada .cell-date-time,
+.table tbody tr.row-entrada .party-pill {
+  color: #2563eb;
+}
+
+.table tbody tr.row-saida .party-pill {
+  background: #fee2e2;
+}
+
+.table tbody tr.row-entrada .party-pill {
+  background: #dbeafe;
+}
+
 .empty-row td {
   color: #9ca3af;
   font-style: italic;
@@ -443,7 +513,35 @@ function formatCurrency(value: number): string {
 
 .pagination {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.page-info {
+  font-size: 13px;
+  color: #6b7280;
+  margin-right: 4px;
+}
+
+.table tbody td.state-cell {
+  text-align: center;
+  padding: 32px 24px;
+  color: #6b7280;
+  font-style: normal;
+}
+
+.table tbody td.state-error {
+  color: #dc2626;
+}
+
+.retry-btn {
+  margin-left: 12px;
+  border: none;
+  background: none;
+  color: #0d1b2a;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .page-btn {

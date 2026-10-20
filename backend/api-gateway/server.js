@@ -8,6 +8,7 @@ const managerRoutes = require('./src/routes/managerRoutes');
 const rebootRoutes = require('./src/routes/rebootRoutes');
 const clientRoutes = require('./src/routes/clientRoutes');
 const requestRoutes = require('./src/routes/requestRoutes');
+const jobRoutes = require('./src/routes/jobRoutes');
 const rabbitConnector = require('./src/connector/rabbitConnector');
 const { authGatewayFilter } = require('./src/middlewares/authGatewayMiddleware');
 
@@ -42,7 +43,7 @@ app.use('/relatorios', authGatewayFilter('GERENTE'), createProxyMiddleware({
     pathRewrite: { '^/': '/relatorios/' }
 }));
 
-app.use('/jobs', authGatewayFilter(), createProxyMiddleware({
+app.use('/jobs', authGatewayFilter(), jobRoutes, createProxyMiddleware({
     target: `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}`,
     changeOrigin: true,
     pathRewrite: { '^/': '/jobs/' }

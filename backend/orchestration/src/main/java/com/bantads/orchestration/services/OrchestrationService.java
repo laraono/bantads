@@ -159,6 +159,9 @@ public class OrchestrationService {
             case "INSERIR_GERENTE":
                 this.startSaga(SagaSteps.INSERIR_GERENTE, payload, sagaId);
                 break;
+            case "DELETAR_GERENTE":
+                this.startSaga(SagaSteps.DELETAR_GERENTE, payload, sagaId);
+                break;
             default:
                 break;
         }

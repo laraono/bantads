@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { useCadastro } from '../composables/useCadastro';
 import { useRoute, useRouter } from 'vue-router';
 import { criarSolicitacao } from '@/services/requestService'
+import { mensagemErro } from '@/utils/format'
 
 const { nome, cpf, telefone, email, cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
 const estados = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
@@ -116,8 +117,8 @@ async function envioDados() {
 
         setTimeout(() => router.push('/login'), 1500)
     } catch (err) {
-        const anyErr = err as { response?: { data?: { message?: string } } }
-        erroEnvio.value = anyErr.response?.data?.message || 'Não foi possível enviar sua solicitação. Verifique os dados e tente novamente.'
+        // o gateway devolve { error } (ex.: CPF ou e-mail já cadastrado — R1)
+        erroEnvio.value = mensagemErro(err, 'Não foi possível enviar sua solicitação. Verifique os dados e tente novamente.')
     } finally {
         enviando.value = false
     }

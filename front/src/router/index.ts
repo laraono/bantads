@@ -10,6 +10,7 @@ import Cadastro from '../views/Cadastro.vue'
 import CadastroEndereco from '../views/CadastroEndereco.vue'
 import ClienteList from '@/views/ClienteList.vue'
 import ListagemGerente from '@/views/ListagemGerente.vue'
+import RelatorioClientes from '@/views/RelatorioClientes.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -66,7 +67,13 @@ const routes: Array<RouteRecordRaw> = [
     path: '/listagem',
     name: 'listagem-gerentes',
     component: ListagemGerente,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'gerente' }
+  },
+  {
+    path: '/relatorio',
+    name: 'relatorio-clientes',
+    component: RelatorioClientes,
+    meta: { requiresAuth: true, role: 'gerente' }
   },
   {
     path: '/:pathMatch(.*)*', // Qualquer rota que não exista, redireciona para /login
