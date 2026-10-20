@@ -41,7 +41,7 @@ public class ManagerService {
                 .collect(Collectors.toMap(SagaStepHandler::action, h -> h));
     }
 
-    public Manager createManager(CreateManagerDTO createManagerDTO) {
+    public ManagerDTO createManager(CreateManagerDTO createManagerDTO) {
         Manager manager = Manager.builder()
                 .cpf(createManagerDTO.getCpf())
                 .email(createManagerDTO.getEmail())
@@ -50,33 +50,18 @@ public class ManagerService {
                 .isActive(true)
                 .build();
 
-        return managerRepository.save(manager);
-    }
+        ManagerDTO managerDto = ManagerDTO.builder()
+                .id(manager.getManagerId())
+                .ativo(manager.isActive())
+                .cpf(manager.getCpf())
+                .email(manager.getEmail())
+                .nome(manager.getName())
+                .telefone(manager.getPhone())
+                .build();
 
-    public Map<String, Object> listManagers() {
-        List<Manager> managers = managerRepository.findAllByIsActiveOrderByNameAsc(true);
-        Iterator<Manager> managerIterator = managers.iterator();
+        managerRepository.save(manager);
 
-        List<ManagerDTO> managerList = new ArrayList<>();
-
-        while (managerIterator.hasNext()) {
-            Manager manager = managerIterator.next();
-            ManagerDTO dto = ManagerDTO.builder()
-                    .id(manager.getManagerId())
-                    .ativo(manager.isActive())
-                    .cpf(manager.getCpf())
-                    .email(manager.getEmail())
-                    .nome(manager.getName())
-                    .telefone(manager.getPhone())
-                    .build();
-
-            managerList.add(dto);
-        }
-
-        Map<String, Object> gerentes = new HashMap<>();
-        gerentes.put("gerentes", managerList);
-
-        return gerentes;
+        return managerDto;
     }
 
     public List<String> listManagerCPFs() {
@@ -106,8 +91,17 @@ public class ManagerService {
         return managerList;
     }
 
-    public Manager getManager(String cpf) {
-        return managerRepository.findByCpfAndIsActive(cpf, true);
+    public ManagerDTO getManager(String cpf) {
+        Manager manager = managerRepository.findByCpfAndIsActive(cpf, true);
+
+        return ManagerDTO.builder()
+                .id(manager.getManagerId())
+                .ativo(manager.isActive())
+                .cpf(manager.getCpf())
+                .email(manager.getEmail())
+                .nome(manager.getName())
+                .telefone(manager.getPhone())
+                .build();
     }
 
     public ManagerDTO updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
@@ -115,50 +109,67 @@ public class ManagerService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e CPF não podem ser alterados");
         }
 
-        Manager manager = this.getManager(managerCPF);
+        ManagerDTO managerDto = this.getManager(managerCPF);
 
-        manager.setName(updateManagerDTO.getNome());
-        manager.setPhone(updateManagerDTO.getTelefone());
-        manager.setActive(updateManagerDTO.getAtivo());
+        managerDto.setNome(updateManagerDTO.getNome());
+        managerDto.setTelefone(updateManagerDTO.getTelefone());
+        managerDto.setAtivo(updateManagerDTO.getAtivo());
 
-        Manager saved = managerRepository.save(manager);
+        Manager manager = new Manager();
+        manager.setManagerId(managerDto.getId());
+        manager.setName(managerDto.getNome());
+        manager.setPhone(managerDto.getTelefone());
+        manager.setActive(managerDto.getAtivo());
+
+        managerRepository.save(manager);
 
         return ManagerDTO.builder()
-                .id(saved.getManagerId())
-                .ativo(saved.isActive())
-                .cpf(saved.getCpf())
-                .email(saved.getEmail())
-                .nome(saved.getName())
-                .telefone(saved.getPhone())
+                .id(manager.getManagerId())
+                .ativo(manager.isActive())
+                .cpf(manager.getCpf())
+                .email(manager.getEmail())
+                .nome(manager.getName())
+                .telefone(manager.getPhone())
                 .build();
     }
-
+    
     public void deleteByCpf(String cpf) {
         this.managerRepository.deleteByCpf(cpf);
     }
-
+    
+    // --- MANAGER SAGA --
+    
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
     public void handleManagerQueue(RabbitRequest command) {
-
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
-
-        if (alreadyProcessed) {
-            return;
-        }
-
-        String action = command.getType();
-
-        if (!this.handlers.containsKey(action)) {
-            throw new RuntimeException("Handler não encontrado para a ação " + action);
-        }
-
-        SagaStepHandler handler = this.handlers.get(action);
-
-        Map<String, Object> payload = new HashMap<>();
+        
         Status status = Status.SUCESSO;
         String error = null;
+        Map<String, Object> payload = new HashMap<>();
+        
+        Map<String, Object> reply = new HashMap<>();
+        reply.put("sagaId", command.getSagaId());
+        reply.put("type", command.getType());
+        reply.put("stepIndex", command.getStepIndex());
+        reply.put("attempt", command.getAttempt());
+        reply.put("payload", payload);
 
         try {
+
+            boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+
+            if (alreadyProcessed) {
+                this.sendReadModelCommand(reply);
+                return;
+            }
+
+            String action = command.getType();
+
+            if (!this.handlers.containsKey(action)) {
+                throw new RuntimeException("Handler não encontrado para a ação " + action);
+            }
+
+            SagaStepHandler handler = this.handlers.get(action);
+            
             if (command.isCompensation()) {
                 handler.compensate(command.getPayload());
             } else {
@@ -167,33 +178,29 @@ public class ManagerService {
 
             requestRepository.save(Request.builder()
                     .sagaId(command.getSagaId())
-                    .type(command.getType())
+                    .type((command.isCompensation() ? command.getType() + ".comp" : command.getType())) // comp para sinalizar um registro de compensacao no banco
                     .build());
+            
         } catch (Exception e) {
             status = Status.FALHA;
             error = e.getMessage();
             e.printStackTrace();
         }
 
-        Map<String, Object> reply = new HashMap<>();
-        reply.put("sagaId", command.getSagaId());
-        reply.put("type", command.getType());
-        reply.put("stepIndex", command.getStepIndex());
-        reply.put("attempt", command.getAttempt());
+
         reply.put("status", status.toString());
         reply.put("error", error);
-        reply.put("timestamp", new Date());
-        reply.put("payload", payload);
 
         this.sendReadModelCommand(reply);
     }
 
+    // -- COMPENSACAO --
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
     public void handleDlqQueue(Map<String, Object> payload) {
         UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
         String type = payload.get("type").toString();
 
-        if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
+        if (requestRepository.existsBySagaIdAndType(sagaId, type + ".comp")) {
             return;
         }
 
@@ -205,7 +212,7 @@ public class ManagerService {
 
         requestRepository.save(Request.builder()
                 .sagaId(sagaId)
-                .type(type)
+                .type(type + ".comp")
                 .build());
     }
 

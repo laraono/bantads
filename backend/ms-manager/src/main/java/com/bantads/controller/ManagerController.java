@@ -1,11 +1,13 @@
 package com.bantads.controller;
 
+import com.bantads.assembler.ManagerModelAssembler;
 import com.bantads.dto.CreateManagerDTO;
 import com.bantads.dto.ManagerDTO;
 import com.bantads.dto.UpdateManagerDTO;
 import com.bantads.entity.Manager;
 import com.bantads.service.ManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,24 +21,17 @@ import java.util.Map;
 public class ManagerController {
 
     @Autowired
+    private ManagerModelAssembler assembler;
+
+    @Autowired
     private ManagerService managerService;
 
     @PostMapping()
-    public ResponseEntity<Manager> createManager(@RequestBody  CreateManagerDTO manager) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public EntityModel<ManagerDTO> createManager(@RequestBody CreateManagerDTO manager) {
         try {
-            Manager gerente = managerService.createManager(manager);
-            return ResponseEntity.status(HttpStatus.CREATED).body(gerente);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    @GetMapping()
-    public ResponseEntity<Map<String, Object>> listManagers() {
-        try{
-            Map<String, Object> gerentes =  managerService.listManagers();
-            return ResponseEntity.status(HttpStatus.CREATED).body(gerentes);
+            ManagerDTO gerente = managerService.createManager(manager);
+            return assembler.toModel(gerente);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -44,10 +39,12 @@ public class ManagerController {
     }
 
     @PutMapping("/{cpf}")
-    public ResponseEntity<ManagerDTO> updateManager(@PathVariable("cpf") String managerCPF, @RequestBody UpdateManagerDTO manager) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public EntityModel<ManagerDTO> updateManager(@PathVariable("cpf") String managerCPF,
+            @RequestBody UpdateManagerDTO manager) {
         try {
             ManagerDTO atualizado = managerService.updateManager(managerCPF, manager);
-            return ResponseEntity.status(HttpStatus.OK).body(atualizado);
+            return assembler.toModel(atualizado);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -55,14 +52,15 @@ public class ManagerController {
     }
 
     @GetMapping("/{cpf}")
-    public ResponseEntity<Manager> getManagerByCpf(@PathVariable String cpf) {
-        try{
-            Manager gerente = managerService.getManager(cpf);
-            return ResponseEntity.status(HttpStatus.CREATED).body(gerente);
+    @ResponseStatus(HttpStatus.OK)
+    public EntityModel<ManagerDTO> getManagerByCpf(@PathVariable String cpf) {
+        try {
+            ManagerDTO gerente = managerService.getManager(cpf);
+            return assembler.toModel(gerente);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
         }
     }
-    
+
 }

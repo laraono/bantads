@@ -1,46 +1,60 @@
-const jwt = require('jsonwebtoken');
-const redis = require('../config/redis');
+const jwt = require("jsonwebtoken");
+const redis = require("../config/redis");
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta';
+const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta";
 
 function authGatewayFilter(requiredRole = null) {
-    return async (req, res, next) => {
-        const token = req.headers['x-access-token'];
-        if (!token) {
-            return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
-        }
+  return async (req, res, next) => {
+    const token = req.headers["x-access-token"];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ auth: false, message: "Token não fornecido" });
+    }
 
-        try {
-            const decoded = jwt.verify(token, JWT_SECRET);
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
 
-            const jti = decoded.jti;
+      const jti = decoded.jti;
 
-            const sessionKey = `sessao:${jti}`;
-            const sessionExists = await redis.exists(sessionKey);
+      const sessionKey = `sessao:${jti}`;
+      const reverseSessionKey = `sessao:cpf:${decoded.cpf}`;// to do: usar na remocao gerente
 
-            if (!sessionExists) {
-                return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
-            }
+      const sessionExists = await redis.exists(sessionKey);
 
-            if (await redis.exists(`bloqueado:${decoded.cpf}`)) {
-                await redis.del(sessionKey);
-                return res.status(401).json({ auth: false, message: 'Usuário não autorizado' });
-            }
+      if (!sessionExists) {
+        return res
+          .status(401)
+          .json({ auth: false, message: "Falha ao autenticar o token" });
+      }
 
-            await redis.expire(sessionKey, 1800);
+      if (await redis.exists(`bloqueado:${decoded.cpf}`)) {
+        await redis.del(sessionKey);
+        await redis.del(reverseSessionKey);
+        return res
+          .status(401)
+          .json({ auth: false, message: "Falha ao autenticar o token" });
+      }
 
-            if (requiredRole && decoded.tipo !== requiredRole) {
-                return res.status(403).json({ auth: false, message: 'Acesso negado para este perfil' });
-            }
+      await redis.expire(sessionKey, 1800);
+      await redis.expire(reverseSessionKey, 1800);
 
-            req.headers['x-user-cpf'] = decoded.cpf;
-            req.headers['x-user-tipo'] = decoded.tipo;
+      if (requiredRole && decoded.tipo !== requiredRole) {
+        return res
+          .status(403)
+          .json({ auth: false, message: "Acesso negado para este perfil" });
+      }
 
-            next();
-        } catch (err) {
-            return res.status(401).json({ auth: false, message: 'Token inválido' });
-        }
-    };
+      req.headers["x-user-cpf"] = decoded.cpf;
+      req.headers["x-user-tipo"] = decoded.tipo;
+
+      next();
+    } catch (err) {
+      return res
+        .status(401)
+        .json({ auth: false, message: "Falha ao autenticar o token" });
+    }
+  };
 }
 
 module.exports = { authGatewayFilter };

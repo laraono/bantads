@@ -1,10 +1,13 @@
 package com.bantads.controller;
 
+import com.bantads.assemblers.AccountDataModelAssembler;
 import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.ExtractDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +23,19 @@ public class AccountController {
     @Autowired
     private AccountService accountService;
 
+    @Autowired
+    private AccountDataModelAssembler assembler;
+
     @GetMapping
-    ResponseEntity<List<AccountData>> listAccounts(@RequestParam(name = "cpf", required = false) List<String> cpf) {
+    @ResponseStatus (HttpStatus.OK)
+    public CollectionModel<EntityModel<GetAccountDTO>> listAccounts(
+            @RequestParam(name = "cpf", required = false) List<String> cpf) {
         try {
-            List<AccountData> accounts = this.accountService.listAccounts(cpf);
-            return ResponseEntity.status(HttpStatus.OK).body(accounts);
+            
+            List<GetAccountDTO> accounts = this.accountService.listAccounts(cpf);
+
+            return assembler.toCollectionModel(accounts);
+
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -32,10 +43,12 @@ public class AccountController {
     }
 
     @GetMapping("/cpf/{cpf}")
-    ResponseEntity<GetAccountDTO> getAccountDataByCpf(@PathVariable String cpf, @RequestHeader("x-user-cpf") String userCPF) {
+    @ResponseStatus (HttpStatus.OK)
+    public EntityModel<GetAccountDTO> getAccountDataByCpf(@PathVariable String cpf,
+            @RequestHeader("x-user-cpf") String userCPF) {
         try {
             GetAccountDTO account = this.accountService.getAccountDataByCpf(cpf, userCPF);
-            return ResponseEntity.status(HttpStatus.OK).body(account);
+            return assembler.toModel(account);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -43,10 +56,11 @@ public class AccountController {
     }
 
     @GetMapping("/{accountNumber}")
-    ResponseEntity<GetAccountDTO> getAccountData(@PathVariable String accountNumber) {
+    @ResponseStatus (HttpStatus.OK)
+    public EntityModel<GetAccountDTO> getAccountData(@PathVariable String accountNumber) {
         try {
             GetAccountDTO account = this.accountService.getAccountData(accountNumber);
-            return ResponseEntity.status(HttpStatus.OK).body(account);
+            return assembler.toModel(account);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -54,12 +68,11 @@ public class AccountController {
     }
 
     @GetMapping("/{accountNumber}/extract")
-    ResponseEntity<ExtractDTO> getExtract(
+    public ResponseEntity<ExtractDTO> getExtract(
             @RequestHeader("x-user-cpf") String userCPF,
             @PathVariable String accountNumber,
             @RequestParam(value = "inicio", required = false) String start,
-            @RequestParam(value = "fim", required = false) String end
-    ) {
+            @RequestParam(value = "fim", required = false) String end) {
         try {
             ExtractDTO extract = this.accountService.getExtract(accountNumber, start, end, userCPF);
             return ResponseEntity.status(HttpStatus.OK).body(extract);
@@ -70,7 +83,8 @@ public class AccountController {
     }
 
     @GetMapping("/{accountNumber}/cpf")
-    String getCPF(@PathVariable String accountNumber) {
+    @ResponseStatus (HttpStatus.OK)
+    public String getCPF(@PathVariable String accountNumber) {
         try {
             return this.accountService.getCPF(accountNumber);
         } catch (Exception e) {
@@ -80,9 +94,10 @@ public class AccountController {
     }
 
     @GetMapping("/{accountNumber}/balance")
-    BigDecimal getBalance(@PathVariable String accountNumber) {
+    @ResponseStatus (HttpStatus.OK)
+    public String getBalance(@PathVariable String accountNumber) {
         try {
-            return this.accountService.getBalance(accountNumber);
+            return this.accountService.getBalance(accountNumber).toString();
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -90,9 +105,10 @@ public class AccountController {
     }
 
     @GetMapping("/managers/{cpf}/")
-    List<AccountData> getAccountsByManager(@PathVariable String cpf) {
+    public CollectionModel<EntityModel<GetAccountDTO>> getAccountsByManager(@PathVariable String cpf) {
         try {
-            return this.accountService.getAccountsByManager(cpf);
+            List<GetAccountDTO> accounts = this.accountService.getAccountsByManager(cpf);
+            return assembler.toCollectionModel(accounts);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

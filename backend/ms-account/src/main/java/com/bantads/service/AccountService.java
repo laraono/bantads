@@ -41,12 +41,25 @@ public class AccountService {
         return this.accountDataService.getBalance(accountNumber);
     }
 
-    public List<AccountData> getAccountsByManager(String managerCPF) {
-        return this.accountDataService.getAccountsByManager(managerCPF);
+    private GetAccountDTO toGetAccountDTO(AccountData account) {
+        return GetAccountDTO.builder()
+            .numero(account.getAccountNumber())
+            .cpfCliente(account.getClientCPF())
+            .saldo(account.getBalance().toPlainString())
+            .cpfGerente(account.getManagerCPF())
+            .build();
     }
 
-    public List<AccountData> listAccounts(List<String> cpf) {
-        return this.accountDataService.listAccounts(cpf);
+    public List<GetAccountDTO> getAccountsByManager(String managerCPF) {
+        return this.accountDataService.getAccountsByManager(managerCPF).stream()
+            .map(this::toGetAccountDTO)
+            .toList();
+    }
+
+    public List<GetAccountDTO> listAccounts(List<String> cpf) {
+        return this.accountDataService.listAccounts(cpf).stream()
+            .map(this::toGetAccountDTO)
+            .toList();
     }
 
     @Transactional()
@@ -57,11 +70,7 @@ public class AccountService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta " + accountNumber + " não foi encontrada");
         }
 
-        return GetAccountDTO.builder()
-            .numero(account.getAccountNumber())
-            .cpfCliente(account.getClientCPF())
-            .saldo(account.getBalance().toPlainString())
-            .build();
+        return toGetAccountDTO(account);
     }
 
     public RabbitQueryDTO createAccountData(RabbitCommandDTO body) {
@@ -154,7 +163,7 @@ public class AccountService {
 
             String error = this.createHistory(accountNumber, body);
 
-            if (!error.isEmpty()) {
+            if (error != null) {
                 answer.setError(error);
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -246,7 +255,7 @@ public class AccountService {
         Map<String, Object> payload = body.getPayload();
 
         if (payload == null || body.getType() == null) {
-            return "information missing";
+            return "Campos obrigatórios";
         }
 
         AccountHistoryDTO ac = new AccountHistoryDTO();
@@ -263,7 +272,7 @@ public class AccountService {
                 ac.setType(TransactionType.TRANSFER);
                 break;
             default:
-                return "unsupported transaction type";
+                return "Tipo de transação não suportado";
         }
 
         Map<?, ?> origin = (Map<?, ?>) payload.get("origem");
@@ -278,7 +287,7 @@ public class AccountService {
                 : (payload.get("clienteCpf") != null ? String.valueOf(payload.get("clienteCpf")) : null);
 
         String destinationClientName = (destination != null) ? String.valueOf(destination.get("nome")) : null;
-        String destinationClientCpf = (destination != null) ? String.valueOf(destination.get("cpf")) : null;
+        String destinationClientCpf = (destination != null) ? String.valueOf(destination.get("cpfCliente")) : null;
 
         Object rawValue = (origin != null && origin.get("valor") != null) 
                 ? origin.get("valor") 
@@ -289,7 +298,7 @@ public class AccountService {
         String managerCpf = payload.get("cpfGerente") != null ? String.valueOf(payload.get("cpfGerente")) : null;
 
         if (accountNumber == null || originClientCpf == null || textValue == null) {
-            return "information missing";
+            return "Campos obrigatórios";
         }
 
         ac.setAccountNumber(accountNumber);
@@ -303,7 +312,7 @@ public class AccountService {
 
         this.accountHistoryService.createAcountHistory(ac);
 
-        return "";
+        return null;
     }
 
     public ExtractDTO getExtract(String accountNumber, String start, String end, String userCPF) {
@@ -357,12 +366,7 @@ public class AccountService {
 
         AccountData account = this.accountDataService.getAccountDataByCpf(cpf);
 
-        return GetAccountDTO.builder()
-            .numero(account.getAccountNumber())
-            .cpfCliente(account.getClientCPF())
-            .saldo(account.getBalance().toPlainString())
-            .cpfGerente(account.getManagerCPF())
-            .build();
+        return toGetAccountDTO(account);
     }
     
     public String findManager(Map<String, Object> payload) {

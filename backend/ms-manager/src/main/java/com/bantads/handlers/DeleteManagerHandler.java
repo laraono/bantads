@@ -29,10 +29,16 @@ public class DeleteManagerHandler implements SagaStepHandler {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Gerente não encontrado");
         }
 
-        if(manager.getCpf().equals(String.valueOf(payload.get("cpfGerente")))) {
+        if(manager.getCpf().equals(String.valueOf(payload.get("cpfSolicitante")))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Gerente não pode deletar seu próprio gerente");
         }
+
+        Integer managerCount = this.managerRepository.countByIsActive(true);
         
+        if(managerCount <= 1) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Não é possível deletar o último gerente ativo");
+        }
+
         manager.setActive(false);
         this.managerRepository.save(manager);
         return payload;

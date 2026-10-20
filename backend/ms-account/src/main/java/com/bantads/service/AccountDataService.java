@@ -1,6 +1,5 @@
 package com.bantads.service;
 
-import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.AccountsByManagerDTO;
 import com.bantads.entity.read.AccountData;
 import com.bantads.repository.read.AccountDataRepository;
@@ -53,7 +52,6 @@ public class AccountDataService {
         long lowestAccountAmount = Long.MAX_VALUE;
         BigDecimal lowestTotalBalance = BigDecimal.ZERO;
 
-        Iterator<String> cpfIterator = managerCPFs.iterator();
         String firstCPF = managerCPFs.getFirst();
         AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
 

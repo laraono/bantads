@@ -30,11 +30,11 @@ public class RequestController {
     RequestModelAssembler assembler;
 
     @PostMapping()
-    public
-    ResponseEntity<EntityModel<Request>> createRequest(@RequestBody RequestDTO requestDTO) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public EntityModel<Request> createRequest(@RequestBody RequestDTO requestDTO) {
         try {
             Request newRequest = this.requestService.createRequest(requestDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(assembler.toModel(newRequest));
+            return assembler.toModel(newRequest);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -43,8 +43,9 @@ public class RequestController {
 
     @PostMapping("/{cpf}/aprovacao")
     @ResponseStatus(HttpStatus.CREATED)
-    public void approveRequest(@PathVariable String cpf) {
-        this.requestService.approveRequest(cpf);
+    public EntityModel<Request> approveRequest(@PathVariable String cpf) {
+        Request request = this.requestService.approveRequest(cpf);
+        return assembler.toModel(request);
     }
 
     @PostMapping("/{cpf}/rejeicao")

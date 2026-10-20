@@ -18,8 +18,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || 'ms-client';
-const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || '8082';
 const MS_EMAIL_HOST =process.env.MS_EMAIL_HOST || 'ms-email';
 const MS_EMAIL_PORT = process.env.MS_EMAIL_PORT || '8086';
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || 'ms-manager';

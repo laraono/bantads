@@ -20,6 +20,6 @@ public class RabbitRequest {
     private String stepIndex;
 
     private int attempt;
-
+    
     private Map<String, Object> payload;
 }

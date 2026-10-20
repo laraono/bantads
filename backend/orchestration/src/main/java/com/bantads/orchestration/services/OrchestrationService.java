@@ -55,8 +55,6 @@ public class OrchestrationService {
         cmd.put("compensation", false);
         cmd.put("payload", sagaStates.getPayload());
 
-
-
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, cmd);
 
@@ -77,7 +75,6 @@ public class OrchestrationService {
 
         String status = reply.get("status").toString();
         int attempt = (int) reply.get("attempt");
-        int stepIndex = Integer.parseInt(reply.get("stepIndex").toString());
 
         String accountNumber = reply.getOrDefault("numeroConta", "").toString();
 
@@ -87,16 +84,13 @@ public class OrchestrationService {
             redisTemplate.expire(sagaKey, Duration.ofHours(24));
             return;
         }
-
+        
         if (sagaStates.getStatus() == SagaStatus.COMPENSACAO || sagaStates.getStatus() == SagaStatus.FALHA) {
             return;
         }
 
         if ("SUCESSO".equals(status)) {
-            if (reply.get("payload") instanceof Map<?, ?> stepPayload) {
-                stepPayload.forEach((k, v) -> sagaStates.getPayload().put(String.valueOf(k), v));
-            }
-
+        
             if (sagaStates.isLastStep()) {
                 sagaStates.setStatus(SagaStatus.CONCLUIDO);
                 sagaStates.setPayload(reply);
@@ -107,12 +101,12 @@ public class OrchestrationService {
                 Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
                 job.put("status", "SUCESSO");
                 redisTemplate.opsForValue().set("job-" + sagaId, job);
+                reply.put("email", "");
             } else {
                 sagaStates.setStepIndex(sagaStates.getStepIndex() + 1);
                 sagaStates.setPayload(reply);
                 publishSagaCmd(sagaStates);
 
-                reply.put("email", "");
                 sagaStates.setPayload(reply);
                 redisTemplate.opsForValue().set(sagaKey, sagaStates);
             }
@@ -122,9 +116,6 @@ public class OrchestrationService {
                 sagaStates.setPayload(reply);
                 sagaStates.setStepIndex(sagaStates.getStepIndex());
                 publishSagaCmd(sagaStates);
-
-                reply.put("email", "");
-                sagaStates.setPayload(reply);
                 redisTemplate.opsForValue().set(sagaKey, sagaStates);
             } else {
                 sagaStates.setStatus(SagaStatus.COMPENSACAO);
@@ -134,10 +125,10 @@ public class OrchestrationService {
                 Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
                 job.put("status", "FALHA");
                 redisTemplate.opsForValue().set("job-" + sagaId, job);
-
+                
+                reply.put("email", "");
                 compensate(sagaStates);
 
-                reply.put("email", "");
                 sagaStates.setPayload(reply);
                 redisTemplate.opsForValue().set(sagaKey, sagaStates);
             }
@@ -203,7 +194,7 @@ public class OrchestrationService {
         if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size()) return;
 
         StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
-        String queue = step.getQueue() + ".dql";
+        String queue = step.getQueue() + ".dlq";
 
         Map<String, Object> comp = new HashMap<>();
         comp.put("sagaId", sagaStates.getSagaId());

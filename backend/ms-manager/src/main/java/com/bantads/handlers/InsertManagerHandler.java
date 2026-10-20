@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import com.bantads.dto.CreateManagerDTO;
-import com.bantads.entity.Manager;
+import com.bantads.dto.ManagerDTO;
 import com.bantads.service.ManagerService;
 
 @Component
@@ -34,19 +34,19 @@ public class InsertManagerHandler implements SagaStepHandler {
                 .telefone(String.valueOf(dados.get("telefone")))
                 .senha(String.valueOf(dados.get("senha")))
                 .build();
-        Manager manager = this.managerService.createManager(managerDTO);
+        ManagerDTO manager = this.managerService.createManager(managerDTO);
 
         Map<String, Object> gerente = new HashMap<>();
         gerente.put("cpf", manager.getCpf());
         gerente.put("email", manager.getEmail());
-        gerente.put("nome", manager.getName());
-        gerente.put("telefone", manager.getPhone());
+        gerente.put("nome", manager.getNome());
+        gerente.put("telefone", manager.getTelefone());
 
         Map<String, String> requisicao = new HashMap<>();
         requisicao.put("email", manager.getEmail());
-        requisicao.put("cpf", manager.getCpf());
         requisicao.put("tipo", "gerente");
-        requisicao.put("id", manager.getCpf());
+        requisicao.put("id", String.valueOf(manager.getId()));
+        requisicao.put("cpf", manager.getCpf());
         requisicao.put("senha", managerDTO.getSenha());
 
         payload.put("gerente", gerente);
