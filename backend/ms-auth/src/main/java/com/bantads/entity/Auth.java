@@ -2,12 +2,14 @@ package com.bantads.entity;
 
 import lombok.Data;
 
+import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @Data
+@Getter
 @Document(collection = "auths")
 public class Auth 
 {

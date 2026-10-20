@@ -113,7 +113,6 @@ public class ManagerService {
 
         managerDto.setNome(updateManagerDTO.getNome());
         managerDto.setTelefone(updateManagerDTO.getTelefone());
-        managerDto.setAtivo(updateManagerDTO.getAtivo());
 
         Manager manager = new Manager();
         manager.setManagerId(managerDto.getId());
@@ -145,20 +144,13 @@ public class ManagerService {
         Status status = Status.SUCESSO;
         String error = null;
         Map<String, Object> payload = new HashMap<>();
-        
-        Map<String, Object> reply = new HashMap<>();
-        reply.put("sagaId", command.getSagaId());
-        reply.put("type", command.getType());
-        reply.put("stepIndex", command.getStepIndex());
-        reply.put("attempt", command.getAttempt());
-        reply.put("payload", payload);
 
         try {
 
             boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
 
             if (alreadyProcessed) {
-                this.sendReadModelCommand(reply);
+                this.sendReadModelCommand(command);
                 return;
             }
 
