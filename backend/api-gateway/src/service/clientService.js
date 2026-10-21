@@ -1,5 +1,4 @@
 const axios = require("axios");
-
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
 const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
@@ -19,7 +18,6 @@ class ClientService {
 
     return links;
   }
-
   async listClients(busca) {
     const response = await axios.get(
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes`,
@@ -47,6 +45,7 @@ class ClientService {
   }
 
   async getClient(cpf, headers) {
+
     const response = await axios.get(
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
       { headers: { "x-user-tipo": headers["x-user-tipo"] } },
@@ -54,7 +53,7 @@ class ClientService {
 
     const isGerente = headers["x-user-tipo"] === "GERENTE";
 
-    return {
+    const client = {
       cpf: response.data.cpf,
       nome: response.data.name,
       email: response.data.email,
@@ -67,7 +66,9 @@ class ClientService {
         },
       },
       _links: this.mapLinks(response.data.cpf, isGerente),
-    };
+    }
+    
+    return client;
   }
 }
 

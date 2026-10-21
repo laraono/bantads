@@ -1,6 +1,6 @@
 const axios = require("axios");
 const rabbitConnector = require("../connector/rabbitConnector");
-
+const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
 
@@ -63,10 +63,18 @@ class RequestService {
 
   async getRequest(cpf) {
     try {
+      const cached = getByCache("solicitacoes", cpf);
+      if (cached) {
+        return cached;
+      }
       const response = await axios.get(
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`,
       );
-      return toRequestDTO(response.data);
+      const request = toRequestDTO(response.data);
+
+      cacheObject("solicitacoes", request);
+
+      return request;
     } catch (err) {
       rethrow(err);
     }
@@ -78,22 +86,13 @@ class RequestService {
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`,
         body,
       );
+
+      removeCache("solicitacoes", body.cpf);
+
       return response.data;
     } catch (err) {
       rethrow(err);
     }
-
-    const response = response.data._embedded?.requestsList ?? [];
-
-    const job = {
-      status: "PENDENTE",
-      resultType: "resource",
-      dominio: "clientes",
-      resourceId: cpf,
-      erro: null,
-    };
-
-    return await rabbitConnector.startSaga(payload, job);
   }
 
   async rejectRequest(cpf, body) {
@@ -104,6 +103,9 @@ class RequestService {
           motivo: body?.motivo,
         },
       );
+
+      removeCache("solicitacoes", cpf);
+
       return toRequestDTO(response.data);
     } catch (err) {
       rethrow(err);
@@ -133,6 +135,8 @@ class RequestService {
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`,
       body,
     );
+
+    removeCache("solicitacoes", cpf);
 
     return response.data;
   }

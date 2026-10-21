@@ -27,15 +27,7 @@ function authGatewayFilter(requiredRole = null) {
           .status(401)
           .json({ auth: false, message: "Falha ao autenticar o token" });
       }
-
-      if (await redis.exists(`bloqueado:${decoded.cpf}`)) {
-        await redis.del(sessionKey);
-        await redis.del(reverseSessionKey);
-        return res
-          .status(401)
-          .json({ auth: false, message: "Falha ao autenticar o token" });
-      }
-
+      
       await redis.expire(sessionKey, 1800);
       await redis.expire(reverseSessionKey, 1800);
 
