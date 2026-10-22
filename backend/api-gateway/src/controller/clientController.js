@@ -18,12 +18,12 @@ class ClientController {
                     const conta = contaPorCpf.get(c.cpf);
                     return {
                         cpf: c.cpf,
-                        nome: c.name,
+                        nome: c.nome,
                         email: c.email,
-                        telefone: c.phone,
-                        salario: c.salary != null ? String(c.salary) : null,
-                        cidade: c.address?.city,
-                        uf: c.address?.state?.uf,
+                        telefone: c.telefone,
+                        salario: c.salario != null ? String(c.salario) : null,
+                        cidade: c.cidade,
+                        uf: c.uf,
                         numeroConta: conta?.accountNumber ?? null,
                         saldo: conta ? String(conta.balance) : null,
                     };

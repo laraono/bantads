@@ -20,24 +20,24 @@ class ClientService {
   }
   async listClients(busca) {
     const response = await axios.get(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes`,
+      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients`,
       {
         params: { busca },
       },
     );
 
-  const clients = response.data._embedded?.clientList ?? [];
+    const clients = response.data.clientes ?? [];
 
     return clients
       .map((c) => ({
         _links: this.mapLinks(c.cpf, true),
         cpf: c.cpf,
-        nome: c.name,
+        nome: c.nome,
         email: c.email,
-        telefone: c.phone,
-        salario: c.salary,
-        cidade: c.address?.city,
-        uf: c.address?.state?.uf,
+        telefone: c.telefone,
+        salario: c.salario,
+        cidade: c.endereco?.cidade,
+        uf: c.endereco?.uf,
       }))
       .sort((a, b) =>
         a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
@@ -47,7 +47,7 @@ class ClientService {
   async getClient(cpf, headers) {
 
     const response = await axios.get(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
+      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`,
       { headers: { "x-user-tipo": headers["x-user-tipo"] } },
     );
 
@@ -55,14 +55,14 @@ class ClientService {
 
     const client = {
       cpf: response.data.cpf,
-      nome: response.data.name,
+      nome: response.data.nome,
       email: response.data.email,
-      telefone: response.data.phone,
-      salario: response.data.salary,
+      telefone: response.data.telefone,
+      salario: response.data.salario,
       endereco: {
-        cidade: response.data.address.city,
+        cidade: response.data.endereco?.cidade,
         estado: {
-          uf: response.data.address.state.uf,
+          uf: response.data.endereco?.uf,
         },
       },
       _links: this.mapLinks(response.data.cpf, isGerente),

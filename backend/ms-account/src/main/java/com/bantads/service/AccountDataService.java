@@ -14,6 +14,7 @@ import java.util.*;
 
 @Service
 @Transactional
+// Se refere a métodos do objeto AccountData, usado por AccountService
 public class AccountDataService {
 
     @Autowired
@@ -107,7 +108,7 @@ public class AccountDataService {
 
     public AccountData createAccountData(AccountData accountData) {
         if(this.accountDataRepository.existsAccountDataByAccountNumber(accountData.getAccountNumber())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Conta já existe");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
         }
 
         return this.accountDataRepository.save(accountData);

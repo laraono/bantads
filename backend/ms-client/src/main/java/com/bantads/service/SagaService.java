@@ -3,6 +3,7 @@ package com.bantads.service;
 import com.bantads.handlers.SagaStepHandler;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.entity.Rabbit;
+import com.bantads.entity.Request;
 import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
@@ -65,7 +66,7 @@ public class SagaService {
         String error = null;
         try {
             if (command.isCompensation()) {
-                handler.compensate(command.getPayload());
+                handler.compensate(command.getPayload(), command.getError());
             } else {
                 payload = handler.execute(command.getPayload());
                 status = Status.SUCESSO;
@@ -96,36 +97,27 @@ public class SagaService {
     public void handlDlqQueue(RabbitRequest command) {
         UUID sagaId = command.getSagaId();
         String type = command.getType();
+        Map<String, Object> payload = command.getPayload();
 
         boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
         if (alreadyProcessed) {
             return;
         }
 
-        Map<String, Object> payload = command.getPayload();
+        SagaStepHandler handler = this.handlers.get(type);
+
+        if (handler != null) {
+            handler.compensate(payload, command.getError());
+        }
 
         Rabbit req = Rabbit.builder()
                 .sagaId(sagaId)
                 .type(type)
                 .build();
 
-
-        if(type.contains("criar-cliente")) {
-            this.clientService.deleteClient(payload);
-        }
-
-        if(type.contains("aprovar-solicitacao")) {
-            if(command.getError().equals("CONTA JÁ EXISTE")) {
-                String id = (String) payload.get("idSolicitacao");
-                this.requestService.rejectRequest("", command.getError());
-            } else {
-                String id = (String) payload.get("idSolicitacao");
-                this.requestService.compensateRequestStatus(id);
-            }
-        }
-
         rabbitRepository.save(req);
     }
+
 
     public void sendCommand(RabbitRequest answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);

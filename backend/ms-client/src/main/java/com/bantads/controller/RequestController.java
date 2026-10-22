@@ -3,6 +3,7 @@ package com.bantads.controller;
 import com.bantads.assembler.RequestModelAssembler;
 import com.bantads.dto.RejectRequestDTO;
 import com.bantads.dto.RequestDTO;
+import com.bantads.dto.RequestResponseDTO;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
 import com.bantads.service.RequestService;
@@ -31,10 +32,11 @@ public class RequestController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public EntityModel<Request> createRequest(@RequestBody RequestDTO requestDTO) {
+    public EntityModel<RequestResponseDTO> createRequest(@RequestBody RequestDTO requestDTO) {
         try {
-            Request newRequest = this.requestService.createRequest(requestDTO);
-            return assembler.toModel(newRequest);
+            Request request = this.requestService.createRequest(requestDTO);
+            RequestResponseDTO response = RequestResponseDTO.from(request);
+            return assembler.toModel(response);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
@@ -43,32 +45,36 @@ public class RequestController {
 
     @PostMapping("/{cpf}/aprovacao")
     @ResponseStatus(HttpStatus.CREATED)
-    public EntityModel<Request> approveRequest(@PathVariable String cpf) {
+    public EntityModel<RequestResponseDTO> approveRequest(@PathVariable String cpf) {
         Request request = this.requestService.approveRequest(cpf);
-        return assembler.toModel(request);
+        RequestResponseDTO response = RequestResponseDTO.from(request);
+            return assembler.toModel(response);
     }
 
     @PostMapping("/{cpf}/reject")
     @ResponseStatus(HttpStatus.OK)
-    public EntityModel<Request> rejectRequest(@PathVariable String cpf, @RequestBody RejectRequestDTO dto) {
+    public EntityModel<RequestResponseDTO> rejectRequest(@PathVariable String cpf, @RequestBody RejectRequestDTO dto) {
         Request request = this.requestService.rejectRequest(cpf, dto.getMotivo());
-        return assembler.toModel(request);
+        RequestResponseDTO response = RequestResponseDTO.from(request);
+            return assembler.toModel(response);
     }
 
     @GetMapping()
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, List<EntityModel<Request>>> listRequests() {
-        List<EntityModel<Request>> requests = this.requestService.listRequests().stream()
-                .map(assembler::toModel)
+    public Map<String, List<EntityModel<RequestResponseDTO>>> listRequests() {
+        List<EntityModel<RequestResponseDTO>> requests = this.requestService.listRequests().stream()
+                .map((r) -> RequestResponseDTO.from(r)).map(assembler::toModel)
                 .toList();
+
         return Map.of("solicitacoes", requests);
     }
 
     @GetMapping("/{cpf}")
     @ResponseStatus(HttpStatus.OK)
-    public EntityModel<Request> getRequest(@PathVariable String cpf) {
+    public EntityModel<RequestResponseDTO> getRequest(@PathVariable String cpf) {
         Request request = this.requestService.getRequestByCpf(cpf);
-        return assembler.toModel(request);
+        RequestResponseDTO response = RequestResponseDTO.from(request);
+        return assembler.toModel(response);
     }
 
 }

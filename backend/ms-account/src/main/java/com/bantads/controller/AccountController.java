@@ -3,7 +3,6 @@ package com.bantads.controller;
 import com.bantads.assemblers.AccountDataModelAssembler;
 import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.ExtractDTO;
-import com.bantads.entity.read.AccountData;
 import com.bantads.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -12,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @CrossOrigin

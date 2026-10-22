@@ -78,7 +78,7 @@ class MangerService {
 
   async getManager(id) {
     try {
-      const cached = this.getByCache("gerente", id);
+      const cached = await getByCache("gerente", id);
 
       if (cached) {
         return cached;

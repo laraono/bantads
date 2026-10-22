@@ -72,7 +72,7 @@ class AccountService {
         },
       );
 
-      if (!originClient.data?.name) {
+      if (!originClient.data?.nome) {
         const error = new Error("Usuário não encontrado");
         error.status = 404;
         throw error;
@@ -85,7 +85,7 @@ class AccountService {
         },
       );
 
-      if (!destinationClient.data?.name) {
+      if (!destinationClient.data?.nome) {
         const error = new Error("Usuário não existe");
         error.status = 422;
         throw error;
@@ -94,11 +94,11 @@ class AccountService {
       const payload = {
         destino: {
           conta: msBody.contaDestino,
-          nome: destinationClient.data.name,
+          nome: destinationClient.data.nome,
           cpf,
         },
         origem: {
-          nome: originClient.data.name,
+          nome: originClient.data.nome,
           valor: msBody.valor,
         },
       };
@@ -159,7 +159,7 @@ class AccountService {
         {
           payload: {
             valor: body.valor,
-            nome: client.data.name,
+            nome: client.data.nome,
             cpfCliente: cpf,
           },
         },

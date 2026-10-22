@@ -29,6 +29,8 @@ public class OrchestrationService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    private static final int ATTEMP_MAX = 3;
+
     public void startSaga(SagaSteps step, Map<String, Object> payload, UUID sagaId) {
 
         SagaStates sagaStates = SagaStates.builder()
@@ -161,7 +163,7 @@ public class OrchestrationService {
                 }
             }
         } else if ("FALHA".equals(status)) {
-            if(attempt < 3) {
+            if(attempt < ATTEMP_MAX) {
                 if(reply.getError().equals("CONTA JÁ EXISTE")) {
 
                     this.updateJob(sagaId, "FALHA");

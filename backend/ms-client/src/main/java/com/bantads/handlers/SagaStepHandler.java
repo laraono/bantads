@@ -7,6 +7,10 @@ public interface SagaStepHandler {
 
     Map<String, Object> execute(Map<String, Object> payload);
 
-    void compensate(Map<String, Object> payload);
+    default void compensate(Map<String, Object> payload) {
+    }
 
+    default void compensate(Map<String, Object> payload, String error) {
+        compensate(payload);
+    }
 }
