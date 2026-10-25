@@ -11,7 +11,9 @@ class ClientController {
                 accountService.listAccounts(),
             ]);
 
-            const contaPorCpf = new Map((accounts ?? []).map((a) => [a.clientCPF, a]));
+            const contaPorCpf = new Map(
+                (Array.isArray(accounts) ? accounts : []).map((a) => [a.cpfCliente, a]),
+            );
 
             const clientes = clients
                 .map((c) => {
@@ -24,8 +26,8 @@ class ClientController {
                         salario: c.salario != null ? String(c.salario) : null,
                         cidade: c.cidade,
                         uf: c.uf,
-                        numeroConta: conta?.accountNumber ?? null,
-                        saldo: conta ? String(conta.balance) : null,
+                        numeroConta: conta?.numero ?? null,
+                        saldo: conta ? String(conta.saldo) : null,
                     };
                 })
                 .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));

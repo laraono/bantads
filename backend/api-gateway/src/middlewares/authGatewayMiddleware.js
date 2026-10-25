@@ -18,7 +18,7 @@ function authGatewayFilter(requiredRole = null) {
       const jti = decoded.jti;
 
       const sessionKey = `sessao:${jti}`;
-      const reverseSessionKey = `sessao:cpf:${decoded.cpf}`;// to do: usar na remocao gerente
+      const reverseSessionKey = `sessao:cpf:${decoded.cpf}`;
 
       const sessionExists = await redis.exists(sessionKey);
 
