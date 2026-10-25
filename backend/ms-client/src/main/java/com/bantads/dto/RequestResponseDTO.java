@@ -45,6 +45,7 @@ public class RequestResponseDTO {
                 .endereco(endereco)
                 .cliente(ClientResponseDTO.from(request.getClient()))
                 .status(request.getStatus())
+                .motivo(request.getRejectionReason())
                 .build();
     }
 
@@ -57,5 +58,6 @@ public class RequestResponseDTO {
     public AddressResponseDTO endereco;
     public ClientResponseDTO cliente;
     public RequestStatus status;
+    public String motivo;
 
 }

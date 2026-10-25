@@ -24,6 +24,7 @@ public class JobController {
         body.put("jobId", job.getJobId());
         body.put("status", job.getStatus().name());
         body.put("resultType", job.getResultType());
+        body.put("erro", job.getErrorMessage());
 
         return body;
     }

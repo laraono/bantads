@@ -51,10 +51,10 @@ class MangerService {
       ]);
 
       const clientesPorGerente = new Map();
-      for (const conta of accounts ?? []) {
+      for (const conta of accounts?._embedded?.getAccountDTOList ?? []) {
         clientesPorGerente.set(
-          conta.managerCPF,
-          (clientesPorGerente.get(conta.managerCPF) ?? 0) + 1,
+          conta.cpfGerente,
+          (clientesPorGerente.get(conta.cpfGerente) ?? 0) + 1,
         );
       }
 
@@ -70,7 +70,7 @@ class MangerService {
           a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
         );
 
-      return { gerentes };
+      return { "gerentes": gerentes };
     } catch (err) {
       rethrow(err);
     }
@@ -134,7 +134,6 @@ class MangerService {
     }
   }
 
-  // HATEOAS pelas jobs
   async deleteManager(id, headers) {
     try {
       const payload = {
@@ -151,7 +150,7 @@ class MangerService {
         erro: null,
       };
 
-      removeCache("gerente", managerAnswer.data.cpf);
+      removeCache("gerente", id);
 
       return await rabbitConnector.startSaga(payload, job);
     } catch (err) {
@@ -165,6 +164,13 @@ class MangerService {
   }
 
   async createManager(gerente) {
+
+    if (!gerente.nome || !gerente.cpf || !gerente.email || !gerente.telefone || !gerente.senha) {
+      const error = new Error("Dados obrigatórios não informados");
+      error.status = 400;
+      throw error;
+    }
+
     const payload = {
       gerente,
       type: "INSERIR_GERENTE",
@@ -178,7 +184,7 @@ class MangerService {
       erro: null,
     };
 
-    removeCache("gerente", managerAnswer.data.cpf);
+    removeCache("gerente", gerente.cpf);
 
     return await rabbitConnector.startSaga(payload, job);
   }

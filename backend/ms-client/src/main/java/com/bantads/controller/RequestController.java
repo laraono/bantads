@@ -32,7 +32,7 @@ public class RequestController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public EntityModel<RequestResponseDTO> createRequest(@RequestBody RequestDTO requestDTO) {
+    public EntityModel<RequestResponseDTO> createRequest(@Valid @RequestBody RequestDTO requestDTO) {
         try {
             Request request = this.requestService.createRequest(requestDTO);
             RequestResponseDTO response = RequestResponseDTO.from(request);
@@ -53,7 +53,7 @@ public class RequestController {
 
     @PostMapping("/{cpf}/reject")
     @ResponseStatus(HttpStatus.OK)
-    public EntityModel<RequestResponseDTO> rejectRequest(@PathVariable String cpf, @RequestBody RejectRequestDTO dto) {
+    public EntityModel<RequestResponseDTO> rejectRequest(@PathVariable String cpf, @Valid @RequestBody RejectRequestDTO dto) {
         Request request = this.requestService.rejectRequest(cpf, dto.getMotivo());
         RequestResponseDTO response = RequestResponseDTO.from(request);
             return assembler.toModel(response);

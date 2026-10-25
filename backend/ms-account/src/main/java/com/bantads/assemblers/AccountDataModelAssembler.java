@@ -23,9 +23,9 @@ public class AccountDataModelAssembler
         model.add(linkTo(AccountController.class).slash(number).withSelfRel());
         model.add(linkTo(AccountController.class).slash(number).slash("extract").withRel("extrato"));
         model.add(linkTo(AccountController.class).slash(number).slash("balance").withRel("saldo"));
-        model.add(linkTo(EventController.class).slash(number).slash("deposit").withRel("depositar"));
-        model.add(linkTo(EventController.class).slash(number).slash("withdraw").withRel("sacar"));
-        model.add(linkTo(EventController.class).slash(number).slash("transfer").withRel("transferir"));
+        model.add(linkTo(EventController.class).slash(number).slash("deposit").withRel("deposito"));
+        model.add(linkTo(EventController.class).slash(number).slash("withdraw").withRel("saque"));
+        model.add(linkTo(EventController.class).slash(number).slash("transfer").withRel("transferencia"));
 
         return model;
     }

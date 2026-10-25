@@ -63,7 +63,7 @@ class RequestService {
 
   async getRequest(cpf) {
     try {
-      const cached = getByCache("solicitacoes", cpf);
+      const cached = await getByCache("solicitacoes", cpf);
       if (cached) {
         return cached;
       }
@@ -82,6 +82,27 @@ class RequestService {
 
   async createRequest(body) {
     try {
+      const camposObrigatorios = ["nome", "email", "cpf", "telefone", "salario"];
+      const camposEnderecoObrigatorios = [
+        "uf",
+        "cep",
+        "logradouro",
+        "numero",
+        "bairro",
+        "cidade",
+      ];
+
+      if (
+        !body ||
+        camposObrigatorios.some((c) => !body[c]) ||
+        !body.endereco ||
+        camposEnderecoObrigatorios.some((c) => !body.endereco[c])
+      ) {
+        const error = new Error("Dados obrigatórios não informados");
+        error.status = 400;
+        throw error;
+      }
+
       const response = await axios.post(
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`,
         body,
@@ -97,10 +118,14 @@ class RequestService {
 
   async rejectRequest(cpf, body) {
     try {
+      if (!body.motivo) {
+        throw new Error("Motivo não informado");
+      }
+
       const response = await axios.post(
-        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/rejeicao`,
+        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`,
         {
-          motivo: body?.motivo,
+          motivo: body.motivo,
         },
       );
 
@@ -112,7 +137,6 @@ class RequestService {
     }
   }
 
-  // HATEOAS pras jobs
   async approveRequest(cpf) {
     const payload = {
       idSolicitacao: cpf,
@@ -128,17 +152,6 @@ class RequestService {
     };
 
     return await rabbitConnector.startSaga(payload, job);
-  }
-
-  async rejectRequest(cpf, body) {
-    const response = await axios.post(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`,
-      body,
-    );
-
-    removeCache("solicitacoes", cpf);
-
-    return response.data;
   }
 }
 

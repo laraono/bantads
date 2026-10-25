@@ -8,9 +8,13 @@ function cacheObject(type, object) {
     .catch(() => {});
 }
 
-function getByCache(type, cpf) {
-  const cached = redis.get(`cache:${type}:${cpf}`).catch(() => {});
-  return JSON.parse(cached);
+async function getByCache(type, cpf) {
+  try {
+    const cached = await redis.get(`cache:${type}:${cpf}`);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
 }
 
 function removeCache(type, cpf) {

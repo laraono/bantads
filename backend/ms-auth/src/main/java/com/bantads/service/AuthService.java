@@ -4,7 +4,6 @@ import com.bantads.entity.Auth;
 import com.bantads.repository.AuthRepository;
 import com.password4j.Password;
 
-import reactor.core.publisher.Mono;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
@@ -88,9 +87,11 @@ public class AuthService {
         auth.setActive(false);
         authRepository.save(auth);
 
-        Mono<String> jti = redisTemplate.opsForValue().get("sessao:cpf:"+cpf);
-        redisTemplate.opsForValue().delete("sessao:jti:"+jti);
-        redisTemplate.opsForValue().delete("sessao:cpf:"+cpf);
+        String jti = redisTemplate.opsForValue().get("sessao:cpf:" + cpf).block();
+        if (jti != null) {
+            redisTemplate.opsForValue().delete("sessao:" + jti).block();
+        }
+        redisTemplate.opsForValue().delete("sessao:cpf:" + cpf).block();
     }
 
     public void activateAuth(String cpf) {

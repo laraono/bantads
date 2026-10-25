@@ -4,6 +4,7 @@ import com.bantads.assemblers.AccountDataModelAssembler;
 import com.bantads.dto.event.GetAccountDTO;
 import com.bantads.dto.read.ExtractDTO;
 import com.bantads.service.AccountService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -26,13 +27,15 @@ public class AccountController {
 
     @GetMapping
     @ResponseStatus (HttpStatus.OK)
-    public CollectionModel<EntityModel<GetAccountDTO>> listAccounts(
+    public List<EntityModel<GetAccountDTO>> listAccounts(
             @RequestParam(name = "cpf", required = false) List<String> cpf) {
         try {
             
-            List<GetAccountDTO> accounts = this.accountService.listAccounts(cpf);
+            List<EntityModel<GetAccountDTO>> accounts = this.accountService.listAccounts(cpf).stream()
+                .map(assembler::toModel)
+                .toList();;
 
-            return assembler.toCollectionModel(accounts);
+            return accounts;
 
         } catch (Exception e) {
             e.printStackTrace();

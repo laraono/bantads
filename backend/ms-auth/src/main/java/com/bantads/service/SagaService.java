@@ -52,7 +52,7 @@ public class SagaService {
             throw new RuntimeException("Handler não encontrado para a ação " + command.getType());
         }
 
-        Map<String, Object> payload = new HashMap<>();
+        Map<String, Object> payload = command.getPayload();
         Status status = Status.SUCESSO;
         String error = null;
 

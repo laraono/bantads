@@ -2,7 +2,11 @@ package com.bantads.handlers;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -18,6 +22,9 @@ public class InsertManagerHandler implements SagaStepHandler {
     @Lazy
     private ManagerService managerService;
 
+    @Autowired
+    private Validator validator;
+
     @Override
     public String action() {
         return "gerente.inserir-gerente";
@@ -27,13 +34,26 @@ public class InsertManagerHandler implements SagaStepHandler {
     @SuppressWarnings("unchecked")
     public Map<String, Object> execute(Map<String, Object> payload) {
         Map<String, Object> dados = (Map<String, Object>) payload.get("gerente");
+        if(dados == null) {
+            throw new IllegalArgumentException("Dados não informados");
+        }
+        
         CreateManagerDTO managerDTO = CreateManagerDTO.builder()
-                .nome(String.valueOf(dados.get("nome")))
-                .email(String.valueOf(dados.get("email")))
-                .cpf(String.valueOf(dados.get("cpf")))
-                .telefone(String.valueOf(dados.get("telefone")))
-                .senha(String.valueOf(dados.get("senha")))
+                .nome(asString(dados.get("nome")))
+                .email(asString(dados.get("email")))
+                .cpf(asString(dados.get("cpf")))
+                .telefone(asString(dados.get("telefone")))
+                .senha(asString(dados.get("senha")))
                 .build();
+
+        Set<ConstraintViolation<CreateManagerDTO>> violacoes = validator.validate(managerDTO);
+        if (!violacoes.isEmpty()) {
+            throw new IllegalArgumentException(violacoes.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .sorted()
+                    .collect(Collectors.joining("; ")));
+        }
+
         ManagerDTO manager = this.managerService.createManager(managerDTO);
 
         Map<String, Object> gerente = new HashMap<>();
@@ -44,7 +64,6 @@ public class InsertManagerHandler implements SagaStepHandler {
 
         Map<String, String> requisicao = new HashMap<>();
         requisicao.put("email", manager.getEmail());
-        requisicao.put("tipo", "gerente");
         requisicao.put("id", String.valueOf(manager.getId()));
         requisicao.put("cpf", manager.getCpf());
         requisicao.put("tipo", "GERENTE");
@@ -56,10 +75,14 @@ public class InsertManagerHandler implements SagaStepHandler {
         return payload;
     }
 
+    private static String asString(Object valor) {
+        return valor == null ? null : String.valueOf(valor);
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public void compensate(Map<String, Object> payload) {
-        Object gerente = payload.get("gerente");
+        Map<String, Object> gerente = (Map<String, Object>) payload.get("gerente");
         if (gerente == null) {
             return;
         }

@@ -1,6 +1,5 @@
 package com.bantads.orchestration.services;
 
-import java.io.Serializable;
 import java.time.Duration; 
 import java.util.HashMap;
 import java.util.Map;
@@ -132,9 +131,10 @@ public class OrchestrationService {
                 publishSagaCmd(sagaStates, reply);
             } else {
                 reply.setAttempt(0);
-                if(SagaSteps.INSERIR_GERENTE == sagaStates.getStep()) {
-                    String accountNumber = payload.getOrDefault("numeroConta", "sem-resposta").toString();
-                    if(accountNumber != null && accountNumber.isEmpty()) {
+                if(SagaSteps.INSERIR_GERENTE == sagaStates.getStep() && "conta.identificar-conta".equals(sagaStates.getType())) {
+                    String accountNumber = payload.getOrDefault("numeroConta", "sem-conta").toString();
+                    
+                    if(accountNumber.equals("sem-conta")) {
                         sagaStates.setStatus(SagaStatus.CONCLUIDO);
                         redisTemplate.opsForValue().set(sagaKey, sagaStates);
                         redisTemplate.expire(sagaKey, Duration.ofHours(24));
@@ -164,9 +164,9 @@ public class OrchestrationService {
             }
         } else if ("FALHA".equals(status)) {
             if(attempt < ATTEMP_MAX) {
-                if(reply.getError().equals("CONTA JÁ EXISTE")) {
+                if("CONTA JÁ EXISTE".equals(reply.getError())) {
 
-                    this.updateJob(sagaId, "FALHA");
+                    this.updateJob(sagaId, "FALHA", reply.getError());
 
                     sagaStates.setStatus(SagaStatus.COMPENSACAO);
                     sagaStates.setError(reply.getError());
@@ -184,9 +184,10 @@ public class OrchestrationService {
                 }
             } else {
                 sagaStates.setStatus(SagaStatus.COMPENSACAO);
-                sagaStates.setError(reply.getError().isBlank() ? "ERRO-DESCONHECIDO" : reply.getError());
+                String erro = (reply.getError() == null || reply.getError().isBlank()) ? "ERRO-DESCONHECIDO" : reply.getError();
+                sagaStates.setError(erro);
 
-                this.updateJob(sagaId, "FALHA");
+                this.updateJob(sagaId, "FALHA", erro);
                 this.updateRedis(sagaStates);
 
                 compensate(sagaStates);
@@ -204,9 +205,16 @@ public class OrchestrationService {
     }
 
     public void updateJob(UUID sagaId, String status) {
+        updateJob(sagaId, status, null);
+    }
+
+    public void updateJob(UUID sagaId, String status, String erro) {
         Object jobObject = redisTemplate.opsForValue().get("job-" + sagaId);
         Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
         job.put("status", status);
+        if (erro != null) {
+            job.put("erro", erro);
+        }
         redisTemplate.opsForValue().set("job-" + sagaId, job);
     }
 
