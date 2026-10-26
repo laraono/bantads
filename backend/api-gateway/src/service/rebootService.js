@@ -175,6 +175,7 @@ class RebootService {
                 
                 console.log(`Successfully seeded ${dbName}`);
             } catch (err) {
+                console.log(err.message)
                 const error = new Error(`Seeding failed for ${dbName}: ${err.message}`);
                 error.status = 500;
                 throw error;

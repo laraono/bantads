@@ -40,6 +40,7 @@ class ClientService {
             return response.data
         } catch (err) {
             if (err.response) {
+                console.log(err.message)
                 const error = new Error(err.response.data?.message || err.message);
                 error.status = err.response.status;
                 throw error;

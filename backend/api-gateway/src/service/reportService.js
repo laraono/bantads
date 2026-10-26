@@ -77,6 +77,7 @@ class JobService {
             redis.set(jobId, job)
 
         } catch(err) {
+            console.log(err.message)
             const job = {
                 jobId,
                 status: "FALHA",

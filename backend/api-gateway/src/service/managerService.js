@@ -40,6 +40,7 @@ class MangerService {
 
       return { gerentes };
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -52,6 +53,7 @@ class MangerService {
 
       return managerAnswer.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -66,6 +68,7 @@ class MangerService {
       );
       return updateAnswer.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }

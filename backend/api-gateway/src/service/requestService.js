@@ -40,6 +40,7 @@ class RequestService {
             const solicitacoes = response.data?.solicitacoes ?? []
             return { solicitacoes: solicitacoes.map(toRequestDTO) }
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -49,6 +50,7 @@ class RequestService {
             const response = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`)
             return toRequestDTO(response.data)
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -58,6 +60,7 @@ class RequestService {
             const response = await axios.post(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`, body)
             return response.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -86,6 +89,7 @@ class RequestService {
             })
             return toRequestDTO(response.data)
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }

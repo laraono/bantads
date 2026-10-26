@@ -45,6 +45,7 @@ class AuthService {
             const { data } = await axios.get(`http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`);
             return { cpf: data.cpf, nome: data.name ?? data.nome, email: data.email };
         } catch (err) {
+            console.log(err.message)
             // sem nome/e-mail, mas o login não deve falhar por causa disso
             return { cpf, nome: '', email: '' };
         }
