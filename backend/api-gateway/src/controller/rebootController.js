@@ -12,6 +12,7 @@ class RebootController {
                 status: 'ok'
             });
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             console.log(err)
             return res.status(status).json({ error: err.message || 'Falha no seeder' });

@@ -18,6 +18,7 @@ class RabbitConnector {
                 return channel
             } catch (err) {
                 retries--
+                console.log(err.message)
                 if (retries === 0) throw err
                 await new Promise(res => setTimeout(res, delay))
             }

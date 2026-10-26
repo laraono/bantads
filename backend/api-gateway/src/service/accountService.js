@@ -28,6 +28,7 @@ class AccountService {
             const accounts = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts${query}`);
             return accounts.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -94,6 +95,7 @@ class AccountService {
 
             return transferAnswer.data;
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -107,6 +109,7 @@ class AccountService {
 
             return withdrawAnswer.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -120,6 +123,7 @@ class AccountService {
 
             return depositAnswer.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -145,6 +149,7 @@ class AccountService {
 
             return accountAnswer.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -169,6 +174,7 @@ class AccountService {
 
             return accountAnswer.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }
@@ -194,6 +200,7 @@ class AccountService {
 
             return extractAnswer.data
         } catch (err) {
+            console.log(err.message)
             rethrow(err);
         }
     }

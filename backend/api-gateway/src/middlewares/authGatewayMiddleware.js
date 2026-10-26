@@ -38,6 +38,7 @@ function authGatewayFilter(requiredRole = null) {
 
             next();
         } catch (err) {
+            console.log(err.message)
             return res.status(401).json({ auth: false, message: 'Token inválido' });
         }
     };

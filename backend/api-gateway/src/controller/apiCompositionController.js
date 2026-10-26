@@ -31,6 +31,7 @@ class ApiCompositionController {
 
       return res.status(200).json({ clientes: list });
     } catch (err) {
+      console.log(err.message)
       const status = err.status || 500;
       return res
         .status(status)

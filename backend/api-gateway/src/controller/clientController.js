@@ -32,6 +32,7 @@ class ClientController {
 
             return res.status(200).json({ clientes });
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -42,6 +43,7 @@ class ClientController {
             const client = await clientService.getClient(req.params.cpf, req.headers);
             return res.status(200).json(client);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -52,6 +54,7 @@ class ClientController {
             const client = await clientService.createClient(req.body.targetCpf, req.headers);
             return res.status(201).json(client);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
