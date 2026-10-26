@@ -41,6 +41,10 @@ const linhas = computed(() =>
   })
 )
 
+// TO DO tem que fazer a busca usando o que está no job 
+// pegando o domínio + o id e aí sim fazendo uma chamada pro back
+// porém não sei se faz sentido considerando nossa lógica
+
 async function carregar() {
   erroCarregamento.value = ''
   try {
