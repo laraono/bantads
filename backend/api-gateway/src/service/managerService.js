@@ -1,8 +1,8 @@
 const axios = require("axios");
 const rabbitConnector = require("../connector/rabbitConnector");
 const accountService = require("./accountService");
-const redis = require("../config/redis");
 const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
+const linksUtils = require("../utils/linksUtils");
 
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || "ms-manager";
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || "8084";
@@ -19,17 +19,8 @@ function rethrow(err) {
   }
   throw err;
 }
-const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
-const CACHE_TTL = 60 * 5;
 
 class MangerService {
-  mapLinks(cpf, gatewayUrl = GATEWAY_URL) {
-    const base = `${gatewayUrl}/gerentes`;
-    const links = {
-      self: { href: `${base}/${cpf}` },
-    };
-    return links;
-  }
 
   toManager(data) {
     return {
@@ -39,7 +30,7 @@ class MangerService {
       cpf: data.cpf,
       telefone: data.telefone,
       ativo: data.ativo,
-      _links: this.mapLinks(data.cpf),
+      _links: linksUtils.rewriteLinks(data._links ?? data.links),
     };
   }
 
@@ -120,15 +111,8 @@ class MangerService {
 
       removeCache("gerente", managerAnswer.data.cpf);
 
-      return {
-        id: managerAnswer.data.id,
-        nome: managerAnswer.data.nome,
-        email: managerAnswer.data.email,
-        cpf: managerAnswer.data.cpf,
-        telefone: managerAnswer.data.telefone,
-        ativo: managerAnswer.data.ativo,
-        _links: this.mapLinks(managerAnswer.data.cpf),
-      };
+      return this.toManager(managerAnswer.data);
+
     } catch (err) {
       rethrow(err);
     }

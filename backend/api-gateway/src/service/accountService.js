@@ -1,23 +1,8 @@
 const axios = require("axios");
 const clientService = require("../service/clientService");
-
+const linksUtils = require("../utils/linksUtils");
 const MS_ACCOUNT_HOST = process.env.MS_ACCOUNT_HOST || "ms-account";
 const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || "8083";
-const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
-const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
-const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
-
-// monta os _links com os paths públicos do gateway (/contas/...), não os do ms-account
-function mapLinks(numero, gatewayUrl = GATEWAY_URL) {
-  const base = `${gatewayUrl}/contas/${numero}`;
-  return {
-    self: { href: base },
-    extrato: { href: `${base}/extrato` },
-    deposito: { href: `${base}/deposito` },
-    saque: { href: `${base}/saque` },
-    transferencia: { href: `${base}/transferencia` },
-  };
-}
 
 function rethrow(err) {
   if (err.response) {
@@ -201,7 +186,7 @@ class AccountService {
         cpfCliente: accountAnswer.data.cpfCliente,
         saldo: accountAnswer.data.saldo,
         cpfGerente: accountAnswer.data.cpfGerente,
-        _links: mapLinks(accountAnswer.data.numero),
+        _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
       return result;
@@ -240,7 +225,7 @@ class AccountService {
         cpfCliente: accountAnswer.data.cpfCliente,
         saldo: accountAnswer.data.saldo,
         cpfGerente: accountAnswer.data.cpfGerente,
-        _links: mapLinks(accountAnswer.data.numero),
+        _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
       return result;
