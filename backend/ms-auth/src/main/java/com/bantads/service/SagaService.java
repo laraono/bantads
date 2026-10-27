@@ -92,7 +92,7 @@ public class SagaService {
 
         Map<String, Object> payload = command.getPayload();
 
-        if (requestRepository.existsBySagaIdAndType(sagaId, type)) {
+        if (requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type, true)) {
             return;
         }
 
@@ -106,6 +106,7 @@ public class SagaService {
                 .id(new ObjectId())
                 .sagaId(sagaId)
                 .type(type)
+                .compensation(true)
                 .build());
     }
 }

@@ -257,11 +257,12 @@ public class OrchestrationService {
         sagaStates.setStatus(SagaStatus.COMPENSACAO);
         sagaStates.setError("TIMEOUT");
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
+        updateJob(sagaId, "FALHA", "TIMEOUT");
         compensate(sagaStates);
     }
 
     public void compensate(SagaStates sagaStates) {  
-        for (int i = sagaStates.getStepIndex() - 1; i >= 0; i--) {
+        for (int i = sagaStates.getStepIndex(); i >= 0; i--) { // ele corrige, inclusive, o step atual
             compensateSingleStep(sagaStates, i);
         }
 
@@ -297,7 +298,7 @@ public class OrchestrationService {
             request.setPayload(comp);
             request.setStepIndex(sagaStates.getStepIndex());
 
-            rabbitTemplate.convertAndSend(RabbitMQConfig.MS_EMAIL_CMD + ".dql", request);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.MS_EMAIL_CMD + ".dlq", request);
         }
     }
 

@@ -99,7 +99,7 @@ public class SagaService {
         String type = command.getType();
         Map<String, Object> payload = command.getPayload();
 
-        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
+        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type, true);
         if (alreadyProcessed) {
             return;
         }
@@ -113,6 +113,7 @@ public class SagaService {
         Rabbit req = Rabbit.builder()
                 .sagaId(sagaId)
                 .type(type)
+                .compensation(true)
                 .build();
 
         rabbitRepository.save(req);
