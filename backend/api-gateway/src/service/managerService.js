@@ -60,6 +60,7 @@ class MangerService {
 
       return { gerentes };
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -80,6 +81,7 @@ class MangerService {
         _links: this.mapLinks(managerAnswer.data.cpf),
       };
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -114,6 +116,7 @@ class MangerService {
         _links: this.mapLinks(managerAnswer.data.cpf),
       };
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }

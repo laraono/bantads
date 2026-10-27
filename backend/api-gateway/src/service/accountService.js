@@ -42,6 +42,7 @@ class AccountService {
       );
       return accounts.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -119,6 +120,7 @@ class AccountService {
 
       return transferAnswer.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -133,6 +135,7 @@ class AccountService {
 
       return withdrawAnswer.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -168,6 +171,7 @@ class AccountService {
 
       return depositAnswer.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -204,6 +208,7 @@ class AccountService {
 
       return result;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -243,6 +248,7 @@ class AccountService {
 
       return result;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -274,6 +280,7 @@ class AccountService {
 
       return extractAnswer.data;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }

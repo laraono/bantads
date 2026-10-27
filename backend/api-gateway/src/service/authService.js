@@ -34,6 +34,7 @@ class AuthService {
       );
       data = authResponse.data;
     } catch (err) {
+      console.log(err.message)
       this.unauthorizedError();
     }
 
@@ -70,6 +71,7 @@ class AuthService {
       );
       return { cpf: data.cpf, nome: data.name ?? data.nome, email: data.email };
     } catch (err) {
+      console.log(err.message)
       return { cpf, nome: "", email: "" };
     }
   }
