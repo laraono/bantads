@@ -6,6 +6,7 @@ class ManagerController {
             const result = await managerService.list();
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -16,6 +17,7 @@ class ManagerController {
             const result = await managerService.getManager(req.params.id);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -26,6 +28,7 @@ class ManagerController {
             const result = await managerService.updateManager(req.params.id, req.body, req.headers);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -39,6 +42,7 @@ class ManagerController {
             const jobId = await managerService.deleteManager(req.params.id, req.headers);
             return res.status(202).json(jobId);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -49,6 +53,7 @@ class ManagerController {
             const jobId = await managerService.createManager(req.body);
             return res.status(202).json(jobId);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }

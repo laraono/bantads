@@ -1,5 +1,6 @@
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { DateTime } from 'luxon'
+import Decimal from 'decimal.js'
 import { useAuth } from '@/composables/useAuth'
 import {
   getContaPorCpf,
@@ -19,7 +20,7 @@ export interface AccountTransaction {
   time: string // HH:mm
   operation: OperationType
   party: string
-  amount: number // positivo = entrada, negativo = saída
+  amount: Decimal // positivo = entrada, negativo = saída
 }
 
 const OPERATION_LABEL: Record<MovimentacaoDTO['type'], OperationType> = {
@@ -29,18 +30,18 @@ const OPERATION_LABEL: Record<MovimentacaoDTO['type'], OperationType> = {
 }
 
 const accountNumber = ref('')
-const balance = ref(0)
+const balance = shallowRef<Decimal>(new Decimal(0))
 const loaded = ref(false)
 
-function parseValor(v: string): number {
-  return parseFloat(v)
+function parseValor(v: string): Decimal {
+  return new Decimal(v)
 }
 
 function toTransaction(mov: MovimentacaoDTO, cpfProprio: string): AccountTransaction {
   // o backend grava createdAt em UTC (container sem TZ) sem indicar o fuso na
   // string; sem isso o Luxon assumiria que já está no fuso local do navegador
   const dt = DateTime.fromISO(mov.createdAt, { zone: 'utc' }).toLocal()
-  const abs = Math.abs(parseValor(mov.amount))
+  const abs = parseValor(mov.amount).abs()
 
   let amount = abs
   let party = ''
@@ -49,12 +50,12 @@ function toTransaction(mov: MovimentacaoDTO, cpfProprio: string): AccountTransac
     amount = abs
     party = 'Depósito em conta'
   } else if (mov.type === 'WITHDRAW') {
-    amount = -abs
+    amount = abs.negated()
     party = 'Saque em conta'
   } else {
     // TRANSFER: o lado do extrato (origem/destino) indica se é entrada ou saída pra essa conta
     const souOrigem = mov.originClientCPF === cpfProprio
-    amount = souOrigem ? -abs : abs
+    amount = souOrigem ? abs.negated() : abs
     party = souOrigem ? (mov.destinationClientName ?? 'Conta destino') : (mov.originClientName ?? 'Conta origem')
   }
 
@@ -85,34 +86,34 @@ async function refreshBalance() {
   for (let tentativa = 0; tentativa < 6; tentativa++) {
     const conta = await getConta(accountNumber.value)
     balance.value = parseValor(conta.saldo)
-    if (balance.value !== before) return
+    if (!balance.value.equals(before)) return
     await new Promise((resolve) => setTimeout(resolve, 400))
   }
 }
 
-async function deposit(amount: number) {
+async function deposit(amount: Decimal) {
   await depositar(accountNumber.value, amount.toFixed(2))
   await refreshBalance()
 }
 
-async function withdraw(amount: number) {
+async function withdraw(amount: Decimal) {
   await sacar(accountNumber.value, amount.toFixed(2))
   await refreshBalance()
 }
 
-async function transfer(destinationAccount: string, amount: number) {
+async function transfer(destinationAccount: string, amount: Decimal) {
   await transferir(accountNumber.value, destinationAccount, amount.toFixed(2))
   await refreshBalance()
 }
 
 interface Extrato {
-  saldoAbertura: number
+  saldoAbertura: Decimal
   transactions: AccountTransaction[]
 }
 
 async function fetchExtrato(inicio?: string, fim?: string): Promise<Extrato> {
   const { usuario } = useAuth()
-  if (!accountNumber.value || !usuario.value) return { saldoAbertura: 0, transactions: [] }
+  if (!accountNumber.value || !usuario.value) return { saldoAbertura: new Decimal(0), transactions: [] }
   const extrato = await getExtrato(accountNumber.value, inicio, fim)
   return {
     saldoAbertura: parseValor(extrato.saldoAbertura),

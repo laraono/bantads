@@ -1,17 +1,34 @@
 import { isAxiosError } from 'axios'
 import { DateTime } from 'luxon'
+import Decimal from 'decimal.js'
 
-const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+type ValorMonetario = Decimal | string | number | null | undefined
 
-// valores monetários chegam do back como string (seção 5.1)
-export function formatMoeda(valor: string | number | null | undefined): string {
-  if (valor === null || valor === undefined || valor === '') return '—'
-  const numero = typeof valor === 'number' ? valor : Number(valor)
-  return Number.isNaN(numero) ? '—' : moeda.format(numero)
+// valores monetários chegam do back como string (seção 5.1) e viram Decimal
+// no front, para não perder precisão com float
+export function toDecimal(valor: ValorMonetario): Decimal | null {
+  if (valor === null || valor === undefined || valor === '') return null
+  if (valor instanceof Decimal) return valor
+  try {
+    return new Decimal(valor)
+  } catch {
+    return null
+  }
 }
 
-export function isNegativo(valor: string | number | null | undefined): boolean {
-  return valor !== null && valor !== undefined && Number(valor) < 0
+// "R$ 1.234,56" montado a partir do Decimal, sem passar por Number
+export function formatMoeda(valor: ValorMonetario): string {
+  const d = toDecimal(valor)
+  if (!d) return '—'
+  const [inteiro, centavos] = d.abs().toFixed(2).split('.')
+  const agrupado = inteiro!.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const sinal = d.isNegative() && !d.isZero() ? '-' : ''
+  return `${sinal}R$ ${agrupado},${centavos}`
+}
+
+export function isNegativo(valor: ValorMonetario): boolean {
+  const d = toDecimal(valor)
+  return d !== null && d.isNegative() && !d.isZero()
 }
 
 export function somenteDigitos(valor: string | null | undefined): string {

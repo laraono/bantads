@@ -41,9 +41,35 @@ export async function aguardarJob(jobId: string): Promise<Job> {
   throw new JobTimeoutError('A operação ainda está em processamento.')
 }
 
+// Seção 5.8: "resource" -> GET /{dominio}/{resourceId}; "inline" -> GET /jobs/{id}/result.
+// A SAGA já terminou com sucesso aqui, então uma falha ao buscar o dado não
+// deve transformar a operação em erro na tela.
+async function buscarResultado<T>(jobId: string, job: Job): Promise<T | null> {
+  try {
+    if (job.resultType === 'resource' && job.dominio && job.resourceId) {
+      return await http.get<T>(`/${job.dominio}/${job.resourceId}`).then((r) => r.data)
+    }
+    if (job.resultType === 'inline') {
+      return await getJobResult<T>(jobId)
+    }
+  } catch {
+    // ignora: o status do job é o que importa para o usuário
+  }
+  return null
+}
+
+export interface JobResolvido<T> {
+  job: Job
+  resultado: T | null
+}
+
 // Operações assíncronas podem responder 202 (com jobId) ou já o status normal;
 // só faz polling no 202.
-export async function resolverAssincrono(response: AxiosResponse<{ jobId?: string }>): Promise<Job | null> {
-  if (response.status !== 202 || !response.data?.jobId) return null
-  return aguardarJob(response.data.jobId)
+export async function resolverAssincrono<T = unknown>(
+  response: AxiosResponse<{ jobId?: string }>,
+): Promise<JobResolvido<T> | null> {
+  const jobId = response.status === 202 ? response.data?.jobId : undefined
+  if (!jobId) return null
+  const job = await aguardarJob(jobId)
+  return { job, resultado: await buscarResultado<T>(jobId, job) }
 }

@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import Decimal from 'decimal.js'
+import { formatMoeda } from '../utils/format'
 
 type TabKey = 'transferencia' | 'saque' | 'depositar'
 
 const props = defineProps<{
   open: boolean
   tab: TabKey
-  balance: number
+  balance: Decimal
 }>()
 
 const emit = defineEmits<{
   close: []
   'update:tab': [tab: TabKey]
-  submit: [payload: { tab: TabKey; amount: number; account?: string }]
+  submit: [payload: { tab: TabKey; amount: Decimal; account?: string }]
 }>()
 
 const tabs: { key: TabKey; label: string; action: string }[] = [
@@ -47,24 +49,22 @@ watch(
   }
 )
 
-const formattedBalance = computed(() =>
-  `R$ ${props.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-)
+const formattedBalance = computed(() => formatMoeda(props.balance))
 
 function selectTab(key: TabKey) {
   emit('update:tab', key)
 }
 
-function parseAmount(raw: string): number {
-  const cleaned = raw.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(,|$))/g, '').replace(',', '.')
-  return parseFloat(cleaned)
+// o input sempre está no formato da máscara ("R$ 1.234,56"): os dígitos são os centavos
+function parseAmount(raw: string): Decimal | null {
+  const digits = raw.replace(/\D/g, '')
+  return digits ? new Decimal(digits).dividedBy(100) : null
 }
 
 function formatAmountInput(raw: string): string {
   const digits = raw.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
   if (!digits) return ''
-  const cents = parseInt(digits, 10)
-  return `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  return formatMoeda(new Decimal(digits).dividedBy(100))
 }
 
 function onAmountInput(target: 'transferencia' | 'saque' | 'depositar', event: Event) {
@@ -90,7 +90,7 @@ function submit() {
   const raw = props.tab === 'transferencia' ? transferValue.value : props.tab === 'saque' ? saqueValue.value : depositoValue.value
   const amount = parseAmount(raw)
 
-  if (!amount || amount <= 0) {
+  if (!amount || amount.lessThanOrEqualTo(0)) {
     errorMsg.value = 'Informe um valor válido.'
     return
   }
@@ -98,7 +98,7 @@ function submit() {
     errorMsg.value = 'Informe a conta corrente.'
     return
   }
-  if (props.tab !== 'depositar' && amount > props.balance) {
+  if (props.tab !== 'depositar' && amount.greaterThan(props.balance)) {
     errorMsg.value = 'Saldo insuficiente.'
     return
   }

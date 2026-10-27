@@ -373,6 +373,11 @@ public class EventService {
         Object objectValue = payload.get("valor");
         BigDecimal value = new BigDecimal(objectValue.toString());
 
+        // saque/transferência com valor negativo viraria entrada de dinheiro
+        if(value.signum() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor inválido");
+        }
+
         if(value.compareTo(balance) > 0) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Sem saldo suficiente");
         }
