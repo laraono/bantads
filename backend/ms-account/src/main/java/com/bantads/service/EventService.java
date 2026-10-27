@@ -50,7 +50,7 @@ public class EventService {
         }
     }
 
-    public Event deposit(String userCPF, CreateEventDTO event, String objectId) {
+    public String deposit(String userCPF, CreateEventDTO event, String objectId) {
 
         if(event.getPayload().get("valor") == null || event.getPayload().get("valor").toString().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor não informado");
@@ -95,7 +95,8 @@ public class EventService {
 
         this.sendReadModelCommand(command, userCPF);
         
-        return newEvent;
+        String balance = this.getBalance(objectId).toString();
+        return balance;
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {
@@ -336,9 +337,6 @@ public class EventService {
 
         this.eventRepository.save(destinationTransfer);
 
-        // cópia defensiva: os comandos do read model levam o payload completo
-        // (origem + destino) pra cada lado conseguir montar o histórico com o
-        // nome/cpf da outra ponta, sem contaminar o payload do evento (write side)
         Map<String, Object> originCommandPayload = new HashMap<>(payload);
         originCommandPayload.put("eventId", originTransfer.getEventId());
         originCommandPayload.put("version", originTransfer.getVersion());

@@ -26,6 +26,7 @@ public class InvalidateAuthHandler implements SagaStepHandler {
 
     @Override
     public void compensate(Map<String, Object> payload) {
+        this.authService.activateAuth(payload.get("cpfGerente").toString());
         return;
     }
 

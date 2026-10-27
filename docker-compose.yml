@@ -125,6 +125,11 @@ services:
     mem_limit: 512m
     mem_reservation: 384m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   orchestration:
     container_name: orchestration
@@ -146,6 +151,11 @@ services:
       rabbitmq:
         condition: service_healthy
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ms-auth:
     container_name: ms-auth
@@ -174,6 +184,11 @@ services:
     mem_limit: 512m
     mem_reservation: 384m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ms-account:
     container_name: ms-account
@@ -205,6 +220,11 @@ services:
     mem_limit: 512m
     mem_reservation: 384m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ms-manager:
     container_name: ms-manager
@@ -230,6 +250,11 @@ services:
     mem_limit: 512m
     mem_reservation: 384m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ms-email:
     container_name: ms-email
@@ -254,6 +279,11 @@ services:
     mem_limit: 512m
     mem_reservation: 384m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api-gateway:
     container_name: api-gateway
@@ -298,3 +328,8 @@ services:
       - api-gateway
     mem_limit: 64m
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

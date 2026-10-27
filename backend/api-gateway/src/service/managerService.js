@@ -1,6 +1,8 @@
 const axios = require("axios");
 const rabbitConnector = require("../connector/rabbitConnector");
 const accountService = require("./accountService");
+const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
+const linksUtils = require("../utils/linksUtils");
 
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || "ms-manager";
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || "8084";
@@ -17,15 +19,19 @@ function rethrow(err) {
   }
   throw err;
 }
-const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
 
 class MangerService {
-  mapLinks(cpf, gatewayUrl = GATEWAY_URL) {
-    const base = `${gatewayUrl}/gerentes`;
-    const links = {
-      self: { href: `${base}/${cpf}` },
+
+  toManager(data) {
+    return {
+      id: data.id,
+      nome: data.nome,
+      email: data.email,
+      cpf: data.cpf,
+      telefone: data.telefone,
+      ativo: data.ativo,
+      _links: linksUtils.rewriteLinks(data._links ?? data.links),
     };
-    return links;
   }
 
   async list() {
@@ -36,29 +42,26 @@ class MangerService {
       ]);
 
       const clientesPorGerente = new Map();
-      for (const conta of accounts ?? []) {
+      for (const conta of accounts?._embedded?.getAccountDTOList ?? []) {
         clientesPorGerente.set(
-          conta.managerCPF,
-          (clientesPorGerente.get(conta.managerCPF) ?? 0) + 1,
+          conta.cpfGerente,
+          (clientesPorGerente.get(conta.cpfGerente) ?? 0) + 1,
         );
       }
 
       const gerentes = (managersAnswer.data?.gerentes ?? [])
-        .map((g) => ({
-          _links: this.mapLinks(c.cpf, true),
-          id: c.id,
-          cpf: c.cpf,
-          nome: c.name,
-          email: c.email,
-          telefone: c.phone,
-          ativo: c.ativo,
-          quantidadeClientes: clientesPorGerente.get(g.cpf) ?? 0,
-        }))
+        .map((g) => {
+          const manager = this.toManager(g);
+          return {
+            ...manager,
+            quantidadeClientes: clientesPorGerente.get(g.cpf) ?? 0,
+          };
+        })
         .sort((a, b) =>
           a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
         );
 
-      return { gerentes };
+      return { "gerentes": gerentes };
     } catch (err) {
       console.log(err.message)
       rethrow(err);
@@ -66,20 +69,21 @@ class MangerService {
   }
 
   async getManager(id) {
-    try{
-      const managerAnswer = await axios.get(
-        `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`
-      )
+    try {
+      const cached = await getByCache("gerente", id);
 
-      return {
-        id: managerAnswer.data.id,
-        nome: managerAnswer.data.nome,
-        email: managerAnswer.data.email,
-        cpf: managerAnswer.data.cpf,
-        telefone: managerAnswer.data.telefone,
-        ativo: managerAnswer.data.ativo,
-        _links: this.mapLinks(managerAnswer.data.cpf),
-      };
+      if (cached) {
+        return cached;
+      }
+      const managerAnswer = await axios.get(
+        `http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers/${id}`,
+      );
+
+      const returnData = this.toManager(managerAnswer.data);
+
+      cacheObject("gerente", returnData);
+
+      return returnData;
     } catch (err) {
       console.log(err.message)
       rethrow(err);
@@ -89,14 +93,14 @@ class MangerService {
   // R14: e-mail e CPF não podem ser alterados, então só nome e telefone seguem
   async updateManager(id, body, headers) {
     try {
-      if(body.email) {
-        const error = new Error('Não é possível alterar o email');
+      if (body.email) {
+        const error = new Error("Não é possível alterar o email");
         error.status = 400;
         throw error;
       }
 
-      if(body.cpf) {
-        const error = new Error('Não é possível alterar o CPF');
+      if (body.cpf) {
+        const error = new Error("Não é possível alterar o CPF");
         error.status = 400;
         throw error;
       }
@@ -106,22 +110,17 @@ class MangerService {
         { nome: body.nome, telefone: body.telefone, ativo: true },
         { headers: { "x-user-cpf": headers["x-user-cpf"] } },
       );
-      return {
-        id: managerAnswer.data.id,
-        nome: managerAnswer.data.nome,
-        email: managerAnswer.data.email,
-        cpf: managerAnswer.data.cpf,
-        telefone: managerAnswer.data.telefone,
-        ativo: managerAnswer.data.ativo,
-        _links: this.mapLinks(managerAnswer.data.cpf),
-      };
+
+      removeCache("gerente", managerAnswer.data.cpf);
+
+      return this.toManager(managerAnswer.data);
+
     } catch (err) {
       console.log(err.message)
       rethrow(err);
     }
   }
 
-  // HATEOAS pelas jobs
   async deleteManager(id, headers) {
     try {
       const payload = {
@@ -130,15 +129,17 @@ class MangerService {
         type: "DELETAR_GERENTE",
       };
 
-    const job = {
-      status: "PENDENTE",
-      resultType: "inline",
-      dominio: null,
-      resourceId: id,
-      erro: null
-    }
-      
-    return await rabbitConnector.startSaga(payload, job)
+      const job = {
+        status: "PENDENTE",
+        resultType: "inline",
+        dominio: null,
+        resourceId: id,
+        erro: null,
+      };
+
+      removeCache("gerente", id);
+
+      return await rabbitConnector.startSaga(payload, job);
     } catch (err) {
       if (err.response) {
         const error = new Error(err.response.data?.message || err.message);
@@ -149,12 +150,18 @@ class MangerService {
     }
   }
 
-  
   async createManager(gerente) {
-      const payload = {
-        gerente,
-        type: "INSERIR_GERENTE",
-      };
+
+    if (!gerente.nome || !gerente.cpf || !gerente.email || !gerente.telefone || !gerente.senha) {
+      const error = new Error("Dados obrigatórios não informados");
+      error.status = 400;
+      throw error;
+    }
+
+    const payload = {
+      gerente,
+      type: "INSERIR_GERENTE",
+    };
 
     const job = {
       status: "PENDENTE",
@@ -163,6 +170,8 @@ class MangerService {
       resourceId: gerente.cpf,
       erro: null,
     };
+
+    removeCache("gerente", gerente.cpf);
 
     return await rabbitConnector.startSaga(payload, job);
   }

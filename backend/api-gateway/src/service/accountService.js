@@ -1,22 +1,8 @@
 const axios = require("axios");
-
+const clientService = require("../service/clientService");
+const linksUtils = require("../utils/linksUtils");
 const MS_ACCOUNT_HOST = process.env.MS_ACCOUNT_HOST || "ms-account";
 const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || "8083";
-const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
-const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
-const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
-
-// monta os _links com os paths públicos do gateway (/contas/...), não os do ms-account
-function mapLinks(numero, gatewayUrl = GATEWAY_URL) {
-  const base = `${gatewayUrl}/contas/${numero}`;
-  return {
-    self: { href: base },
-    extrato: { href: `${base}/extrato` },
-    depositar: { href: `${base}/deposito` },
-    sacar: { href: `${base}/saque` },
-    transferir: { href: `${base}/transferencia` },
-  };
-}
 
 function rethrow(err) {
   if (err.response) {
@@ -49,6 +35,12 @@ class AccountService {
 
   async transfer(id, body, headers) {
     try {
+      if (!body?.contaDestino || !body.valor) {
+        const error = new Error("Conta de destino não informada");
+        error.status = 400;
+        throw error;
+      }
+
       const msBody = { contaDestino: body.contaDestino, valor: body.valor };
 
       const destinationCPF = await axios.get(
@@ -61,32 +53,25 @@ class AccountService {
       const cpf = destinationCPF.data;
 
       if (!cpf) {
-        const error = new Error("Conta não existe");
+        const error = new Error("Conta destino não existe");
         error.status = 422;
         throw error;
       }
 
-      const originClient = await axios.get(
-        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${headers["x-user-cpf"]}`,
-        {
-          headers: { "x-user-cpf": headers["x-user-cpf"] },
-        },
+      const originClient = await clientService.getClient(
+        headers["x-user-cpf"],
+        headers,
       );
 
-      if (!originClient.data?.name) {
-        const error = new Error("Usuário não encontrado");
+      if (!originClient.nome || !originClient.cpf) {
+        const error = new Error("Usuário de origem não encontrado");
         error.status = 404;
         throw error;
       }
 
-      const destinationClient = await axios.get(
-        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
-        {
-          headers: { "x-user-cpf": headers["x-user-cpf"] },
-        },
-      );
+      const destinationClient = await clientService.getClient(cpf, headers);
 
-      if (!destinationClient.data?.name) {
+      if (!destinationClient.nome) {
         const error = new Error("Usuário não existe");
         error.status = 422;
         throw error;
@@ -95,11 +80,11 @@ class AccountService {
       const payload = {
         destino: {
           conta: msBody.contaDestino,
-          nome: destinationClient.data.name,
+          nome: destinationClient.nome,
           cpf,
         },
         origem: {
-          nome: originClient.data.name,
+          nome: originClient.nome,
           valor: msBody.valor,
         },
       };
@@ -127,13 +112,13 @@ class AccountService {
 
   async withdraw(id, body, headers) {
     try {
-      const withdrawAnswer = await axios.post(
+      await axios.post(
         `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/withdraw`,
         { payload: body },
         { headers: { "x-user-cpf": headers["x-user-cpf"] } },
       );
 
-      return withdrawAnswer.data;
+      return;
     } catch (err) {
       console.log(err.message)
       rethrow(err);
@@ -143,50 +128,52 @@ class AccountService {
   async deposit(id, body, headers) {
     try {
       if (
+        !body ||
+        !body.valor ||
         typeof body.valor !== "string" ||
         !/^\d+(\.\d{1,2})?$/.test(body.valor) // filtra para strings em forma de dinheiro
       ) {
-        const error = new Error("Valor inválido");
+        const error = new Error("Valor do depósito inválido");
         error.status = 400;
         throw error;
       }
 
-      // o ms-account exige nome e cpf de quem deposita (vão para o histórico)
       const cpf = headers["x-user-cpf"];
-      const client = await axios.get(
-        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
-      );
+      const client = await clientService.getClient(cpf, headers);
 
-      const depositAnswer = await axios.post(
+      const balance = await axios.post(
         `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
         {
           payload: {
             valor: body.valor,
-            nome: client.data.name,
+            nome: client.nome,
             cpfCliente: cpf,
           },
         },
         { headers: { "x-user-cpf": headers["x-user-cpf"] } },
       );
 
-      return depositAnswer.data;
+      return balance.data;
     } catch (err) {
       console.log(err.message)
       rethrow(err);
     }
   }
 
-    async getAccount(id, headers) {
-        try {
-            const accountAnswer = await axios.get(`http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`, {
-                headers: { 'x-user-cpf': headers['x-user-cpf']}
-            })
+  async getAccount(id, headers) {
+    try {
+      const accountAnswer = await axios.get(
+        `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${id}`,
+        {
+          headers: { "x-user-cpf": headers["x-user-cpf"] },
+        },
+      );
 
-            if(!accountAnswer.data) {
-                const error = new Error('Conta não encontrado');
-                error.status = 404;
-                throw error;
-            }
+      if (!accountAnswer.data) {
+        const error = new Error("Conta não encontrado");
+        error.status = 404;
+        throw error;
+      }
 
       if (
         !accountAnswer.data.numero ||
@@ -203,7 +190,7 @@ class AccountService {
         cpfCliente: accountAnswer.data.cpfCliente,
         saldo: accountAnswer.data.saldo,
         cpfGerente: accountAnswer.data.cpfGerente,
-        _links: mapLinks(accountAnswer.data.numero),
+        _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
       return result;
@@ -243,7 +230,7 @@ class AccountService {
         cpfCliente: accountAnswer.data.cpfCliente,
         saldo: accountAnswer.data.saldo,
         cpfGerente: accountAnswer.data.cpfGerente,
-        _links: mapLinks(accountAnswer.data.numero),
+        _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
       return result;

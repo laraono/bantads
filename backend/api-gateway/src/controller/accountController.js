@@ -14,8 +14,8 @@ class AccountController {
 
     async withdraw(req, res) {
         try {
-            const result = await accountService.withdraw(req.params.id, req.body, req.headers);
-            return res.status(201).json(result);
+            await accountService.withdraw(req.params.id, req.body, req.headers);
+            return res.status(201).end();
         } catch (err) {
             console.log(err.message)
             const status = err.status || 500;
@@ -26,8 +26,8 @@ class AccountController {
 
     async deposit(req, res) {
         try {
-            const result = await accountService.deposit(req.params.id, req.body, req.headers);
-            return res.status(201).json(result);
+            const balance = await accountService.deposit(req.params.id, req.body, req.headers);
+            return res.status(201).json({"saldo": balance.body});
         } catch (err) {
             console.log(err.message)
             const status = err.status || 500;

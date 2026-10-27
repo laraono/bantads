@@ -50,6 +50,10 @@ public class ManagerService {
                 .isActive(true)
                 .build();
 
+        if (managerRepository.existsByEmail(manager.getEmail()) || managerRepository.existsByCpf(manager.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
+        }
+
         ManagerDTO managerDto = ManagerDTO.builder()
                 .id(manager.getManagerId())
                 .ativo(manager.isActive())
@@ -105,9 +109,6 @@ public class ManagerService {
     }
 
     public ManagerDTO updateManager(String managerCPF, UpdateManagerDTO updateManagerDTO) {
-        if (updateManagerDTO.getEmail() != null || updateManagerDTO.getCpf() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail e CPF não podem ser alterados");
-        }
 
         ManagerDTO managerDto = this.getManager(managerCPF);
 
@@ -118,6 +119,8 @@ public class ManagerService {
         manager.setManagerId(managerDto.getId());
         manager.setName(managerDto.getNome());
         manager.setPhone(managerDto.getTelefone());
+        manager.setCpf(managerDto.getCpf());
+        manager.setEmail(managerDto.getEmail());
         manager.setActive(managerDto.getAtivo());
 
         managerRepository.save(manager);
@@ -143,7 +146,8 @@ public class ManagerService {
         
         Status status = Status.SUCESSO;
         String error = null;
-        Map<String, Object> payload = new HashMap<>();
+        // em caso de falha devolve o payload original, senão a retentativa do orquestrador vai sem dados
+        Map<String, Object> payload = command.getPayload();
 
         try {
 

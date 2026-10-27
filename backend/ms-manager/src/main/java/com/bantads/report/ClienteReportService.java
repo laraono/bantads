@@ -72,9 +72,9 @@ public class ClienteReportService {
 
         return ClienteRelatorioDTO.builder()
                 .cpf((String) cliente.get("cpf"))
-                .nome((String) cliente.get("name"))
+                .nome((String) cliente.get("nome"))
                 .email((String) cliente.get("email"))
-                .salario(paraBigDecimal(cliente.get("salary")))
+                .salario(paraBigDecimal(cliente.get("salario")))
                 .numeroConta((String) conta.get("accountNumber"))
                 .saldo(paraBigDecimal(conta.get("balance")))
                 .cpfGerente(cpfGerente)
@@ -85,7 +85,7 @@ public class ClienteReportService {
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> buscarClientes() {
         Map<String, Object> resposta = restTemplate.getForObject(msClientBaseUrl + "/clientes", Map.class);
-        return extrairListaEmbutida(resposta);
+        return extrairClientes(resposta);
     }
 
     @SuppressWarnings("unchecked")
@@ -94,20 +94,13 @@ public class ClienteReportService {
         return contas != null ? contas : List.of();
     }
 
-    // resposta HATEOAS: o nome da chave embutida varia conforme o tipo (ex.:
-    // "clientList"), então pega o primeiro (e único) array em "_embedded" em
-    // vez de fixar o nome da relação
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> extrairListaEmbutida(Map<String, Object> resposta) {
+    private List<Map<String, Object>> extrairClientes(Map<String, Object> resposta) {
         if (resposta == null) {
             return List.of();
         }
-        Object embedded = resposta.get("_embedded");
-        if (!(embedded instanceof Map<?, ?> embeddedMap) || embeddedMap.isEmpty()) {
-            return List.of();
-        }
-        Object primeiraLista = embeddedMap.values().iterator().next();
-        return primeiraLista instanceof List ? (List<Map<String, Object>>) primeiraLista : List.of();
+        Object clientes = resposta.get("clientes");
+        return clientes instanceof List ? (List<Map<String, Object>>) clientes : List.of();
     }
 
     private static BigDecimal paraBigDecimal(Object valor) {

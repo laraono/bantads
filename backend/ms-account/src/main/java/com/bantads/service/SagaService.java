@@ -60,7 +60,7 @@ public class SagaService {
 
         SagaStepHandler handler = this.handlers.get(action);
 
-        Map<String, Object> payload = new HashMap<>();
+        Map<String, Object> payload = command.getPayload();
 
         Status status = Status.SUCESSO;
         String error = null;

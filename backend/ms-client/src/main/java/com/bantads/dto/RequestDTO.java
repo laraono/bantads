@@ -30,7 +30,6 @@ public class RequestDTO {
     private String cpf;
 
     @NotBlank(message = "Telefone é obrigatório") 
-    @Pattern(regexp = "^\\d{11}$", message = "Telefone inválido") 
     private String telefone;
 
     @NotNull(message = "Salário é obrigatório") 

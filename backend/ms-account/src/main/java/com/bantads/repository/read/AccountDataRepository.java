@@ -31,7 +31,7 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     @Query("SELECT DISTINCT a.managerCPF FROM AccountData a")
     List<String> findAllUniqueManagerCPF();
 
-    @Query("SELECT a.managerCPF FROM AccountData a GROUP BY a.managerCPF HAVING COUNT(a) > 1 ORDER BY COUNT(a) ASC")
+    @Query("SELECT a.managerCPF FROM AccountData a GROUP BY a.managerCPF HAVING COUNT(a.accountNumber) > 1 ORDER BY COUNT(a.accountNumber) ASC")
     List<String> findManagersWithMultipleAccountsOrderedByCount();
 
     void deleteByClientCPF(String CPF);

@@ -23,6 +23,13 @@ echo "Subindo os containers..."
 echo "------------------------------------------"
 docker compose up -d
 
-curl -X POST http://localhost:3000/reboot
+echo "Aguardando o API Gateway ficar disponível..."
+echo "------------------------------------------"
+until curl -sf http://localhost:3000/health > /dev/null; do
+    sleep 2
+done
+
+curl -X POST --fail --retry 15 --retry-delay 5 --retry-all-errors http://localhost:3000/reboot
+echo
 
 echo " Ambiente iniciado com sucesso!"

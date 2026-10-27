@@ -9,7 +9,6 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,12 +58,12 @@ public class EmailService {
 
         if(type.contains("novo-gerente")) {
             try {
-                Map<String, String> gerente = (Map<String, String>) command.getPayload().get("email");
-                String managerName = gerente.get("nome");
+                Map<String, Object> gerente = (Map<String, Object>) command.getPayload().get("gerente");
+                String managerName = String.valueOf(gerente.get("nome"));
                 String clientEmail = command.getPayload().get("email").toString();
                 String clientName = command.getPayload().get("nome").toString();
 
-                this.sendEmail(clientEmail, "Novo gerente", "Olá, " + clientName + "Seu novo gerente é:  " + managerName);
+                this.sendEmail(clientEmail, "Novo gerente", "Olá, " + clientName + ". Seu novo gerente é: " + managerName);
 
             } catch (Exception e) {
                 e.printStackTrace();

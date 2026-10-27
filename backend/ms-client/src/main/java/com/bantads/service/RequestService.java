@@ -7,7 +7,6 @@ import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
 import com.bantads.model.RabbitRequest;
-import com.bantads.repository.AddressRepository;
 import com.bantads.repository.ClientRepository;
 import com.bantads.repository.RequestRepository;
 import com.bantads.repository.StateRepository;
@@ -74,8 +73,15 @@ public class RequestService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
             }
 
+            System.out.println("verificou:" + requestDTO.toString());
+
             AddressDTO addressDTO = requestDTO.getEndereco();
+
+            System.out.println("endereco:" + addressDTO.toString());
+
             BigDecimal salary = new BigDecimal(requestDTO.getSalario());
+
+            System.out.println("salary:" + salary.toString());
 
             Request requestEntity = Request.builder()
                     .status(RequestStatus.PENDENTE)
@@ -180,7 +186,8 @@ public class RequestService {
     }
 
     public Request getRequestById(Long id) {
-        return requestRepository.getReferenceById(id);
+        return requestRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisição não encontrada"));
     }
 
 }
