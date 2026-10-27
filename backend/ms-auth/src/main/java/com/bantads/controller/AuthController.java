@@ -60,10 +60,4 @@ public class AuthController
                 auth.getActive()
         );
     }
-
-    @GetMapping
-    public Iterable<Auth> listAuths() 
-    {
-        return authService.findAll();
-    }
 }

@@ -27,10 +27,18 @@ public class ApproveRequestHandler implements SagaStepHandler {
         payload.put("cpfCliente", request.getCpf());
         payload.put("requisicao", request);
         return payload;
+
     }
 
     @Override
-    public void compensate(Map<String, Object> payload) {
+    public void compensate(Map<String, Object> payload, String error) {
+        String id = (String) payload.get("idSolicitacao");
+        if ("CONTA JÁ EXISTE".equals(error)) {
+            this.requestService.rejectRequest(id, error);
+        } else {
+            this.requestService.compensateRequestStatus(id);
+        }
+
         return;
     }
 

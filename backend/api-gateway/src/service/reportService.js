@@ -49,13 +49,13 @@ class JobService {
 
                 const data = {
                     cpf: client.cpf, 
-                    nome: client.name, 
+                    nome: client.nome, 
                     email: client.email, 
-                    salario: client.salary, 
+                    salario: client.salario, 
                     numeroConta: account.numero,
                     saldo: account.saldo, 
                     cpfGerente: account.cpfGerente, 
-                    nomeGerente: managerObj.name
+                    nomeGerente: managerObj.nome
                 }
 
                 report.push(data)

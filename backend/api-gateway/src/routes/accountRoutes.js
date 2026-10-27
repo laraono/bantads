@@ -12,12 +12,12 @@ router.get('/cpf/:cpf', authGatewayFilter(), accountController.getAccountByCpf);
 
 router.get('/:id', authGatewayFilter(), accountController.getAccount);
 
-router.post('/:id/deposito',  authGatewayFilter(), accountController.deposit);
+router.post('/:id/deposito',  authGatewayFilter('CLIENTE'), accountController.deposit);
 
-router.post('/:id/saque', authGatewayFilter(), accountController.withdraw);
+router.post('/:id/saque', authGatewayFilter('CLIENTE'), accountController.withdraw);
 
 router.get('/:id/extrato',  authGatewayFilter(), accountController.getExtract);
 
-router.post('/:id/transferencia',  authGatewayFilter(),  accountController.transfer);
+router.post('/:id/transferencia',  authGatewayFilter('CLIENTE'),  accountController.transfer);
 
 module.exports = router;

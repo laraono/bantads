@@ -12,5 +12,5 @@ import java.math.BigDecimal;
 public class AccountsByManagerDTO {
     private String managerCPF;
     private Long totalAccounts;
-    private BigDecimal totalBalance; // não é string pois não vai ao json e front
+    private BigDecimal totalBalance;
 }

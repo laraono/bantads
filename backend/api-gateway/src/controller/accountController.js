@@ -13,8 +13,8 @@ class AccountController {
 
     async withdraw(req, res) {
         try {
-            const result = await accountService.withdraw(req.params.id, req.body, req.headers);
-            return res.status(201).json(result);
+            await accountService.withdraw(req.params.id, req.body, req.headers);
+            return res.status(201).end();
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
@@ -24,8 +24,8 @@ class AccountController {
 
     async deposit(req, res) {
         try {
-            const result = await accountService.deposit(req.params.id, req.body, req.headers);
-            return res.status(201).json(result);
+            const balance = await accountService.deposit(req.params.id, req.body, req.headers);
+            return res.status(201).json({"saldo": balance.body});
         } catch (err) {
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });

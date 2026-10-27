@@ -5,7 +5,7 @@ const accountController = require('../controller/accountController');
 
 const router = Router();
 
-router.get('/', authGatewayFilter('GERENTE'), clientController.listClients);
+router.get('', authGatewayFilter('GERENTE'), clientController.listClients);
 
 router.get('/:cpf', authGatewayFilter(), clientController.getClient);
 

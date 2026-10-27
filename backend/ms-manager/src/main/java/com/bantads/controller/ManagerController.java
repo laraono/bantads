@@ -4,12 +4,11 @@ import com.bantads.assembler.ManagerModelAssembler;
 import com.bantads.dto.CreateManagerDTO;
 import com.bantads.dto.ManagerDTO;
 import com.bantads.dto.UpdateManagerDTO;
-import com.bantads.entity.Manager;
 import com.bantads.service.ManagerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,9 +25,16 @@ public class ManagerController {
     @Autowired
     private ManagerService managerService;
 
+    @GetMapping()
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, List<EntityModel<ManagerDTO>>> listManagers() {
+        List<EntityModel<ManagerDTO>> gerentes = managerService.list().stream().map(assembler::toModel).toList();
+        return Map.of("gerentes", gerentes);
+    }
+
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public EntityModel<ManagerDTO> createManager(@RequestBody CreateManagerDTO manager) {
+    public EntityModel<ManagerDTO> createManager(@Valid @RequestBody CreateManagerDTO manager) {
         try {
             ManagerDTO gerente = managerService.createManager(manager);
             return assembler.toModel(gerente);
@@ -39,9 +45,9 @@ public class ManagerController {
     }
 
     @PutMapping("/{cpf}")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.OK)
     public EntityModel<ManagerDTO> updateManager(@PathVariable("cpf") String managerCPF,
-            @RequestBody UpdateManagerDTO manager) {
+            @Valid @RequestBody UpdateManagerDTO manager) {
         try {
             ManagerDTO atualizado = managerService.updateManager(managerCPF, manager);
             return assembler.toModel(atualizado);
