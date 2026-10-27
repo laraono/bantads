@@ -1,6 +1,7 @@
 const axios = require("axios");
 const rabbitConnector = require("../connector/rabbitConnector");
-
+const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
+const linksUtils = require("../utils/linksUtils");
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
 
@@ -21,7 +22,6 @@ function toIso(date) {
   return date ? new Date(date).toISOString() : null;
 }
 
-// entidade Request do MS Cliente -> DTO da solicitação para o front (R8)
 function toRequestDTO(request) {
   return {
     cpf: request.cpf,
@@ -31,24 +31,11 @@ function toRequestDTO(request) {
     status: request.status,
     motivo: request.motivo ?? null,
     dataDecisao: toIso(request.approvedAt ?? request.rejectionAt),
-    _links: request._links ?? request.links,
+    _links: linksUtils.rewriteLinks(request._links ?? request.links),
   };
 }
 
 class RequestService {
-  mapLinks(cpf, status, gatewayUrl = GATEWAY_URL) {
-    const base = `${gatewayUrl}/solicitacoes`;
-    const links = {
-      self: { href: `${base}/${cpf}` },
-    };
-
-    if (status === "PENDENTE") {
-      links.aprovacao = { href: `${base}/${cpf}/aprovacao` };
-      links.rejeicao = { href: `${base}/${cpf}/rejeicao` };
-    }
-
-    return links;
-  }
   async listRequests() {
     try {
       const response = await axios.get(
@@ -64,10 +51,18 @@ class RequestService {
 
   async getRequest(cpf) {
     try {
+      const cached = await getByCache("solicitacoes", cpf);
+      if (cached) {
+        return cached;
+      }
       const response = await axios.get(
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}`,
       );
-      return toRequestDTO(response.data);
+      const request = toRequestDTO(response.data);
+
+      cacheObject("solicitacoes", request);
+
+      return request;
     } catch (err) {
       console.log(err.message)
       rethrow(err);
@@ -76,37 +71,39 @@ class RequestService {
 
   async createRequest(body) {
     try {
+      const camposObrigatorios = [
+        "nome",
+        "email",
+        "cpf",
+        "telefone",
+        "salario",
+      ];
+      const camposEnderecoObrigatorios = [
+        "uf",
+        "cep",
+        "logradouro",
+        "numero",
+        "cidade",
+      ];
+
+      if (
+        !body ||
+        camposObrigatorios.some((c) => !body[c]) ||
+        !body.endereco ||
+        camposEnderecoObrigatorios.some((c) => !body.endereco[c])
+      ) {
+        const error = new Error("Dados obrigatórios não informados");
+        error.status = 400;
+        throw error;
+      }
+
+      removeCache("solicitacoes", body.cpf);
+
       const response = await axios.post(
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests`,
         body,
       );
-      return response.data;
-    } catch (err) {
-      console.log(err.message)
-      rethrow(err);
-    }
 
-    const response = response.data._embedded?.requestsList ?? [];
-
-    const job = {
-      status: "PENDENTE",
-      resultType: "resource",
-      dominio: "clientes",
-      resourceId: cpf,
-      erro: null,
-    };
-
-    return await rabbitConnector.startSaga(payload, job);
-  }
-
-  async rejectRequest(cpf, body) {
-    try {
-      const response = await axios.post(
-        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/rejeicao`,
-        {
-          motivo: body?.motivo,
-        },
-      );
       return toRequestDTO(response.data);
     } catch (err) {
       console.log(err.message)
@@ -114,7 +111,28 @@ class RequestService {
     }
   }
 
-  // HATEOAS pras jobs
+  async rejectRequest(cpf, body) {
+    try {
+      if (!body.motivo) {
+        throw new Error("Motivo não informado");
+      }
+
+      removeCache("solicitacoes", cpf);
+
+      const response = await axios.post(
+        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`,
+        {
+          motivo: body.motivo,
+        },
+      );
+
+      return toRequestDTO(response.data);
+    } catch (err) {
+      console.log(err.message)
+      rethrow(err);
+    }
+  }
+
   async approveRequest(cpf) {
     const payload = {
       idSolicitacao: cpf,
@@ -129,16 +147,9 @@ class RequestService {
       erro: null,
     };
 
+    removeCache("solicitacoes", cpf);
+
     return await rabbitConnector.startSaga(payload, job);
-  }
-
-  async rejectRequest(cpf, body) {
-    const response = await axios.post(
-      `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/requests/${cpf}/reject`,
-      body,
-    );
-
-    return response.data;
   }
 }
 

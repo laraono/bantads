@@ -15,10 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 
-
 @Service
 public class ClientService {
-    
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -44,11 +43,11 @@ public class ClientService {
 
     public Client getClient(String cpf) {
         try {
-         Client client = clientRepository.findByCpf(cpf);
-         if (client == null) {
-             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado");
-         }
-         return client;
+            Client client = clientRepository.findByCpf(cpf);
+            if (client == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado");
+            }
+            return client;
         } catch (Exception e) {
             throw e;
         }
@@ -66,10 +65,15 @@ public class ClientService {
 
     public Client createClient(Map<String, Object> payload) {
 
-        Request req = objectMapper.convertValue(payload.get("requisicao"), Request.class);
+        Request origiRequest = objectMapper.convertValue(payload.get("requisicao"), Request.class);
 
-        if(stateRepository.findByUf(req.getState().getUf()) == null) {
+        if (stateRepository.findByUf(origiRequest.getState().getUf()) == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
+        }
+
+        Request req = this.requestService.getRequestById(origiRequest.getRequestId());
+        if (req == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisição não encontrada");
         }
 
         Address addressEntity = Address.builder()

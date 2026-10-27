@@ -11,12 +11,6 @@ CREATE TYPE approved_status AS ENUM (
     'NAO_APROVADO'
 );
 
-CREATE TYPE request_status AS ENUM (
-    'PENDENTE',
-    'APROVADO',
-    'NAO_APROVADO'
-);
-
 CREATE TABLE state(
     state_id        SERIAL PRIMARY KEY,
     uf              VARCHAR(2) NOT NULL
@@ -50,9 +44,21 @@ CREATE TABLE client (
 CREATE TABLE request (
     request_id          SERIAL PRIMARY KEY,
     client_id           INTEGER NULL,
-    status              request_status NOT NULL,
+    status              VARCHAR(255) NOT NULL,
     rejection_reason    VARCHAR(255) NULL,
+    rejection_at        TIMESTAMP NULL,
     approved_at         TIMESTAMP NULL,
+    name                VARCHAR(50) NOT NULL,
+    email               VARCHAR(100) NOT NULL, 
+    cpf                 VARCHAR(11) NOT NULL UNIQUE,
+    phone               VARCHAR(20) NOT NULL,
+    salary              NUMERIC(19, 4) NOT NULL,
+    cep                 VARCHAR(9) NOT NULL,
+    city                VARCHAR(30) NOT NULL,
+    state_id            INTEGER NOT NULL,
+    street              VARCHAR(30) NOT NULL,
+    number              INTEGER NOT NULL,
+    additional_info     VARCHAR(30) NULL,
 
     FOREIGN KEY(client_id) REFERENCES client(client_id)
 );

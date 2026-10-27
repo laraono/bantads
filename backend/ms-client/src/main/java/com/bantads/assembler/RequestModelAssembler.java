@@ -8,15 +8,16 @@ import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
 import com.bantads.controller.RequestController;
-import com.bantads.entity.Request;
+import com.bantads.dto.RequestResponseDTO;
 import com.bantads.entity.RequestStatus;
 
 @Component
-public class RequestModelAssembler implements RepresentationModelAssembler<Request, EntityModel<Request>>  {
+public class RequestModelAssembler implements RepresentationModelAssembler<RequestResponseDTO, EntityModel<RequestResponseDTO>>  {
     
     @Override
-    public EntityModel<Request> toModel(Request request) {
-        EntityModel<Request> model = EntityModel.of(request);
+    public EntityModel<RequestResponseDTO> toModel(RequestResponseDTO request) {
+
+        EntityModel<RequestResponseDTO> model = EntityModel.of(request);
 
         model.add(linkTo(methodOn(RequestController.class).getRequest(request.getCpf())).withSelfRel());
         

@@ -23,8 +23,8 @@ public class EventController {
     @PostMapping("/{objectId}/deposit")
     ResponseEntity deposit(@RequestHeader("x-user-cpf") String userCPF, @PathVariable String objectId, @RequestBody CreateEventDTO event) {
         try{
-            this.eventService.deposit(userCPF, event, objectId);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            String balance = this.eventService.deposit(userCPF, event, objectId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(balance);
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

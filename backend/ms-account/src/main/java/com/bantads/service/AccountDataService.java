@@ -14,6 +14,7 @@ import java.util.*;
 
 @Service
 @Transactional
+// Se refere a métodos do objeto AccountData, usado por AccountService
 public class AccountDataService {
 
     @Autowired
@@ -48,43 +49,22 @@ public class AccountDataService {
     }
 
     public String getManagerWithLowestAccount(List<String> managerCPFs) {
-        long lowestAccountAmount = Long.MAX_VALUE;
-
-        String firstCPF = managerCPFs.getFirst();
-        AccountsByManagerDTO first = this.getAccountsCountByManager(firstCPF);
-
-        BigDecimal lowestTotalBalance = first.getTotalBalance();
-        int index = 0;
-        int i = 0;
-
-        for (String cpf : managerCPFs) {
-            AccountsByManagerDTO current = this.getAccountsCountByManager(cpf);
-
-            if (current == null) {
-                current = new AccountsByManagerDTO(cpf, 0L, BigDecimal.ZERO);
-            }
-
-            if (current.getTotalAccounts() < lowestAccountAmount) {
-                lowestAccountAmount = current.getTotalAccounts();
-                lowestTotalBalance = current.getTotalBalance();
-                index = i;
-            } else if (current.getTotalAccounts() == lowestAccountAmount && current.getTotalBalance().compareTo(lowestTotalBalance) < 0) {
-                lowestAccountAmount = current.getTotalAccounts();
-                lowestTotalBalance = current.getTotalBalance();
-                index = i;
-            }
-
-            i++;
-        }
-
-        return managerCPFs.get(index);
+        return managerCPFs.stream()
+                .distinct()
+                .map(cpf -> {
+                    AccountsByManagerDTO dto = this.getAccountsCountByManager(cpf);
+                    return dto != null ? dto : new AccountsByManagerDTO(cpf, 0L, BigDecimal.ZERO);
+                })
+                .min(Comparator.comparingLong(AccountsByManagerDTO::getTotalAccounts).reversed().thenComparing(Comparator.comparing(AccountsByManagerDTO::getTotalBalance)))
+                .map(AccountsByManagerDTO::getManagerCPF)
+                .orElseThrow();
     }
 
     public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
         List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
 
         if(cpfs.isEmpty()) {
-            payload.put("numeroConta", "");
+            payload.put("numeroConta", "sem-conta");
             return payload;
         }
 
@@ -107,7 +87,7 @@ public class AccountDataService {
 
     public AccountData createAccountData(AccountData accountData) {
         if(this.accountDataRepository.existsAccountDataByAccountNumber(accountData.getAccountNumber())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Conta já existe");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
         }
 
         return this.accountDataRepository.save(accountData);

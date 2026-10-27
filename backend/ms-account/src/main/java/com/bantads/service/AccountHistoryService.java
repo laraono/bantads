@@ -3,8 +3,6 @@ package com.bantads.service;
 import com.bantads.dto.read.AccountHistoryDTO;
 import com.bantads.dto.read.ExtractDTO;
 import com.bantads.dto.read.HistoryInstanceDTO;
-import com.bantads.entity.event.Event;
-import com.bantads.entity.event.EventType;
 import com.bantads.entity.read.AccountHistory;
 import com.bantads.entity.read.TransactionType;
 import com.bantads.repository.read.AccountHistoryRepository;
@@ -21,14 +19,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 
-// Gerencia histórico de transações
+// Gerencia histórico de transações para criar extrato
 public class AccountHistoryService {
 
     @Autowired
