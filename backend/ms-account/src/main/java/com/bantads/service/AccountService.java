@@ -287,7 +287,11 @@ public class AccountService {
                 : (payload.get("clienteCpf") != null ? String.valueOf(payload.get("clienteCpf")) : null);
 
         String destinationClientName = (destination != null) ? String.valueOf(destination.get("nome")) : null;
-        String destinationClientCpf = (destination != null) ? String.valueOf(destination.get("cpfCliente")) : null;
+        // o seed grava "cpfCliente"; o Gateway envia "cpf"
+        Object rawDestinationCpf = (destination != null)
+                ? (destination.get("cpfCliente") != null ? destination.get("cpfCliente") : destination.get("cpf"))
+                : null;
+        String destinationClientCpf = rawDestinationCpf != null ? String.valueOf(rawDestinationCpf) : null;
 
         Object rawValue = (origin != null && origin.get("valor") != null) 
                 ? origin.get("valor") 
@@ -319,7 +323,10 @@ public class AccountService {
         return this.accountHistoryService.getExtract(accountNumber, start, end, userCPF);
     }
 
-    @Transactional()
+    // a projeção grava no banco de leitura (request_db); sem apontar o
+    // transaction manager, o @Primary (command_db) seria usado e uma falha no
+    // meio deixaria o saldo já salvo, fazendo o retry aplicar o evento de novo
+    @org.springframework.transaction.annotation.Transactional(transactionManager = "requestTransactionManager")
     @RabbitListener(queues = RabbitMQConfig.EVENT_QUEUE)
     public void handleReadModelCommand(RabbitCommandDTO command) {
 

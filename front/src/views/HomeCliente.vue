@@ -2,10 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { DateTime } from 'luxon'
+import type Decimal from 'decimal.js'
 import TransactionModal from '../components/TransactionModal.vue'
 import Sidebar from '../components/Sidebar.vue'
 import { useAccount, type AccountTransaction } from '../composables/useAccount'
 import { useAuth } from '../composables/useAuth'
+import { formatMoeda } from '../utils/format'
 
 const router = useRouter()
 const { accountNumber, balance, loadAccount, deposit, withdraw, transfer, fetchExtrato } = useAccount()
@@ -101,7 +103,7 @@ function extractErrorMessage(err: unknown): string {
   return anyErr.response?.data?.error || 'Não foi possível concluir a operação.'
 }
 
-async function handleTransaction(payload: { tab: ModalTab; amount: number; account?: string }) {
+async function handleTransaction(payload: { tab: ModalTab; amount: Decimal; account?: string }) {
   balanceLoading.value = true
   errorMessage.value = ''
   try {
@@ -120,12 +122,7 @@ async function handleTransaction(payload: { tab: ModalTab; amount: number; accou
   }
 }
 
-function formatCurrency(value: number): string {
-  const sign = value < 0 ? '-' : ''
-  return `${sign}R$${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
-
-const formattedBalance = computed(() => `R$${balance.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+const formattedBalance = computed(() => formatMoeda(balance.value))
 </script>
 
 <template>
@@ -196,8 +193,8 @@ const formattedBalance = computed(() => `R$${balance.value.toLocaleString('pt-BR
                 <span class="transaction-name">{{ tx.operation }} · {{ tx.party }}</span>
                 <span class="transaction-date">{{ formatRelativeLabel(tx) }}</span>
               </span>
-              <span class="transaction-amount" :class="tx.amount > 0 ? 'positive' : 'negative'">
-                {{ tx.amount > 0 ? '+ ' : '' }}{{ formatCurrency(tx.amount) }}
+              <span class="transaction-amount" :class="tx.amount.isPositive() ? 'positive' : 'negative'">
+                {{ tx.amount.isPositive() ? '+ ' : '' }}{{ formatMoeda(tx.amount) }}
               </span>
             </li>
           </ul>

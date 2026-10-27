@@ -49,7 +49,7 @@ const routes: Array<RouteRecordRaw> = [
     path: '/extrato',
     name: 'extrato',
     component: ExtratoDetalhado,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, role: 'cliente' }
   },
   {
     path: '/gerentes',

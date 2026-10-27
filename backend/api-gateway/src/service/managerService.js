@@ -63,6 +63,7 @@ class MangerService {
 
       return { "gerentes": gerentes };
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -84,6 +85,7 @@ class MangerService {
 
       return returnData;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -114,6 +116,7 @@ class MangerService {
       return this.toManager(managerAnswer.data);
 
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }

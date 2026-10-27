@@ -7,6 +7,7 @@ class JobController {
             const result = await jobService.getStatus(req.params.id);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }
@@ -17,6 +18,7 @@ class JobController {
             const result = await jobService.getResult(req.params.id);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }

@@ -45,6 +45,7 @@ class RebootService {
       const hash = await argon2.hash(pass, options);
       return hash.replace(/m=(\d+),p=(\d+),t=(\d+)/, "m=$1,t=$3,p=$2");
     } catch (err) {
+      console.log(err.message)
       console.error("Erro ao gerar hash Argon2:", err);
       const error = new Error(err);
       error.status = 500;
@@ -178,6 +179,7 @@ class RebootService {
 
         console.log(`Successfully seeded ${dbName}`);
       } catch (err) {
+        console.log(err.message)
         const error = new Error(`Seeding failed for ${dbName}: ${err.message}`);
         error.status = 500;
         throw error;
