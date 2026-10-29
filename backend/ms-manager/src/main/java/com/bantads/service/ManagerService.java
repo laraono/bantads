@@ -151,23 +151,23 @@ public class ManagerService {
         // em caso de falha devolve o payload original, senão a retentativa do orquestrador vai sem dados
         Map<String, Object> payload = command.getPayload();
 
+        String action = command.getType();
+        SagaStepHandler handler = this.handlers.get(action);
+
+        if (handler == null) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        }
+
         try {
 
-            boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+            boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(),
+                    command.isCompensation() ? command.getType() + ".comp" : command.getType());
 
             if (alreadyProcessed) {
                 this.sendReadModelCommand(command);
                 return;
             }
 
-            String action = command.getType();
-
-            if (!this.handlers.containsKey(action)) {
-                throw new RuntimeException("Handler não encontrado para a ação " + action);
-            }
-
-            SagaStepHandler handler = this.handlers.get(action);
-            
             if (command.isCompensation()) {
                 handler.compensate(command.getPayload());
             } else {

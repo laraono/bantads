@@ -76,9 +76,9 @@ class AuthService {
 
   async invalidateSession(tokenValue) {
     if (!tokenValue) {
-      this.unauthorizedError();
+      return;
     }
-
+    
     const decoded = jwt.decode(tokenValue);
 
     if (decoded && decoded.jti) {

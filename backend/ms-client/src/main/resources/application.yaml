@@ -20,5 +20,6 @@ spring:
   web:
     error:
       include-message: always
+      include-binding-errors: always
 server:
   port: 8082

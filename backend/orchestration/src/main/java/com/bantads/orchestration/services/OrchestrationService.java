@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.bantads.orchestration.model.*;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.bantads.orchestration.config.RabbitMQConfig;
 import tools.jackson.databind.ObjectMapper;
 
+@Slf4j
 @Service 
 public class OrchestrationService {
 
@@ -102,10 +104,12 @@ public class OrchestrationService {
         String sagaKey = "saga:" + sagaId;
 
         Object object = redisTemplate.opsForValue().get(sagaKey);
-        if (object == null) return;
-        SagaStates sagaStates = objectMapper.convertValue(object, SagaStates.class);
+        SagaStates sagaStates = object == null ? null : objectMapper.convertValue(object, SagaStates.class);
 
-        if (sagaStates == null) return;
+        if (sagaStates == null) {
+            log.warn("Saga {} sem estado no Redis (perdido/expirado?); reply '{}' descartado", sagaId, reply.getStatus());
+            return;
+        }
 
         String status = reply.getStatus();
         int attempt = reply.getAttempt();
@@ -210,6 +214,10 @@ public class OrchestrationService {
 
     public void updateJob(UUID sagaId, String status, String erro) {
         Object jobObject = redisTemplate.opsForValue().get("job-" + sagaId);
+        if (jobObject == null) {
+            log.warn("Job {} não encontrada no Redis; status '{}' não atualizado", sagaId, status);
+            return;
+        }
         Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
         job.put("status", status);
         if (erro != null) {
@@ -246,9 +254,12 @@ public class OrchestrationService {
 
         String sagaKey = "saga:" + sagaId;
         Object object = redisTemplate.opsForValue().get(sagaKey);
-        SagaStates sagaStates = objectMapper.convertValue(object, SagaStates.class);
+        SagaStates sagaStates = object == null ? null : objectMapper.convertValue(object, SagaStates.class);
 
-        if (sagaStates == null) return;
+        if (sagaStates == null) {
+            log.warn("Saga {} sem estado no Redis (perdido/expirado?); timeout do passo {} ignorado", sagaId, timeoutStepIndex);
+            return;
+        }
 
         if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO || sagaStates.getStepIndex() != timeoutStepIndex) {
             return;
@@ -258,11 +269,16 @@ public class OrchestrationService {
         sagaStates.setError("TIMEOUT");
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
         updateJob(sagaId, "FALHA", "TIMEOUT");
-        compensate(sagaStates);
+        compensate(sagaStates, true);
     }
 
-    public void compensate(SagaStates sagaStates) {  
-        for (int i = sagaStates.getStepIndex(); i >= 0; i--) { // ele corrige, inclusive, o step atual
+    public void compensate(SagaStates sagaStates) {
+        compensate(sagaStates, false);
+    }
+
+    public void compensate(SagaStates sagaStates, boolean includeCurrent) {
+        int first = includeCurrent ? sagaStates.getStepIndex() : sagaStates.getStepIndex() - 1; // se ja coloquei dados, ele reverte
+        for (int i = first; i >= 0; i--) {
             compensateSingleStep(sagaStates, i);
         }
 
@@ -288,6 +304,7 @@ public class OrchestrationService {
         request.setSagaId(sagaStates.getSagaId());
         request.setType(step.getActionType());
         request.setPayload(comp);
+        request.setError(sagaStates.getError());
         request.setStepIndex(sagaStates.getStepIndex());
 
         rabbitTemplate.convertAndSend(queue, request);

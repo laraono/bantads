@@ -3,10 +3,10 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.entity.Request;
 import com.bantads.handlers.SagaStepHandler;
-import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.RequestRepository;
+import org.springframework.web.server.ResponseStatusException;
 import org.bson.types.ObjectId;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,7 +39,7 @@ public class SagaService {
     public void handleAuthCommand(RabbitRequest command) {
 
         boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
-                command.getType(), command.isCompensation());
+                command.isCompensation() ? command.getType() + ".comp" : command.getType(), command.isCompensation());
 
         if (alreadyProcessed) {
             return;
@@ -64,16 +63,17 @@ public class SagaService {
             }
         } catch (Exception e) {
             status = Status.FALHA;
-            error = e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason() : e.getMessage();
             e.printStackTrace();
         }
 
         Request req = Request.builder()
             .id(new ObjectId())
             .sagaId(command.getSagaId())
-            .type(command.getType())
+            .type(command.isCompensation() ? command.getType() + ".comp" : command.getType())
             .compensation(command.isCompensation())
             .build();
+            
 
         command.setPayload(payload);
         command.setStatus(status.toString());
@@ -92,7 +92,7 @@ public class SagaService {
 
         Map<String, Object> payload = command.getPayload();
 
-        if (requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type, true)) {
+        if (requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type + ".comp", true)) {
             return;
         }
 
@@ -105,7 +105,7 @@ public class SagaService {
         requestRepository.save(Request.builder()
                 .id(new ObjectId())
                 .sagaId(sagaId)
-                .type(type)
+                .type(type + ".comp")
                 .compensation(true)
                 .build());
     }

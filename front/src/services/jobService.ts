@@ -1,4 +1,4 @@
-import type { AxiosResponse } from 'axios'
+import { isAxiosError, type AxiosResponse } from 'axios'
 import { http } from '@/services/http'
 
 export type JobStatus = 'PENDENTE' | 'CONCLUIDO' | 'SUCESSO' | 'FALHA'
@@ -14,6 +14,7 @@ export interface Job {
 
 export class JobFalhouError extends Error {}
 export class JobTimeoutError extends Error {}
+export class JobNaoEncontradoError extends Error {}
 
 const INTERVALO_MS = 1000
 const TEMPO_MAXIMO_MS = 60_000
@@ -33,7 +34,16 @@ export function getJobResult<T>(jobId: string) {
 export async function aguardarJob(jobId: string): Promise<Job> {
   const limite = Date.now() + TEMPO_MAXIMO_MS
   while (Date.now() < limite) {
-    const job = await getJobStatus(jobId)
+    let job: Job
+    try {
+      job = await getJobStatus(jobId)
+    } catch (err) {
+      // se o job não existe/expirou não continua o polling
+      if (isAxiosError(err) && err.response?.status === 404) {
+        throw new JobNaoEncontradoError('Não foi possível acompanhar a operação (job não encontrado). Atualize a página para ver o resultado.')
+      }
+      throw err
+    }
     if (job.status === 'CONCLUIDO' || job.status === 'SUCESSO') return job
     if (job.status === 'FALHA') throw new JobFalhouError(job.erro || 'A operação falhou.')
     await esperar(INTERVALO_MS)

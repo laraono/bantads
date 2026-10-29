@@ -3,22 +3,10 @@ const rabbitConnector = require("../connector/rabbitConnector");
 const accountService = require("./accountService");
 const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
 const linksUtils = require("../utils/linksUtils");
+const { rethrow } = require("../utils/errorUtils");
 
 const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || "ms-manager";
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || "8084";
-
-function rethrow(err) {
-  if (err.response) {
-    const data = err.response.data;
-    const message =
-      (typeof data === "object" && (data?.detail || data?.message)) ||
-      err.message;
-    const error = new Error(message);
-    error.status = err.response.status;
-    throw error;
-  }
-  throw err;
-}
 
 class MangerService {
 
@@ -138,12 +126,7 @@ class MangerService {
 
       return await rabbitConnector.startSaga(payload, job);
     } catch (err) {
-      if (err.response) {
-        const error = new Error(err.response.data?.message || err.message);
-        error.status = err.response.status;
-        throw error;
-      }
-      throw err;
+      rethrow(err);
     }
   }
 

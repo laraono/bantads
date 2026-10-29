@@ -1,13 +1,12 @@
 package com.bantads.service;
 
 import com.bantads.config.RabbitMQConfig;
-import com.bantads.entity.event.Event;
 import com.bantads.entity.read.Request;
 import com.bantads.handlers.SagaStepHandler;
-import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.read.RequestRepository;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,17 +16,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
 public class SagaService {
-    @Autowired
-    private AccountService accountService;
-
-    @Autowired
-    private EventService eventService;
 
     @Autowired
     private RequestRepository requestRepository;
@@ -46,7 +39,7 @@ public class SagaService {
     public void handleAccountQueue(RabbitRequest command) {
 
         boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
-                command.getType(), command.isCompensation());
+                command.isCompensation() ? command.getType() + ".comp" : command.getType(), command.isCompensation());
 
         if (alreadyProcessed) {
             return;
@@ -72,7 +65,7 @@ public class SagaService {
             }
         } catch (Exception e) {
             status = Status.FALHA;
-            error = e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason() : e.getMessage();
             e.printStackTrace();
         }
 
@@ -84,7 +77,7 @@ public class SagaService {
         if (status == Status.SUCESSO) {
             requestRepository.save(Request.builder()
                     .sagaId(command.getSagaId())
-                    .type(command.getType())
+                    .type((command.isCompensation() ? command.getType() + ".comp" : command.getType()))
                     .compensation(command.isCompensation())
                     .build());
         }
@@ -97,7 +90,7 @@ public class SagaService {
         UUID sagaId = command.getSagaId();
         String type = command.getType();
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type, true);
+        boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type + ".comp", true);
         if (alreadyProcessed) {
             return;
         }
@@ -112,7 +105,7 @@ public class SagaService {
 
         requestRepository.save(Request.builder()
                 .sagaId(sagaId)
-                .type(type)
+                .type(type + ".comp")
                 .compensation(true)
                 .build());
     }

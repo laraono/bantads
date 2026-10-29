@@ -74,10 +74,16 @@ public class EmailService {
         if (type.contains("enviar-rejeicao")) {
             Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
             String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro foi rejeitada.";
-            if (!command.getError().isBlank()) {
+            if (command.getError() != null && !command.getError().isBlank()) {
                 text += " Motivo: " + command.getError();
             }
             this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
+        }
+
+        if (type.contains("enviar-ja-existe")) {
+            Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
+            String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro não pôde ser concluída pois já existe uma conta para este CPF.";
+            this.sendEmail(email.get("email"), "Conta já existente", text);
         }
 
         if (type.contains("enviar-avisar-delecao")) {
