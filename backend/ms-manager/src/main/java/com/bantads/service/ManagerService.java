@@ -16,6 +16,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
@@ -50,8 +51,12 @@ public class ManagerService {
                 .isActive(true)
                 .build();
 
-        if (managerRepository.existsByEmail(manager.getEmail()) || managerRepository.existsByCpf(manager.getCpf())) {
+        if (managerRepository.existsByEmail(manager.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
+        }
+
+        if (managerRepository.existsByCpf(manager.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado");
         }
 
         ManagerDTO managerDto = ManagerDTO.builder()
@@ -135,6 +140,7 @@ public class ManagerService {
                 .build();
     }
     
+    @Transactional
     public void deleteByCpf(String cpf) {
         this.managerRepository.deleteByCpf(cpf);
     }
@@ -149,23 +155,27 @@ public class ManagerService {
         // em caso de falha devolve o payload original, senão a retentativa do orquestrador vai sem dados
         Map<String, Object> payload = command.getPayload();
 
+        String action = command.getType();
+        SagaStepHandler handler = this.handlers.get(action);
+
+        if (handler == null) {
+            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        }
+
         try {
 
-            boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType());
+            boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(),
+                    command.isCompensation() ? command.getType() + ".comp" : command.getType());
 
             if (alreadyProcessed) {
                 this.sendReadModelCommand(command);
                 return;
             }
 
-            String action = command.getType();
-
-            if (!this.handlers.containsKey(action)) {
-                throw new RuntimeException("Handler não encontrado para a ação " + action);
+            if (!command.isCompensation() && requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType() + ".comp")) {
+                return;
             }
 
-            SagaStepHandler handler = this.handlers.get(action);
-            
             if (command.isCompensation()) {
                 handler.compensate(command.getPayload());
             } else {
@@ -179,7 +189,8 @@ public class ManagerService {
             
         } catch (Exception e) {
             status = Status.FALHA;
-            error = e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
+                    : e.getMessage();
             e.printStackTrace();
         }
 

@@ -8,9 +8,11 @@ import com.bantads.entity.event.EventType;
 import com.bantads.entity.read.AccountData;
 import com.bantads.entity.read.Request;
 import com.bantads.entity.read.TransactionType;
+import com.bantads.model.RabbitRequest;
 import com.bantads.repository.read.RequestRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -43,23 +45,23 @@ public class AccountService {
 
     private GetAccountDTO toGetAccountDTO(AccountData account) {
         return GetAccountDTO.builder()
-            .numero(account.getAccountNumber())
-            .cpfCliente(account.getClientCPF())
-            .saldo(account.getBalance().toPlainString())
-            .cpfGerente(account.getManagerCPF())
-            .build();
+                .numero(account.getAccountNumber())
+                .cpfCliente(account.getClientCPF())
+                .saldo(account.getBalance().toPlainString())
+                .cpfGerente(account.getManagerCPF())
+                .build();
     }
 
     public List<GetAccountDTO> getAccountsByManager(String managerCPF) {
         return this.accountDataService.getAccountsByManager(managerCPF).stream()
-            .map(this::toGetAccountDTO)
-            .toList();
+                .map(this::toGetAccountDTO)
+                .toList();
     }
 
     public List<GetAccountDTO> listAccounts(List<String> cpf) {
         return this.accountDataService.listAccounts(cpf).stream()
-            .map(this::toGetAccountDTO)
-            .toList();
+                .map(this::toGetAccountDTO)
+                .toList();
     }
 
     @Transactional()
@@ -74,20 +76,18 @@ public class AccountService {
     }
 
     public RabbitQueryDTO createAccountData(RabbitCommandDTO body) {
-        try{
+        try {
             Map<String, Object> payload = body.getPayload();
             EventType eventType = body.getType();
 
             RabbitQueryDTO answer = RabbitQueryDTO.builder()
-                .type(EventType.CREATED)
-                .build();
+                    .type(EventType.CREATED)
+                    .build();
 
             String clientCpf = String.valueOf(payload.get("cpfCliente"));
             String managerCpf = String.valueOf(payload.get("cpfGerente"));
 
-            if(
-                body.getAccountNumber() == null || clientCpf == null || managerCpf == null || eventType == null
-            ) {
+            if (body.getAccountNumber() == null || clientCpf == null || managerCpf == null || eventType == null) {
                 answer.setError("missing information");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -95,7 +95,7 @@ public class AccountService {
                 return answer;
             }
 
-            if(eventType != EventType.CREATED) {
+            if (eventType != EventType.CREATED) {
                 answer.setError("wrong request");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -103,15 +103,14 @@ public class AccountService {
                 return answer;
             }
 
-            AccountData accountData =  AccountData.builder()
-                .accountNumber(body.getAccountNumber())
-                .clientCPF(clientCpf)
-                .balance(new BigDecimal(0))
-                .managerCPF(managerCpf)
-                .build();
+            AccountData accountData = AccountData.builder()
+                    .accountNumber(body.getAccountNumber())
+                    .clientCPF(clientCpf)
+                    .balance(new BigDecimal(0))
+                    .managerCPF(managerCpf)
+                    .build();
 
             AccountData newAccount = this.accountDataService.createAccountData(accountData);
-
 
             answer.setTimestamp(new Date());
             answer.setStatus(Status.SUCESSO);
@@ -140,12 +139,10 @@ public class AccountService {
             String textValue = rawValue != null ? String.valueOf(rawValue) : null;
 
             RabbitQueryDTO answer = RabbitQueryDTO.builder()
-                .type(body.getType())
-                .build();
+                    .type(body.getType())
+                    .build();
 
-            if (
-                textValue == null || eventType == null || accountNumber == null || accountNumber.isEmpty()
-            ) {
+            if (textValue == null || eventType == null || accountNumber == null || accountNumber.isEmpty()) {
                 answer.setError("missing information");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -173,7 +170,8 @@ public class AccountService {
 
             BigDecimal value = new BigDecimal(textValue);
 
-            if (eventType == EventType.WITHDRAW || eventType == EventType.ORIGINTRANSFER) value = value.negate();
+            if (eventType == EventType.WITHDRAW || eventType == EventType.ORIGINTRANSFER)
+                value = value.negate();
 
             AccountData updatedAccount = this.accountDataService.updateAccountBalance(value, accountNumber);
 
@@ -197,13 +195,11 @@ public class AccountService {
             String managerCpf = String.valueOf(payload.get("cpfGerente"));
 
             RabbitQueryDTO answer = RabbitQueryDTO.builder()
-                .type(body.getType())
-                .build();
+                    .type(body.getType())
+                    .build();
 
-            if(
-                managerCpf == null || eventType == null ||
-                accountNumber == null || accountNumber.isEmpty()
-            ) {
+            if (managerCpf == null || eventType == null ||
+                    accountNumber == null || accountNumber.isEmpty()) {
                 answer.setError("missing information");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -211,7 +207,7 @@ public class AccountService {
                 return answer;
             }
 
-            if(eventType != EventType.UPDATEMANAGER) {
+            if (eventType != EventType.UPDATEMANAGER) {
                 answer.setError("wrong request");
                 answer.setStatus(Status.FALHA);
                 answer.setTimestamp(new Date());
@@ -293,8 +289,8 @@ public class AccountService {
                 : null;
         String destinationClientCpf = rawDestinationCpf != null ? String.valueOf(rawDestinationCpf) : null;
 
-        Object rawValue = (origin != null && origin.get("valor") != null) 
-                ? origin.get("valor") 
+        Object rawValue = (origin != null && origin.get("valor") != null)
+                ? origin.get("valor")
                 : payload.get("valor");
         String textValue = rawValue != null ? String.valueOf(rawValue) : null;
 
@@ -367,7 +363,7 @@ public class AccountService {
     }
 
     public GetAccountDTO getAccountDataByCpf(String cpf, String headerCpf) {
-        if(!cpf.equals(headerCpf)) {
+        if (!cpf.equals(headerCpf)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não pode acessar conta que não é sua.");
         }
 
@@ -375,7 +371,7 @@ public class AccountService {
 
         return toGetAccountDTO(account);
     }
-    
+
     public String findManager(Map<String, Object> payload) {
         List<String> managersCPF = (List<String>) payload.get("gerentes");
         return this.accountDataService.getManagerWithLowestAccount(managersCPF);
@@ -385,7 +381,11 @@ public class AccountService {
         this.accountDataService.deleteAccount(cpf);
     }
 
-    public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
+    public Map<String, Object> getAccountToNewManager(Map<String, Object> payload) {
         return this.accountDataService.getAccountToNewManager(payload);
+    }
+
+    public boolean existsByClientCpf(String cpf) {
+        return this.accountDataService.existsByClientCpf(cpf);
     }
 }
