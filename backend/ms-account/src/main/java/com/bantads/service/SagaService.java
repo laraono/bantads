@@ -45,13 +45,12 @@ public class SagaService {
             return;
         }
 
-        String action = command.getType();
-
-        if (!this.handlers.containsKey(action)) {
-            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        if (!command.isCompensation() && requestRepository.existsBySagaIdAndTypeAndCompensation(
+                command.getSagaId(), command.getType() + ".comp", true)) {
+            return;
         }
 
-        SagaStepHandler handler = this.handlers.get(action);
+        SagaStepHandler handler = this.handlers.get(command.getType());
 
         Map<String, Object> payload = command.getPayload();
 
@@ -65,8 +64,19 @@ public class SagaService {
             }
         } catch (Exception e) {
             status = Status.FALHA;
-            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason() : e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
+                    : e.getMessage();
             e.printStackTrace();
+        }
+
+        // quando o ms pausa, vem msg, depois despausa, tem a msg .comp e a normal sendo
+        // mandadas junto
+        // então coloquei isso pra checar se tá compensando
+        if (!command.isCompensation() && status == Status.SUCESSO
+                && requestRepository.existsBySagaIdAndTypeAndCompensation(
+                        command.getSagaId(), command.getType() + ".comp", true)) {
+            handler.compensate(payload);
+            return;
         }
 
         command.setStatus(status.toString());
@@ -97,17 +107,23 @@ public class SagaService {
 
         Map<String, Object> payload = command.getPayload();
 
-        SagaStepHandler handler = this.handlers.get(type);
-
-        if (handler != null) {
-            handler.compensate(payload);
-        }
-
-        requestRepository.save(Request.builder()
+        Request req = requestRepository.save(Request.builder()
                 .sagaId(sagaId)
                 .type(type + ".comp")
                 .compensation(true)
                 .build());
+                
+        SagaStepHandler handler = this.handlers.get(type);
+
+        try {
+            if (handler != null) {
+                handler.compensate(payload);
+            }
+        } catch (RuntimeException e) {
+            requestRepository.delete(req); // se der erro ainda dá pra refazer a compensação
+            throw e;
+        }
+
     }
 
     public void sendCommand(RabbitRequest answer) {

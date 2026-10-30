@@ -116,7 +116,13 @@ public class OrchestrationService {
 
         Map<String, Object> payload = reply.getPayload();
 
-        if (sagaStates.getStatus() == SagaStatus.COMPENSACAO) {
+        if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO) {
+            log.warn("Saga {} em {}; reply '{}' de '{}' descartado", sagaId, sagaStates.getStatus(), status, reply.getType());
+            return;
+        }
+
+        if (reply.getType() != null && !reply.getType().equals(sagaStates.getType())) {
+            log.warn("Saga {} no passo '{}'; reply obsoleto de '{}' descartado", sagaId, sagaStates.getType(), reply.getType());
             return;
         }
 

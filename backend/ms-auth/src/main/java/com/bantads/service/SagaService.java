@@ -45,6 +45,11 @@ public class SagaService {
             return;
         }
 
+        if (!command.isCompensation() && requestRepository.existsBySagaIdAndTypeAndCompensation(
+                command.getSagaId(), command.getType() + ".comp", true)) {
+            return;
+        }
+
         SagaStepHandler handler = this.handlers.get(command.getType());
 
         if (handler == null) {
@@ -65,6 +70,15 @@ public class SagaService {
             status = Status.FALHA;
             error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason() : e.getMessage();
             e.printStackTrace();
+        }
+
+        // quando o ms pausa, vem msg, depois despausa, tem a msg .comp e a normal sendo mandadas junto
+        // então coloquei isso pra checar se tá compensando
+        if (!command.isCompensation() && status == Status.SUCESSO
+                && requestRepository.existsBySagaIdAndTypeAndCompensation(
+                        command.getSagaId(), command.getType() + ".comp", true)) {
+            handler.compensate(payload);
+            return;
         }
 
         Request req = Request.builder()
@@ -96,17 +110,22 @@ public class SagaService {
             return;
         }
 
-        SagaStepHandler handler = this.handlers.get(type);
-
-        if (handler != null) {
-            handler.compensate(payload);
-        }
-
-        requestRepository.save(Request.builder()
+        Request marker = requestRepository.save(Request.builder()
                 .id(new ObjectId())
                 .sagaId(sagaId)
                 .type(type + ".comp")
                 .compensation(true)
                 .build());
+
+        SagaStepHandler handler = this.handlers.get(type);
+
+        try {
+            if (handler != null) {
+                handler.compensate(payload);
+            }
+        } catch (RuntimeException e) {
+            requestRepository.delete(marker); // se der erro ainda dá pra refazer a compensação
+            throw e;
+        }
     }
 }

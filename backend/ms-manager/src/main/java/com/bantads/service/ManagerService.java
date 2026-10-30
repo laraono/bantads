@@ -51,8 +51,12 @@ public class ManagerService {
                 .isActive(true)
                 .build();
 
-        if (managerRepository.existsByEmail(manager.getEmail()) || managerRepository.existsByCpf(manager.getCpf())) {
+        if (managerRepository.existsByEmail(manager.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
+        }
+
+        if (managerRepository.existsByCpf(manager.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado");
         }
 
         ManagerDTO managerDto = ManagerDTO.builder()
@@ -168,6 +172,10 @@ public class ManagerService {
                 return;
             }
 
+            if (!command.isCompensation() && requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType() + ".comp")) {
+                return;
+            }
+
             if (command.isCompensation()) {
                 handler.compensate(command.getPayload());
             } else {
@@ -181,7 +189,8 @@ public class ManagerService {
             
         } catch (Exception e) {
             status = Status.FALHA;
-            error = e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
+                    : e.getMessage();
             e.printStackTrace();
         }
 
