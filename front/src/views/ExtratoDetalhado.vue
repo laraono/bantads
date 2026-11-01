@@ -26,7 +26,7 @@ const MAX_RANGE_DAYS = 365
 
 const today = DateTime.now().startOf('day')
 
-const { loadAccount, fetchExtrato } = useAccount()
+const { createdAt, loadAccount, fetchExtrato } = useAccount()
 
 const transactions = ref<Transaction[]>([])
 const openingBalance = shallowRef<Decimal>(new Decimal(0))
@@ -87,9 +87,21 @@ const groupedByDay = computed(() => {
     byDay.get(key)!.push(tx)
   }
 
-  const days: { key: string; label: string; sortKey: number; items: Transaction[]; consolidatedBalance: Decimal }[] = []
-  const end = DateTime.fromISO(appliedEnd.value)
-  let cursor = DateTime.fromISO(appliedStart.value)
+  const end = DateTime.fromISO(appliedEnd.value).startOf('day')
+
+  let cursor = DateTime.fromISO(appliedStart.value).startOf('day')
+  if (createdAt.value) {
+    const creationDay = DateTime.fromJSDate(new Date(createdAt.value)).startOf('day')
+    if (creationDay > cursor) cursor = creationDay
+  }
+
+  const days: {
+    key: string
+    label: string
+    sortKey: number
+    items: Transaction[]
+    consolidatedBalance: Decimal
+  }[] = []
 
   while (cursor <= end) {
     const key = cursor.toISODate()!
@@ -98,7 +110,7 @@ const groupedByDay = computed(() => {
       label: cursor.setLocale('pt-BR').toFormat("dd 'de' LLLL"),
       sortKey: cursor.toMillis(),
       items: byDay.get(key) ?? [],
-      consolidatedBalance: balanceAtEndOfDay(key)
+      consolidatedBalance: balanceAtEndOfDay(key),
     })
     cursor = cursor.plus({ days: 1 })
   }
@@ -114,6 +126,14 @@ const pagedGroups = computed(() => {
   const start = (currentPage.value - 1) * DAYS_PER_PAGE
   return groupedByDay.value.slice(start, start + DAYS_PER_PAGE)
 })
+
+function startOfDay(d: Date | string) {
+  const date = new Date(d);
+  date.setHours(0, 0, 0, 0);
+
+  console.log(' start of day  ', date)
+  return date;
+}
 
 function goToPreviousPage() {
   if (currentPage.value > 1) currentPage.value -= 1
@@ -232,30 +252,60 @@ function openPicker(event: MouseEvent) {
             </tr>
           </tbody>
           <tbody v-for="group in pagedGroups" v-else :key="group.key">
-            <tr class="day-row">
-              <td colspan="3" class="day-label">{{ group.label }}</td>
-              <td class="align-right day-balance">
-                Saldo do dia: {{ formatMoeda(group.consolidatedBalance) }}
-              </td>
-            </tr>
-            <tr v-if="group.items.length === 0" class="empty-row">
-              <td colspan="4">Nenhuma movimentação</td>
-            </tr>
-            <tr v-for="tx in group.items" :key="tx.id" :class="tx.amount.isNegative() ? 'row-saida' : 'row-entrada'">
-              <td class="cell-date">
-                <span class="cell-date-day">{{ tx.date }}</span>
-                <span class="cell-date-time">{{ tx.time }}</span>
-              </td>
-              <td class="cell-operation">{{ tx.operation }}</td>
-              <td>
-                <span class="party-pill">{{ tx.party }}</span>
-              </td>
-              <td class="align-right" :class="tx.amount.isNegative() ? 'negative' : 'positive'">
-                {{ formatMoeda(tx.amount) }}
-              </td>
-            </tr>
+              <tr class="day-row">
+                <td colspan="3" class="day-label">{{ group.label }}</td>
+                <td class="align-right day-balance">
+                  Saldo do dia: {{ formatMoeda(group.consolidatedBalance) }}
+                </td>
+              </tr>
+              <tr v-if="group.items.length === 0" class="empty-row">
+                <td colspan="4">Nenhuma movimentação</td>
+              </tr>
+              <tr v-for="tx in group.items" :key="tx.id" :class="tx.amount.isNegative() ? 'row-saida' : 'row-entrada'">
+                <td class="cell-date">
+                  <span class="cell-date-day">{{ tx.date }}</span>
+                  <span class="cell-date-time">{{ tx.time }}</span>
+                </td>
+                <td class="cell-operation">{{ tx.operation }}</td>
+                <td>
+                  <span class="party-pill">{{ tx.party }}</span>
+                </td>
+                <td class="align-right" :class="tx.amount.isNegative() ? 'negative' : 'positive'">
+                  {{ formatMoeda(tx.amount) }}
+                </td>
+              </tr>
           </tbody>
         </table>
+
+        <div class="table-footer">
+          <span class="footer-count">
+            Página {{ currentPage }} de {{ totalPages }}
+          </span>
+
+          <div class="pagination">
+            <button
+              class="page-btn"
+              :disabled="currentPage <= 1"
+              @click="goToPreviousPage"
+            >
+              <svg class="page-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Anterior
+            </button>
+
+            <button
+              class="page-btn"
+              :disabled="currentPage >= totalPages"
+              @click="goToNextPage"
+            >
+              Próximo
+              <svg class="page-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   </div>

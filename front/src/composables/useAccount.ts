@@ -32,6 +32,7 @@ const OPERATION_LABEL: Record<MovimentacaoDTO['type'], OperationType> = {
 const accountNumber = ref('')
 const balance = shallowRef<Decimal>(new Decimal(0))
 const loaded = ref(false)
+const createdAt = ref<Date>()
 
 function parseValor(v: string): Decimal {
   return new Decimal(v)
@@ -76,6 +77,7 @@ async function loadAccount() {
   accountNumber.value = conta.numero
   balance.value = parseValor(conta.saldo)
   loaded.value = true
+  createdAt.value = conta.criado
 }
 
 // Reconsulta o saldo algumas vezes com pequenos intervalos: o lado de leitura
@@ -126,6 +128,7 @@ export function useAccount() {
     accountNumber: computed(() => accountNumber.value),
     balance,
     loaded: computed(() => loaded.value),
+    createdAt,
     loadAccount,
     deposit,
     withdraw,
