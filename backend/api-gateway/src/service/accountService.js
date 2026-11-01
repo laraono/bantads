@@ -234,9 +234,6 @@ class AccountService {
         _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
-            console.log('RESULT ', result)
-
-
       return result;
     } catch (err) {
       console.log(err.message)
