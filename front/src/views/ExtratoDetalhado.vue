@@ -90,8 +90,8 @@ const groupedByDay = computed(() => {
   const end = DateTime.fromISO(appliedEnd.value).startOf('day')
 
   let cursor = DateTime.fromISO(appliedStart.value).startOf('day')
-  if (createdAt.value) {
-    const creationDay = DateTime.fromJSDate(new Date(createdAt.value)).startOf('day')
+  if (createdAt.value && createdAt.value.isValid) {
+    const creationDay = (createdAt.value as DateTime<true>).startOf('day')
     if (creationDay > cursor) cursor = creationDay
   }
 
@@ -126,14 +126,6 @@ const pagedGroups = computed(() => {
   const start = (currentPage.value - 1) * DAYS_PER_PAGE
   return groupedByDay.value.slice(start, start + DAYS_PER_PAGE)
 })
-
-function startOfDay(d: Date | string) {
-  const date = new Date(d);
-  date.setHours(0, 0, 0, 0);
-
-  console.log(' start of day  ', date)
-  return date;
-}
 
 function goToPreviousPage() {
   if (currentPage.value > 1) currentPage.value -= 1
