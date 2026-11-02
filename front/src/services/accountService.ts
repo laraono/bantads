@@ -4,6 +4,7 @@ export interface ContaDTO {
   numero: string
   cpfCliente: string
   saldo: string
+  criado: string
 }
 
 export type TipoMovimentacao = 'DEPOSIT' | 'WITHDRAW' | 'TRANSFER'

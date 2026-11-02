@@ -9,6 +9,8 @@ class RebootController {
 
             await rebootService.flushRedis()
 
+            await rebootService.flushRabbitMQ()
+
             return res.status(200).json({ 
                 message: 'ok',
                 status: 'ok',

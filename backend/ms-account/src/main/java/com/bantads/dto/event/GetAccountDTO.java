@@ -4,6 +4,8 @@ import com.bantads.entity.read.AccountData;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -11,11 +13,11 @@ import lombok.*;
 @Builder
 public class GetAccountDTO {
 
-
     private String numero;
     private String cpfCliente;
     private String saldo;
     private String cpfGerente;
+    private LocalDateTime criado;
 
     public static GetAccountDTO from(AccountData account) {
         return GetAccountDTO.builder()
@@ -23,6 +25,7 @@ public class GetAccountDTO {
                 .cpfCliente(account.getClientCPF())
                 .saldo(account.getBalance().toPlainString())
                 .cpfGerente(account.getManagerCPF())
+                .criado(account.getCreatedAt())
                 .build();
     }
 }

@@ -230,6 +230,7 @@ class AccountService {
         cpfCliente: accountAnswer.data.cpfCliente,
         saldo: accountAnswer.data.saldo,
         cpfGerente: accountAnswer.data.cpfGerente,
+                criado: accountAnswer.data.criado,
         _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
