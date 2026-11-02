@@ -47,6 +47,7 @@ public class AccountService {
             .cpfCliente(account.getClientCPF())
             .saldo(account.getBalance().toPlainString())
             .cpfGerente(account.getManagerCPF())
+            .criado(account.getCreatedAt())
             .build();
     }
 
