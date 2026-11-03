@@ -15,7 +15,9 @@ public class RabbitMQConfig {
     public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
     public static final String ORQUESTRADOR_TIMEOUT = "orquestrador.timeout";
 
-    public static final int SAGA_TIMEOUT_MS = 30_000;
+    // SAGA_TIMEOUT_MS ajuda na hora de testar as compensações
+    public static final int SAGA_TIMEOUT_MS = Integer.parseInt(
+            System.getenv().getOrDefault("SAGA_TIMEOUT_MS", "30000"));
 
     public static final String MS_CLIENTE_CMD = "ms.cliente.cmd";
     public static final String MS_CONTA_CMD = "ms.conta.cmd";

@@ -4,17 +4,16 @@ import com.bantads.handlers.SagaStepHandler;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.entity.Rabbit;
 import com.bantads.entity.Request;
-import com.bantads.model.RabbitAnswer;
 import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.RabbitRepository;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,12 +21,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class SagaService {
-
-    @Autowired
-    private ClientService clientService;
-
-    @Autowired
-    private RequestService requestService;
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -46,19 +39,18 @@ public class SagaService {
     public void handleClientQueue(RabbitRequest command) {
 
         boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
-                command.getType(), command.isCompensation());
+                command.isCompensation() ? command.getType() + ".comp" : command.getType(), command.isCompensation());
 
         if (alreadyProcessed) {
             return;
         }
 
-        String action = command.getType();
-
-        if (!this.handlers.containsKey(action)) {
-            throw new RuntimeException("Handler não encontrado para a ação " + action);
+        if (!command.isCompensation() && rabbitRepository.existsBySagaIdAndTypeAndCompensation(
+                command.getSagaId(), command.getType() + ".comp", true)) {
+            return;
         }
 
-        SagaStepHandler handler = this.handlers.get(action);
+        SagaStepHandler handler = this.handlers.get(command.getType());
 
         Map<String, Object> payload = command.getPayload();
 
@@ -73,12 +65,24 @@ public class SagaService {
             }
         } catch (Exception e) {
             status = Status.FALHA;
-            error = e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
+                    : e.getMessage();
             e.printStackTrace();
         }
+
+        // quando o ms pausa, vem msg, depois despausa, tem a msg .comp e a normal sendo
+        // mandadas junto
+        // então coloquei isso pra checar se tá compensando
+        if (!command.isCompensation() && status == Status.SUCESSO
+                && rabbitRepository.existsBySagaIdAndTypeAndCompensation(
+                        command.getSagaId(), command.getType() + ".comp", true)) {
+            handler.compensate(payload);
+            return;
+        }
+
         Rabbit req = Rabbit.builder()
                 .sagaId(command.getSagaId())
-                .type(command.getType())
+                .type((command.isCompensation() ? command.getType() + ".comp" : command.getType()))
                 .compensation(command.isCompensation())
                 .build();
 
@@ -99,25 +103,28 @@ public class SagaService {
         String type = command.getType();
         Map<String, Object> payload = command.getPayload();
 
-        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndType(sagaId, type);
+        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndTypeAndCompensation(sagaId, type + ".comp", true);
         if (alreadyProcessed) {
             return;
         }
 
+        Rabbit req = rabbitRepository.save(Rabbit.builder()
+                .sagaId(sagaId)
+                .type(type + ".comp")
+                .compensation(true)
+                .build());
+
         SagaStepHandler handler = this.handlers.get(type);
 
-        if (handler != null) {
-            handler.compensate(payload, command.getError());
+        try {
+            if (handler != null) {
+                handler.compensate(payload);
+            }
+        } catch (RuntimeException e) {
+            rabbitRepository.delete(req); // se der erro ainda dá pra refazer a compensação
+            throw e;
         }
-
-        Rabbit req = Rabbit.builder()
-                .sagaId(sagaId)
-                .type(type)
-                .build();
-
-        rabbitRepository.save(req);
     }
-
 
     public void sendCommand(RabbitRequest answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);

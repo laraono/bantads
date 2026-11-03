@@ -167,6 +167,19 @@ public class RequestService {
         rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, command);
     }
 
+    public void sendAlreadyExistsEmail(String cpf) {
+        Request request = this.getRequestByCpf(cpf);
+        Map<String, Object> email = new HashMap<>();
+        email.put("email", request.getEmail());
+        email.put("nome", request.getName());
+        RabbitRequest command = RabbitRequest.builder()
+                .type("email.enviar-ja-existe")
+                .payload(Map.of("email", email))
+                .error(request.getRejectionReason())
+                .build();
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, command);
+    }
+
     public List<Request> listRequests() {
         return requestRepository.findAll();
     }

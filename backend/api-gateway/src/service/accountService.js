@@ -1,21 +1,9 @@
 const axios = require("axios");
 const clientService = require("../service/clientService");
 const linksUtils = require("../utils/linksUtils");
+const { rethrow } = require("../utils/errorUtils");
 const MS_ACCOUNT_HOST = process.env.MS_ACCOUNT_HOST || "ms-account";
 const MS_ACCOUNT_PORT = process.env.MS_ACCOUNT_PORT || "8083";
-
-function rethrow(err) {
-  if (err.response) {
-    const data = err.response.data;
-    const message =
-      (typeof data === "object" && (data?.detail || data?.message)) ||
-      err.message;
-    const error = new Error(message);
-    error.status = err.response.status;
-    throw error;
-  }
-  throw err;
-}
 
 class AccountService {
   async listAccounts(cpf) {

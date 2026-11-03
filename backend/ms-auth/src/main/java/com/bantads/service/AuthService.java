@@ -94,6 +94,16 @@ public class AuthService {
         redisTemplate.opsForValue().delete("sessao:cpf:" + cpf).block();
     }
 
+    public void deleteAuth(String cpf) {
+        authRepository.deleteByCpf(cpf);
+
+        String jti = redisTemplate.opsForValue().get("sessao:cpf:" + cpf).block();
+        if (jti != null) {
+            redisTemplate.opsForValue().delete("sessao:" + jti).block();
+        }
+        redisTemplate.opsForValue().delete("sessao:cpf:" + cpf).block();
+    }
+
     public void activateAuth(String cpf) {
         Auth auth = authRepository.findByCpf(cpf);
         if (auth == null) {

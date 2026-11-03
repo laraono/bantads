@@ -76,6 +76,11 @@ public class ClientService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisição não encontrada");
         }
 
+        if (this.clientRepository.findByCpf(req.getCpf()) != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
+
+        }
+
         Address addressEntity = Address.builder()
                 .additionalInfo(req.getAdditionalInfo())
                 .cep(req.getCep())

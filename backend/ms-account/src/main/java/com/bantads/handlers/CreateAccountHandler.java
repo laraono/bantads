@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.bantads.entity.event.Event;
-import com.bantads.model.Status;
 import com.bantads.service.EventService;
 
 @Component
