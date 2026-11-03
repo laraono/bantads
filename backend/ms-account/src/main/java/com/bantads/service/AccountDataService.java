@@ -145,4 +145,8 @@ public class AccountDataService {
         return this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
     }
 
+    public boolean existsByClientCpf(String cpf){
+        return this.accountDataRepository.existsByClientCPF(cpf);
+    }
+
 }

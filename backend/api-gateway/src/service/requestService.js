@@ -2,21 +2,9 @@ const axios = require("axios");
 const rabbitConnector = require("../connector/rabbitConnector");
 const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
 const linksUtils = require("../utils/linksUtils");
+const { rethrow } = require("../utils/errorUtils");
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
-
-function rethrow(err) {
-  if (err.response) {
-    const data = err.response.data;
-    const message =
-      (typeof data === "object" && (data?.detail || data?.message)) ||
-      err.message;
-    const error = new Error(message);
-    error.status = err.response.status;
-    throw error;
-  }
-  throw err;
-}
 
 function toIso(date) {
   return date ? new Date(date).toISOString() : null;

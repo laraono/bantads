@@ -6,6 +6,7 @@ class JobService {
         const job = await redis.get(id)
 
         if(!job) {
+            console.warn(`job ${id} não encontrada no Redis (expirada ou Redis reiniciado)`);
             const error = new Error('Job não existe');
             error.status = 404;
             throw error;

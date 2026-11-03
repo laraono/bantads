@@ -19,4 +19,6 @@ public interface AuthRepository extends MongoRepository<Auth, String>
     Auth findByCpf(String cpf);
     
     void deleteByEmail(String email);
+
+    void deleteByCpf(String cpf);
 }

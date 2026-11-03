@@ -42,9 +42,11 @@ public class CreateAuthHandler implements SagaStepHandler {
     @Override
     public void compensate(Map<String, Object> payload) {
         Map<String, Object> request = (Map<String, Object>) payload.get("requisicao");
+        if (request == null) {
+            return;
+        }
 
-        this.authService.invalidateAuth(String.valueOf(request.get("cpf")));
-        return;
+        this.authService.deleteAuth(String.valueOf(request.get("cpf")));
     }
 
 }

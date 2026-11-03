@@ -35,4 +35,6 @@ public interface AccountDataRepository extends JpaRepository<AccountData, String
     List<String> findManagersWithMultipleAccountsOrderedByCount();
 
     void deleteByClientCPF(String CPF);
+
+    boolean existsByClientCPF(String CPF);
 }

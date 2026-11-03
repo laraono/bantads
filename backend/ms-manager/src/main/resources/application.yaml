@@ -18,6 +18,10 @@ spring:
       simple:
         acknowledge-mode: auto
         default-requeue-rejected: false
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
 
 server:
   port: 8084

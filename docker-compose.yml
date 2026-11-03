@@ -145,6 +145,7 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
+      SAGA_TIMEOUT_MS: ${SAGA_TIMEOUT_MS:-30000}
     depends_on:
       redis-app:
         condition: service_healthy
