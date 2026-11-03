@@ -6,6 +6,7 @@ class AuthController {
             const result = await authService.authenticate(req.body);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 401;
             return res.status(status).json({ error: err.message || 'Falha na autenticação' });
         }
@@ -17,6 +18,7 @@ class AuthController {
             await authService.invalidateSession(authHeader);
             return res.status(204).json({ message: 'Logout realizado com sucesso' });
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro ao realizar logout' });
         }

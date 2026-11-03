@@ -22,6 +22,14 @@ http.interceptors.response.use(
     if (error.response?.status === 401) {
       const { logout } = useAuth()
       logout()
+      // sessão expirada (30 min de inatividade) ou revogada: volta para o login.
+      // import dinâmico porque o router importa as views, que importam este arquivo
+      import('@/router').then(({ default: router }) => {
+        const atual = router.currentRoute.value
+        if (atual.name !== 'login') {
+          router.push({ name: 'login', query: { redirect: atual.fullPath } })
+        }
+      })
     }
     return Promise.reject(error)
   },

@@ -8,6 +8,7 @@ class RequestController {
 
             return res.status(200).json(requests);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -18,6 +19,7 @@ class RequestController {
             const request = await requestService.getRequest(req.params.id);
             return res.status(200).json(request);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -28,6 +30,7 @@ class RequestController {
             const request = await requestService.createRequest(req.body);
             return res.status(201).json(request);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -39,6 +42,7 @@ class RequestController {
             const jobId = await requestService.approveRequest(req.params.id);
             return res.status(202).json(jobId);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }
@@ -49,6 +53,7 @@ class RequestController {
             const request = await requestService.rejectRequest(req.params.id, req.body);
             return res.status(200).json(request);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Erro no servidor' });
         }

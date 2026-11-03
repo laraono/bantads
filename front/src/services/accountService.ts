@@ -4,6 +4,7 @@ export interface ContaDTO {
   numero: string
   cpfCliente: string
   saldo: string
+  criado: string
 }
 
 export type TipoMovimentacao = 'DEPOSIT' | 'WITHDRAW' | 'TRANSFER'
@@ -36,7 +37,7 @@ export async function getConta(numero: string) {
 }
 
 export async function depositar(numero: string, valor: string) {
-  return http.post(`/contas/${numero}/deposito`, { headers:{'x-user-cpf': localStorage.getItem('cpf')}, valor })
+  return http.post(`/contas/${numero}/deposito`, { valor })
 }
 
 export async function sacar(numero: string, valor: string) {

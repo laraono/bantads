@@ -1,17 +1,27 @@
-const argon2 = require("argon2");
-const crypto = require("crypto");
-const path = require("path");
-const { MongoClient } = require("mongodb");
-const { Client } = require("pg");
-const fs = require("fs/promises");
-const redis = require("../config/redis");
+const argon2 = require("argon2")
+const crypto = require("crypto")
+const path = require("path")
+const { MongoClient } = require("mongodb")
+const { Client } = require("pg")
+const fs = require("fs/promises")
+const redis = require("../config/redis")
 
-const MONGO_USER = process.env.MONGO_USER || "admin";
-const MONGO_PASS = process.env.MONGO_PASS || "password";
-const POSTGRES_USER = process.env.POSTGRES_USER || "user";
-const POSTGRES_PASS = process.env.POSTGRES_PASS || "password";
+const MONGO_USER = process.env.MONGO_USER || "admin"
+const MONGO_PASS = process.env.MONGO_PASS || "password"
+const POSTGRES_USER = process.env.POSTGRES_USER || "user"
+const POSTGRES_PASS = process.env.POSTGRES_PASS || "password"
+const RABBITMQ_USER = process.env.RABBITMQ_USER || "guest"
+const RABBITMQ_PASS = process.env.RABBITMQ_PASS || "guest"
+const RABBITMQ_HOST = process.env.RABBITMQ_HOST || "rabbitmq"
+const RABBITMQ_PORT = process.env.RABBITMQ_PORT || 15672
+const RABBITMQ_VHOST = process.env.RABBITMQ_VHOST || "/"
 
-const MONGO_URI = `mongodb://${MONGO_USER}:${MONGO_PASS}@mongodb:27017`;
+const RABBITMQ_API = `http://${RABBITMQ_HOST}:${RABBITMQ_PORT}/api`
+const RABBITMQ_AUTH = Buffer.from(
+  `${RABBITMQ_USER}:${RABBITMQ_PASS}`
+).toString("base64")
+
+const MONGO_URI = `mongodb://${MONGO_USER}:${MONGO_PASS}@mongodb:27017`
 
 const POSTGRES = [
   {
@@ -30,7 +40,7 @@ const POSTGRES = [
     dbName: "manager_db",
     sqlFile: "manager-seeder.sql",
   },
-];
+]
 
 class RebootService {
   async generatePasswordHashes(pass) {
@@ -40,29 +50,30 @@ class RebootService {
         memoryCost: 15360,
         timeCost: 2,
         parallelism: 1,
-      };
+      }
 
-      const hash = await argon2.hash(pass, options);
-      return hash.replace(/m=(\d+),p=(\d+),t=(\d+)/, "m=$1,t=$3,p=$2");
+      const hash = await argon2.hash(pass, options)
+      return hash.replace(/m=(\d+),p=(\d+),t=(\d+)/, "m=$1,t=$3,p=$2")
     } catch (err) {
-      console.error("Erro ao gerar hash Argon2:", err);
-      const error = new Error(err);
-      error.status = 500;
-      throw error;
+      console.log(err.message)
+      console.error("Erro ao gerar hash Argon2:", err)
+      const error = new Error(err)
+      error.status = 500
+      throw error
     }
   }
 
   async seedAuth() {
-    const client = new MongoClient(MONGO_URI);
+    const client = new MongoClient(MONGO_URI)
 
     try {
-      await client.connect();
-      const db = client.db("account_mongo");
-      const collection = db.collection("auths");
+      await client.connect()
+      const db = client.db("account_mongo")
+      const collection = db.collection("auths")
 
-      await collection.createIndex({ email: 1 }, { unique: true });
+      await collection.createIndex({ email: 1 }, { unique: true })
 
-      await collection.deleteMany({});
+      await collection.deleteMany({})
 
       const MONGO = [
         {
@@ -137,31 +148,31 @@ class RebootService {
           password: await this.generatePasswordHashes("tads"),
           is_active: true,
         },
-      ];
+      ]
 
-      await collection.insertMany(MONGO);
+      await collection.insertMany(MONGO)
 
-      const clientes = MONGO.filter((m) => m.user_type === "CLIENTE").length;
-      const gerentes = MONGO.filter((m) => m.user_type === "GERENTE").length;
-      const contas = MONGO.filter((m) => m.user_type === "CONTA").length;
+      const clientes = MONGO.filter((m) => m.user_type === "CLIENTE").length
+      const gerentes = MONGO.filter((m) => m.user_type === "GERENTE").length
+      const contas = MONGO.filter((m) => m.user_type === "CONTA").length
 
-      return { clientes, gerentes, contas };
+      return { clientes, gerentes, contas }
       
     } catch (err) {
-      console.log(err.message);
-      const error = new Error(err);
-      error.status = 500;
-      throw error;
+      console.log(err.message)
+      const error = new Error(err)
+      error.status = 500
+      throw error
     } finally {
-      await client.close();
+      await client.close()
     }
   }
 
   async seedPostgres() {
     for (const { dbName, sqlFile } of POSTGRES) {
-      const filePath = path.resolve(process.cwd(), "src/seeder", sqlFile);
+      const filePath = path.resolve(process.cwd(), "src/seeder", sqlFile)
 
-      const sqlContent = await fs.readFile(filePath, "utf8");
+      const sqlContent = await fs.readFile(filePath, "utf8")
 
       const client = new Client({
         host: "postgres-db",
@@ -169,28 +180,84 @@ class RebootService {
         user: POSTGRES_USER,
         password: POSTGRES_PASS,
         database: dbName,
-      });
+      })
 
       try {
-        await client.connect();
+        await client.connect()
 
-        await client.query(sqlContent);
+        await client.query(sqlContent)
 
-        console.log(`Successfully seeded ${dbName}`);
+        console.log(`Successfully seeded ${dbName}`)
       } catch (err) {
-        const error = new Error(`Seeding failed for ${dbName}: ${err.message}`);
-        error.status = 500;
-        throw error;
+        console.log(err.message)
+        const error = new Error(`Seeding failed for ${dbName}: ${err.message}`)
+        error.status = 500
+        throw error
       } finally {
-        await client.end();
+        await client.end()
       }
     }
   }
 
-    async flushRedis() {
-        await redis.flushall()
+  async flushRedis() {
+    await redis.flushall()
+  }
+
+  async flushRabbitMQ() {
+    const vhost = encodeURIComponent(RABBITMQ_VHOST)
+    const listRes = await fetch(`${RABBITMQ_API}/queues/${vhost}`, {
+      headers: { Authorization: `Basic ${RABBITMQ_AUTH}` },
+    })
+
+    if (!listRes.ok) {
+      const text = await listRes.text()
+      const error = new Error(
+        `Erro ao listar as filas do RabbitMQ: ${text}`
+      )
+      error.status = 500
+      throw error
     }
+
+    const queues = await listRes.json()
+
+    const results = await Promise.allSettled(
+      queues.map(async (q) => {
+        const res = await fetch(
+          `${RABBITMQ_API}/queues/${vhost}/${encodeURIComponent(q.name)}/contents`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Basic ${RABBITMQ_AUTH}` },
+          }
+        )
+        if (!res.ok) {
+          throw new Error(
+            `Erro ao limpar a fila "${q.name}": ${await res.text()}`
+          )
+        }
+        return q.name
+      })
+    )
+
+    const purged = results
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value)
+    const failed = results
+      .filter((r) => r.status === "rejected")
+      .map((r) => r.reason.message)
+
+    if (failed.length > 0) {
+      console.error("Falhas:", failed)
+      const error = new Error(
+        `Erro ao limpar as filas: ${failed.join(" ")}`
+      )
+      error.status = 500
+      throw error
+    }
+
+    console.log(`${purged.length} filas RabbitMQ limpas. `, purged)
+    return { purged, count: purged.length }
+  }
 
 }
 
-module.exports = new RebootService();
+module.exports = new RebootService()

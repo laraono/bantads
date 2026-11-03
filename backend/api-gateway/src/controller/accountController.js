@@ -6,6 +6,7 @@ class AccountController {
             const result = await accountService.transfer(req.params.id, req.body, req.headers);
             return res.status(201).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }
@@ -16,6 +17,7 @@ class AccountController {
             await accountService.withdraw(req.params.id, req.body, req.headers);
             return res.status(201).end();
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }
@@ -27,6 +29,7 @@ class AccountController {
             const balance = await accountService.deposit(req.params.id, req.body, req.headers);
             return res.status(201).json({"saldo": balance.body});
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }
@@ -37,6 +40,7 @@ class AccountController {
             const result = await accountService.getAccount(req.params.id, req.headers);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }
@@ -47,6 +51,7 @@ class AccountController {
             const result = await accountService.getExtract(req.params.id, req.query, req.headers);
             return res.status(200).json(result);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }
@@ -61,6 +66,7 @@ class AccountController {
             const account = await accountService.getAccountByCpf(req.params.cpf, req.headers);
             return res.status(200).json(account);
         } catch (err) {
+            console.log(err.message)
             const status = err.status || 500;
             return res.status(status).json({ error: err.message || 'Falha no servidor' });
         }

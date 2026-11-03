@@ -32,6 +32,7 @@ class RequestService {
       const solicitacoes = response.data?.solicitacoes ?? [];
       return { solicitacoes: solicitacoes.map(toRequestDTO) };
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -51,6 +52,7 @@ class RequestService {
 
       return request;
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -92,6 +94,7 @@ class RequestService {
 
       return toRequestDTO(response.data);
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
@@ -113,6 +116,7 @@ class RequestService {
 
       return toRequestDTO(response.data);
     } catch (err) {
+      console.log(err.message)
       rethrow(err);
     }
   }
