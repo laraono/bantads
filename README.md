@@ -51,3 +51,64 @@ docker compose logs -f ms-client   # acompanha os logs de um serviço
 
 docker compose down        # para tudo (adicione -v para apagar os dados)
 ```
+Lara Ono Glufke Reis
+GRR 20230943
+
+Emanuelle Rodrigues Silveira
+GRR 20242389
+
+Gabriela Morais Gandine
+GRR 20234968
+
+Cauã Henrique Dias Barbosa
+GRR 20230951
+
+Ender Efrain Ruiz Carrasco 
+GRR 20250037
+
+Disciplina:
+DAC - Desenvolvimento de Aplicações Corporativas
+
+2026
+UFPR
+
+Lara Ono Glufke Reis
+GRR 20230943
+
+Emanuelle Rodrigues Silveira
+GRR 20242389
+
+Gabriela Morais Gandine
+GRR 20234968
+
+Cauã Henrique Dias Barbosa
+GRR 20230951
+
+Ender Efrain Ruiz Carrasco 
+GRR 20250037
+
+Disciplina:
+DAC - Desenvolvimento de Aplicações Corporativas
+
+2026
+UFPR
+Lara Ono Glufke Reis
+GRR 20230943
+
+Emanuelle Rodrigues Silveira
+GRR 20242389
+
+Gabriela Morais Gandine
+GRR 20234968
+
+Cauã Henrique Dias Barbosa
+GRR 20230951
+
+Ender Efrain Ruiz Carrasco 
+GRR 20250037
+
+Disciplina:
+DAC - Desenvolvimento de Aplicações Corporativas
+
+2026
+UFPR
