@@ -496,5 +496,9 @@ async function envioDados() {
         width: 100%;
         min-width: 0;
     }
+
+    .etapa {
+        display: block ruby;
+    }
 }
 </style>
