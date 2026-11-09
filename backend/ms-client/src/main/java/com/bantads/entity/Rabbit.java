@@ -17,7 +17,7 @@ import java.util.UUID;
 @Builder
 public class Rabbit {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "request_id")
     private Long requestId;
 
