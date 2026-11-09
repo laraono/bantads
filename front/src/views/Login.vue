@@ -6,7 +6,6 @@ import { useAuth } from '@/composables/useAuth'
 
 const email = ref('')
 const password = ref('')
-const remember = ref(false)
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
@@ -72,10 +71,6 @@ async function handleSubmit() {
                         <v-text-field id="login-email" v-model="email" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="seu@email.com" type="email" :rules="[rules.required, rules.email]"/>
                         <label class="field-label" for="login-password">Senha</label>
                         <v-text-field id="login-password" v-model="password" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="........" :type="showPassword ? 'text' : 'password'" :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'" :rules="[rules.required]" @click:append-inner="showPassword = !showPassword"/>
-                        <div class="row-between">
-                            <v-checkbox v-model="remember" label="Lembrar-me" density="compact" hide-details color="primary"/>
-                            <a href="#" class="link">Esqueci a senha</a>
-                        </div>
                         <v-alert v-if="errorMessage" type="error" density="compact" class="mb-4">
                             {{ errorMessage }}
                         </v-alert>
@@ -255,24 +250,8 @@ async function handleSubmit() {
   font-size: 0.9rem;
 }
 
-.row-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.link {
-  color: #6b7280;
-  font-size: 0.85rem;
-  text-decoration: none;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
 .submit-btn {
+  margin-top: 8px;
   background: #f4c561 !important;
   color: #101b2d !important;
   font-weight: 700;

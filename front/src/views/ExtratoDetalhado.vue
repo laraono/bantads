@@ -260,7 +260,8 @@ function openPicker(event: MouseEvent) {
                 </td>
                 <td class="cell-operation">{{ tx.operation }}</td>
                 <td>
-                  <span class="party-pill">{{ tx.party }}</span>
+                  <span v-if="tx.party" class="party-pill">{{ tx.party }}</span>
+                  <span v-else>—</span>
                 </td>
                 <td class="align-right" :class="tx.amount.isNegative() ? 'negative' : 'positive'">
                   {{ formatMoeda(tx.amount) }}

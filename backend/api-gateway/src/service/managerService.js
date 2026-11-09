@@ -30,7 +30,8 @@ class MangerService {
       ]);
 
       const clientesPorGerente = new Map();
-      for (const conta of accounts?._embedded?.getAccountDTOList ?? []) {
+      // o MS Conta devolve um array simples de contas
+      for (const conta of Array.isArray(accounts) ? accounts : []) {
         clientesPorGerente.set(
           conta.cpfGerente,
           (clientesPorGerente.get(conta.cpfGerente) ?? 0) + 1,

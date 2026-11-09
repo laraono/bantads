@@ -288,6 +288,8 @@ public class OrchestrationService {
             compensateSingleStep(sagaStates, i);
         }
 
+        sendApprovalFailureEmail(sagaStates);
+
         sagaStates.setStatus(SagaStatus.FALHA);
         
         String sagaKey = "saga:" + sagaStates.getSagaId();
@@ -314,15 +316,35 @@ public class OrchestrationService {
         request.setStepIndex(sagaStates.getStepIndex());
 
         rabbitTemplate.convertAndSend(queue, request);
+    }
 
-        if(sagaStates.isLastStep() && sagaStates.getStep() == SagaSteps.CRIACAO_CONTA) {
-            request.setSagaId(sagaStates.getSagaId());
-            request.setType("email.enviar-rejeicao");
-            request.setPayload(comp);
-            request.setStepIndex(sagaStates.getStepIndex());
-
-            rabbitTemplate.convertAndSend(RabbitMQConfig.MS_EMAIL_CMD + ".dlq", request);
+    // R9: depois das compensações, avisa o cliente que a solicitação não foi
+    // efetuada (fire-and-forget). No e-mail duplicado o MS Cliente já envia o aviso.
+    @SuppressWarnings("unchecked")
+    private void sendApprovalFailureEmail(SagaStates sagaStates) {
+        if (sagaStates.getStep() != SagaSteps.CRIACAO_CONTA || "CONTA JÁ EXISTE".equals(sagaStates.getError())) {
+            return;
         }
+
+        Object requisicao = sagaStates.getPayload().get("requisicao");
+        if (!(requisicao instanceof Map)) {
+            return; // falhou antes de obter os dados da solicitação
+        }
+
+        Map<String, Object> dados = (Map<String, Object>) requisicao;
+        Map<String, Object> email = new HashMap<>();
+        email.put("email", dados.get("email"));
+        email.put("nome", dados.get("name"));
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("email", email);
+
+        RabbitRequest request = new RabbitRequest();
+        request.setSagaId(sagaStates.getSagaId());
+        request.setType("email.enviar-falha-solicitacao");
+        request.setPayload(payload);
+
+        rabbitTemplate.convertAndSend(RabbitMQConfig.MS_EMAIL_CMD, request);
     }
 
 }

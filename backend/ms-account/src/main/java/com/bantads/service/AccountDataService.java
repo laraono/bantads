@@ -55,20 +55,25 @@ public class AccountDataService {
                     AccountsByManagerDTO dto = this.getAccountsCountByManager(cpf);
                     return dto != null ? dto : new AccountsByManagerDTO(cpf, 0L, BigDecimal.ZERO);
                 })
-                .min(Comparator.comparingLong(AccountsByManagerDTO::getTotalAccounts).reversed().thenComparing(Comparator.comparing(AccountsByManagerDTO::getTotalBalance)))
+                // R9/R15: gerente com MENOS clientes (empate: qualquer um)
+                .min(Comparator.comparingLong(AccountsByManagerDTO::getTotalAccounts))
                 .map(AccountsByManagerDTO::getManagerCPF)
                 .orElseThrow();
     }
 
     public Map<String, Object> getAccountToNewManager(Map<String, Object> payload ) {
-        List<String> cpfs = this.accountDataRepository.findManagersWithMultipleAccountsOrderedByCount();
+        // R13: gerente com MAIS contas; no empate, o de menor saldo total
+        Optional<AccountsByManagerDTO> chosenManager = this.accountDataRepository.getAccountCountGroupByManager().stream()
+                .min(Comparator.comparingLong(AccountsByManagerDTO::getTotalAccounts).reversed()
+                        .thenComparing(AccountsByManagerDTO::getTotalBalance));
 
-        if(cpfs.isEmpty()) {
+        // nenhum gerente com mais de 1 conta: o novo gerente fica sem contas
+        if(chosenManager.isEmpty() || chosenManager.get().getTotalAccounts() <= 1) {
             payload.put("numeroConta", "sem-conta");
             return payload;
         }
 
-        String managerCpf = cpfs.getFirst();
+        String managerCpf = chosenManager.get().getManagerCPF();
 
         List<AccountData> accounts = this.accountDataRepository.findAllByManagerCPFOrderByBalanceAsc(managerCpf);
 
