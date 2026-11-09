@@ -312,6 +312,11 @@ async function remover() {
                                         <v-btn variant="text" color="primary" prepend-icon="mdi-pencil-outline" @click="abrirEdicao(gerente)">
                                             Editar
                                         </v-btn>
+                                        <div class="desativar">
+                                            <v-btn v-if="!editandoASiMesmo" class="desativar-btn" variant="elevated" :disabled="salvandoEdicao" @click="confirmarRemocao = true">
+                                            Desativar
+                                            </v-btn>
+                                        </div>
                                     </div>
                                 </v-card-actions>
                             </v-card>
