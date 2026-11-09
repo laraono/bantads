@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 import { useCadastro } from '../composables/useCadastro';
 import { useRoute, useRouter } from 'vue-router';
 import { criarSolicitacao } from '@/services/requestService'
@@ -8,6 +8,7 @@ import { mensagemErro } from '@/utils/format'
 const { nome, cpf, telefone, email, cep, numero, rua, complemento, cidade, estado, salario } = useCadastro()
 const estados = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']
 const mensagemAlerta = ref(false)
+const formularioCadastro = ref<{resetValidation: () => void} | null>(null)
 const erroEnvio = ref('')
 const enviando = ref(false)
 const buscandoCep = ref(false)
@@ -48,11 +49,16 @@ const router = useRouter()
 
 const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',
-}
+    validarSalario: (v: string) => {
+        if(!v) return true;
+        const salarioBRL = /^(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}$/;
+        return salarioBRL.test(v) || 'Formato de inválido';
+    }
+};
 
 const maskSalario = (v: string) => {
 
-        let valor = v.replace(/\D/g, '');
+        let valor = v.replace(/[^0-9]/g, '');
 
         if (!valor) {
             salario.value = '';
@@ -103,6 +109,8 @@ async function envioDados() {
         })
 
         mensagemAlerta.value = true
+
+        // Limpa os campos do formulario
         nome.value = ''
         cpf.value = ''
         telefone.value = ''
@@ -114,6 +122,10 @@ async function envioDados() {
         cidade.value = ''
         estado.value = null
         salario.value = ''
+
+        // Limpa as mensagens de validações
+        await nextTick()
+        formularioCadastro.value?.resetValidation()
 
         setTimeout(() => router.push('/login'), 1500)
     } catch (err) {
@@ -157,7 +169,7 @@ async function envioDados() {
                 <div class="progresso-barra">
                     <div class="progresso"></div>
                 </div>
-                <v-form @submit.prevent="envioDados">
+                <v-form ref="formularioCadastro" @submit.prevent="envioDados">
                     <div class="container-endereco">
                         <div class="endereco">
                             <label class="field-label" for="cadastro-cep">CEP</label>
@@ -176,7 +188,7 @@ async function envioDados() {
                     </div>
                     <div class="label-field">
                         <label class="field-label" for="cadastro-complemento">Complemento</label>
-                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" :rules="[rules.required]"/>
+                        <v-text-field id="cadastro-complemento" v-model="complemento" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="Apto 42, Bloco B" type="text" />
                     </div>
                     <div class="container-regiao">
                         <div class="localizacao">
@@ -191,7 +203,7 @@ async function envioDados() {
                     </div>
                     <div class="label-field">
                         <label class="field-label" for="cadastro-salario">Salário Mensal</label>
-                        <v-text-field id="cadastro-salario" :model-value="salario" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="0,00" prefix="R$" type="text" autocomplete="off" :rules="[rules.required]" @update:model-value="maskSalario"/>
+                        <v-text-field id="cadastro-salario" :model-value="salario" class="field-input" variant="solo" flat single-line density="comfortable" placeholder="R$ 0,00" prefix="R$" type="text" autocomplete="off" :rules="[rules.required, rules.validarSalario]" @update:model-value="maskSalario"/>
                     </div>
                     <div class="container-btn">
                         <v-btn type="button" class="voltar-btn" size="large" to="/cadastro">
