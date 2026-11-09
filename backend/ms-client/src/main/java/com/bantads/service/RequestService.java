@@ -46,7 +46,11 @@ public class RequestService {
             }
 
             if (requestRepository.existsByCpf(requestDTO.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+            }
+
+            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
             }
 
             if (requestDTO.getEmail() == null) {

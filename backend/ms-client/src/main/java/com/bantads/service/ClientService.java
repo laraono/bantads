@@ -98,7 +98,7 @@ public class ClientService {
                 .email(req.getEmail())
                 .name(req.getName())
                 .phone(req.getPhone())
-                .approvedStatus("SUCESSO")
+                .approvedStatus("APROVADO")
                 .salary(req.getSalary())
                 .build();
 
