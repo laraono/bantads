@@ -207,7 +207,7 @@ async function remover() {
 
                         <v-card-text>
                             <v-form ref="formNovo" @submit.prevent="salvarNovo">
-                                <label class="field-label" for="cadastro-nome">Nome Completo</label>
+                                <label class="field-label" for="cadastro-nome">Nome</label>
                                 <v-text-field id="cadastro-nome" v-model="novo.nome" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="João da Silva" type="text" :rules="[rules.required, rules.nome]"/>
                                 <div class="primeiro-bloco">
                                     <div class="gerente-cpf">
@@ -257,7 +257,7 @@ async function remover() {
                     <div class="search">
                         <div class="search-manager">
                             <v-card color="surface-light" max-width="400">
-                                <v-text-field v-model="busca" density="comfortable" flat label="Buscar por nome, CPF ou e-mail..." variant="solo" prepend-inner-icon="mdi-magnify" hide-details single-line clearable/>
+                                <v-text-field v-model="busca" density="comfortable" flat label="Buscar por nome ou CPF..." variant="solo" prepend-inner-icon="mdi-magnify" hide-details single-line clearable/>
                             </v-card>
                         </div>
                     </div>
@@ -339,7 +339,7 @@ async function remover() {
 
                         <v-card-text>
                             <v-form ref="formEdicao" @submit.prevent="salvarEdicao">
-                                <label class="field-label" for="atualizar-nome">Nome Completo</label>
+                                <label class="field-label" for="atualizar-nome">Nome</label>
                                 <v-text-field id="atualizar-nome" v-model="edicao.nome" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="Ex: João da Silva" type="text" :rules="[rules.required, rules.nome]"/>
                                 <label class="field-label" for="atualizar-telefone">Telefone</label>
                                 <v-mask-input id="atualizar-telefone" v-model="edicao.telefone" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="(00) 00000-0000" type="text" :rules="[rules.required, rules.telefone]" mask='(##) #####-####'/>
@@ -381,64 +381,6 @@ async function remover() {
 
 
             <!-- Componente (modal) confirmação de remoção (R15) -->
-            <v-dialog v-model="confirmarRemocao" max-width="440" :persistent="removendo">
-                <v-card>
-                    <v-card-title class="text-h6">Desativar gerente?</v-card-title>
-                    <v-card-text>
-                        <strong>{{ emEdicao?.nome }}</strong> será desativado e perderá o acesso ao sistema.
-                        Os {{ rotuloClientes(emEdicao?.quantidadeClientes ?? 0) }} dele serão transferidos
-                        para o gerente com menos clientes e avisados por e-mail!
-                    </v-card-text>
-                    <v-card-actions class="justify-end">
-                        <v-btn variant="text" :disabled="removendo" @click="confirmarRemocao = false">Cancelar</v-btn>
-                        <v-btn color="error" variant="elevated" :loading="removendo" @click="remover">Desativar</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-
-            <v-snackbar v-model="snackbar.aberto" :color="snackbar.cor" timeout="5000" location="top right">
-                {{ snackbar.texto }}
-            </v-snackbar>
-
-
-            <!-- Componente (modal) confirmação de remoção (R15) -->
-            <v-dialog v-model="confirmarRemocao" max-width="440" :persistent="removendo">
-                <v-card>
-                    <v-card-title class="text-h6">Desativar gerente?</v-card-title>
-                    <v-card-text>
-                        <strong>{{ emEdicao?.nome }}</strong> será desativado e perderá o acesso ao sistema.
-                        Os {{ rotuloClientes(emEdicao?.quantidadeClientes ?? 0) }} dele serão transferidos
-                        para o gerente com menos clientes e avisados por e-mail!
-                    </v-card-text>
-                    <v-card-actions class="justify-end">
-                        <v-btn variant="text" :disabled="removendo" @click="confirmarRemocao = false">Cancelar</v-btn>
-                        <v-btn color="error" variant="elevated" :loading="removendo" @click="remover">Desativar</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-
-            <v-snackbar v-model="snackbar.aberto" :color="snackbar.cor" timeout="5000" location="top right">
-                {{ snackbar.texto }}
-            </v-snackbar>
-            <!-- Componente (modal) confirmação de remoção (R15) -->
-            <v-dialog v-model="confirmarRemocao" max-width="440" :persistent="removendo">
-                <v-card>
-                    <v-card-title class="text-h6">Desativar gerente?</v-card-title>
-                    <v-card-text>
-                        <strong>{{ emEdicao?.nome }}</strong> será desativado e perderá o acesso ao sistema.
-                        Os {{ rotuloClientes(emEdicao?.quantidadeClientes ?? 0) }} dele serão transferidos
-                        para o gerente com menos clientes e avisados por e-mail!
-                    </v-card-text>
-                    <v-card-actions class="justify-end">
-                        <v-btn variant="text" :disabled="removendo" @click="confirmarRemocao = false">Cancelar</v-btn>
-                        <v-btn color="error" variant="elevated" :loading="removendo" @click="remover">Desativar</v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
-
-            <v-snackbar v-model="snackbar.aberto" :color="snackbar.cor" timeout="5000" location="top right">
-                {{ snackbar.texto }}
-            </v-snackbar><!-- Componente (modal) confirmação de remoção (R15) -->
             <v-dialog v-model="confirmarRemocao" max-width="440" :persistent="removendo">
                 <v-card>
                     <v-card-title class="text-h6">Desativar gerente?</v-card-title>
