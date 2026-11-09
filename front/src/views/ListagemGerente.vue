@@ -207,7 +207,7 @@ async function remover() {
 
                         <v-card-text>
                             <v-form ref="formNovo" @submit.prevent="salvarNovo">
-                                <label class="field-label" for="cadastro-nome">Nome Completo</label>
+                                <label class="field-label" for="cadastro-nome">Nome</label>
                                 <v-text-field id="cadastro-nome" v-model="novo.nome" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="João da Silva" type="text" :rules="[rules.required, rules.nome]"/>
                                 <div class="primeiro-bloco">
                                     <div class="gerente-cpf">
@@ -257,7 +257,7 @@ async function remover() {
                     <div class="search">
                         <div class="search-manager">
                             <v-card color="surface-light" max-width="400">
-                                <v-text-field v-model="busca" density="comfortable" flat label="Buscar por nome, CPF ou e-mail..." variant="solo" prepend-inner-icon="mdi-magnify" hide-details single-line clearable/>
+                                <v-text-field v-model="busca" density="comfortable" flat label="Buscar por nome ou CPF..." variant="solo" prepend-inner-icon="mdi-magnify" hide-details single-line clearable/>
                             </v-card>
                         </div>
                     </div>
@@ -312,11 +312,6 @@ async function remover() {
                                         <v-btn variant="text" color="primary" prepend-icon="mdi-pencil-outline" @click="abrirEdicao(gerente)">
                                             Editar
                                         </v-btn>
-                                        <div class="desativar">
-                                            <v-btn v-if="!editandoASiMesmo" class="desativar-btn" variant="elevated" :disabled="salvandoEdicao" @click="confirmarRemocao = true">
-                                            Desativar
-                                            </v-btn>
-                                        </div>
                                     </div>
                                 </v-card-actions>
                             </v-card>
@@ -344,7 +339,7 @@ async function remover() {
 
                         <v-card-text>
                             <v-form ref="formEdicao" @submit.prevent="salvarEdicao">
-                                <label class="field-label" for="atualizar-nome">Nome Completo</label>
+                                <label class="field-label" for="atualizar-nome">Nome</label>
                                 <v-text-field id="atualizar-nome" v-model="edicao.nome" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="Ex: João da Silva" type="text" :rules="[rules.required, rules.nome]"/>
                                 <label class="field-label" for="atualizar-telefone">Telefone</label>
                                 <v-mask-input id="atualizar-telefone" v-model="edicao.telefone" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="(00) 00000-0000" type="text" :rules="[rules.required, rules.telefone]" mask='(##) #####-####'/>
