@@ -33,7 +33,7 @@ public class AccountController {
             
             List<EntityModel<GetAccountDTO>> accounts = this.accountService.listAccounts(cpf).stream()
                 .map(assembler::toModel)
-                .toList();;
+                .toList();
 
             return accounts;
 
