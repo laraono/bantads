@@ -4,6 +4,6 @@ const reportController = require('../controller/reportController')
 
 const router = Router();
 
-router.get('/clientes',  authGatewayFilter(), reportController.getReport);
+router.get('/clientes',  authGatewayFilter('GERENTE'), reportController.getReport);
 
 module.exports = router;

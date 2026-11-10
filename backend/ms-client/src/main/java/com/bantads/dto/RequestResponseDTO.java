@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.lang.Thread.State;
 import java.math.BigDecimal;
+import java.util.Date;
 
 import com.bantads.entity.Client;
 import com.bantads.entity.Request;
@@ -46,6 +47,8 @@ public class RequestResponseDTO {
                 .cliente(ClientResponseDTO.from(request.getClient()))
                 .status(request.getStatus())
                 .motivo(request.getRejectionReason())
+                // R8: data/hora da aprovação ou da rejeição
+                .dataDecisao(request.getApprovedAt() != null ? request.getApprovedAt() : request.getRejectionAt())
                 .build();
     }
 
@@ -59,5 +62,6 @@ public class RequestResponseDTO {
     public ClientResponseDTO cliente;
     public RequestStatus status;
     public String motivo;
+    public Date dataDecisao;
 
 }

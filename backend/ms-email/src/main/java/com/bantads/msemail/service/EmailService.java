@@ -80,6 +80,12 @@ public class EmailService {
             this.sendEmail(email.get("email"), "Solicitação rejeitada", text);
         }
 
+        if (type.contains("enviar-falha-solicitacao")) {
+            Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
+            String text = "Olá " + email.get("nome") + ", não foi possível efetuar sua solicitação de abertura de conta. Por favor, tente novamente mais tarde.";
+            this.sendEmail(email.get("email"), "Solicitação não efetuada", text);
+        }
+
         if (type.contains("enviar-ja-existe")) {
             Map<String, String> email = (Map<String, String>) command.getPayload().get("email");
             String text = "Olá " + email.get("nome") + ", sua solicitação de cadastro não pôde ser concluída pois já existe uma conta para este CPF.";

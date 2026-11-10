@@ -34,6 +34,7 @@ public class ApproveRequestHandler implements SagaStepHandler {
     public void compensate(Map<String, Object> payload, String error) {
         String id = (String) payload.get("idSolicitacao");
         if ("CONTA JÁ EXISTE".equals(error)) {
+            this.requestService.markNotApproved(id, "E-mail já cadastrado");
             this.requestService.sendAlreadyExistsEmail(id);
             return;
         } else {

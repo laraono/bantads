@@ -43,7 +43,8 @@ class ClientService {
       nome: response.data.nome,
       email: response.data.email,
       telefone: response.data.telefone,
-      salario: response.data.salario,
+      // valores monetários trafegam como string (seção 5.1)
+      salario: response.data.salario != null ? String(response.data.salario) : null,
       endereco: {
         cidade: response.data.endereco?.cidade,
         estado: {

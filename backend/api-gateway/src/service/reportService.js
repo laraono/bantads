@@ -51,7 +51,7 @@ class JobService {
                     cpf: client.cpf, 
                     nome: client.nome, 
                     email: client.email, 
-                    salario: client.salario, 
+                    salario: client.salario != null ? String(client.salario) : null, 
                     numeroConta: account.numero,
                     saldo: account.saldo, 
                     cpfGerente: account.cpfGerente, 

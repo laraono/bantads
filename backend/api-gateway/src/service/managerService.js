@@ -30,6 +30,7 @@ class MangerService {
       ]);
 
       const clientesPorGerente = new Map();
+      // o MS Conta devolve um array simples de contas
       for (const conta of Array.isArray(accounts) ? accounts : []) {
         clientesPorGerente.set(
           conta.cpfGerente,

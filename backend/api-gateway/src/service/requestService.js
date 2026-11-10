@@ -13,12 +13,12 @@ function toIso(date) {
 function toRequestDTO(request) {
   return {
     cpf: request.cpf,
-    nome: request.name,
+    nome: request.nome,
     email: request.email,
-    salario: request.salary != null ? String(request.salary) : null,
+    salario: request.salario != null ? String(request.salario) : null,
     status: request.status,
     motivo: request.motivo ?? null,
-    dataDecisao: toIso(request.approvedAt ?? request.rejectionAt),
+    dataDecisao: toIso(request.dataDecisao),
     _links: linksUtils.rewriteLinks(request._links ?? request.links),
   };
 }
