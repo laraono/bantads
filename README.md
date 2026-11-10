@@ -1,21 +1,16 @@
 # BANTADS
 Integrantes do projeto: 
-```
-- Lara Ono Glufke Reis
-GRR 20230943
 
-- Emanuelle Rodrigues Silveira
-GRR 20242389
+- **Lara Ono Glufke Reis**: GRR 20230943
 
-- Gabriela Morais Gandine
-GRR 20234968
+- **Emanuelle Rodrigues Silveira**: GRR 20242389
 
-- Cauã Henrique Dias Barbosa
-GRR 20230951
+- **Gabriela Morais Gandine**: GRR 20234968
 
-- Ender Efrain Ruiz Carrasco 
-GRR 20250037
-```
+- **Cauã Henrique Dias Barbosa**: GRR 20230951
+
+- **Ender Efrain Ruiz Carrasco**: GRR 20250037
+
 Disciplina:
 DAC - Desenvolvimento de Aplicações Corporativas
 
@@ -24,7 +19,7 @@ UFPR
 
 ## Configuração
 
-Crie um arquivo `.env` na raiz da pasta com as variáveis abaixo (valores à sua escolha):
+Crie um arquivo `.env` na raiz da pasta com as variáveis abaixo (valores à sua escolha, utilize o arquivo .env.examplo como referência):
 
 ```
 POSTGRES_USER=  
