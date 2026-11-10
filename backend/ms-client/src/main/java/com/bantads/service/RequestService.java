@@ -46,7 +46,11 @@ public class RequestService {
             }
 
             if (requestRepository.existsByCpf(requestDTO.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+            }
+
+            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
             }
 
             if (requestDTO.getEmail() == null) {
@@ -67,6 +71,11 @@ public class RequestService {
 
             if (clientRepository.existsByEmail(requestDTO.getEmail())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
+            }
+
+            // R1: o e-mail é o login, então também não pode repetir entre solicitações
+            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o e-mail informado");
             }
 
             if (requestDTO.getCpf().length() < 11) {
@@ -112,12 +121,39 @@ public class RequestService {
     public Request approveRequest(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
+        }
+
+        // solicitação rejeitada não volta a ser aprovada: o cliente precisa pedir de novo
+        if (request.getStatus() != RequestStatus.PENDENTE) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Solicitação não está pendente");
+        }
+
         request.setApprovedAt(new Date());
         request.setStatus(RequestStatus.APROVADA);
 
         requestRepository.save(request);
 
         return request;
+    }
+
+    // R9, caso especial: aprovação impossível (e-mail/login já cadastrado) vira
+    // "Não aprovada" com motivo automático, para não ficar pendente para sempre
+    @Transactional
+    public void markNotApproved(String cpf, String motivo) {
+        Request request = requestRepository.findByCpf(cpf);
+
+        if (request == null) {
+            return;
+        }
+
+        request.setApprovedAt(null);
+        request.setRejectionReason(motivo);
+        request.setRejectionAt(new Date());
+        request.setStatus(RequestStatus.REJEITADA);
+
+        requestRepository.save(request);
     }
 
     @Transactional
@@ -145,7 +181,12 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 
+        if (request.getStatus() != RequestStatus.PENDENTE) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Solicitação não está pendente");
+        }
+
         request.setRejectionReason(rejectReason);
+        request.setRejectionAt(new Date());
         request.setStatus(RequestStatus.REJEITADA);
 
         requestRepository.save(request);

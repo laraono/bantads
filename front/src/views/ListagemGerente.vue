@@ -61,7 +61,8 @@ function rotuloClientes(qtd: number) {
 
 const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',
-    nome: (v: string) => v && v.length >= 8 || 'Mínimo de 8 letras',
+    // sem tamanho mínimo: há gerentes no seed com nome curto (ex.: Geniéve)
+    nome: (v: string) => !!v?.trim() || 'Campo obrigatório',
     cpf: (v: string) => somenteDigitos(v).length === 11 || 'CPF inválido',
     telefone: (v: string) => somenteDigitos(v).length === 11 || 'Telefone inválido',
     email: (v: string) => /.+@.+\..+/.test(v) || 'E-mail inválido',

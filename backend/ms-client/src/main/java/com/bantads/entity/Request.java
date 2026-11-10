@@ -21,7 +21,7 @@ import lombok.Setter;
 @Builder
 public class Request {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "request_id")
     private Long requestId;
 

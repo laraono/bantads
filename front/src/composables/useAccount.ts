@@ -47,17 +47,16 @@ function toTransaction(mov: MovimentacaoDTO, cpfProprio: string): AccountTransac
   let amount = abs
   let party = ''
 
+  // R7: o cliente origem/destino só é preenchido em transferência
   if (mov.type === 'DEPOSIT') {
     amount = abs
-    party = 'Depósito em conta'
   } else if (mov.type === 'WITHDRAW') {
     amount = abs.negated()
-    party = 'Saque em conta'
   } else {
     // TRANSFER: o lado do extrato (origem/destino) indica se é entrada ou saída pra essa conta
     const souOrigem = mov.originClientCPF === cpfProprio
     amount = souOrigem ? abs.negated() : abs
-    party = souOrigem ? (mov.destinationClientName ?? 'Conta destino') : (mov.originClientName ?? 'Conta origem')
+    party = `${mov.originClientName ?? 'Conta origem'} → ${mov.destinationClientName ?? 'Conta destino'}`
   }
 
   return {

@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.bantads.entity.read.AccountData;
+import com.bantads.service.AccountDataService;
 import com.bantads.service.EventService;
 
 @Component 
@@ -14,6 +16,9 @@ public class RemoveManagerHandler implements SagaStepHandler {
 
     @Autowired 
     private EventService eventService;
+
+    @Autowired
+    private AccountDataService accountDataService;
 
     @Override
     public String action() {
@@ -24,6 +29,13 @@ public class RemoveManagerHandler implements SagaStepHandler {
     public Map<String, Object> execute(Map<String, Object> payload) {
         List<String> response = this.eventService.deleteManager(payload);
         payload.put("contasMovidas", response); 
+        // o MS Cliente busca os e-mails pelos CPFs dos donos das contas transferidas
+        List<String> clientesCPF = response.stream()
+                .map(this.accountDataService::getAccountData)
+                .filter(java.util.Objects::nonNull)
+                .map(AccountData::getClientCPF)
+                .toList();
+        payload.put("clientesCPF", clientesCPF);
         return payload;
     }
 

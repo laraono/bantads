@@ -67,7 +67,8 @@ class AuthService {
         };
       }
       const { data } = await axios.get(
-        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clientes/${cpf}`,
+        `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`,
+        { headers: { "x-user-tipo": "CLIENTE" } },
       );
       return { cpf: data.cpf, nome: data.nome, email: data.email };
     } catch (err) {

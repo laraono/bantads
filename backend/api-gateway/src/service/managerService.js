@@ -30,7 +30,8 @@ class MangerService {
       ]);
 
       const clientesPorGerente = new Map();
-      for (const conta of accounts?._embedded?.getAccountDTOList ?? []) {
+      // o MS Conta devolve um array simples de contas
+      for (const conta of Array.isArray(accounts) ? accounts : []) {
         clientesPorGerente.set(
           conta.cpfGerente,
           (clientesPorGerente.get(conta.cpfGerente) ?? 0) + 1,
@@ -111,6 +112,7 @@ class MangerService {
 
   async deleteManager(id, headers) {
     try {
+
       const payload = {
         cpfGerente: id,
         cpfSolicitante: headers["x-user-cpf"],
@@ -135,7 +137,7 @@ class MangerService {
 
   async createManager(gerente) {
 
-    if (!gerente.nome || !gerente.cpf || !gerente.email || !gerente.telefone || !gerente.senha) {
+    if (!gerente || !gerente.nome || !gerente.cpf || !gerente.email || !gerente.telefone || !gerente.senha) {
       const error = new Error("Dados obrigatórios não informados");
       error.status = 400;
       throw error;

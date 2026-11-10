@@ -190,7 +190,7 @@ const formattedBalance = computed(() => formatMoeda(balance.value))
                 <svg v-else viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
               </span>
               <span class="transaction-info">
-                <span class="transaction-name">{{ tx.operation }} · {{ tx.party }}</span>
+                <span class="transaction-name">{{ tx.operation }}<template v-if="tx.party"> · {{ tx.party }}</template></span>
                 <span class="transaction-date">{{ formatRelativeLabel(tx) }}</span>
               </span>
               <span class="transaction-amount" :class="tx.amount.isPositive() ? 'positive' : 'negative'">
