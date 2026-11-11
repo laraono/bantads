@@ -3,6 +3,7 @@ package com.bantads.entity;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum RequestStatus {
+    
     PENDENTE("PENDENTE"),
     APROVADA("APROVADA"),
     REJEITADA("NAO_APROVADA");

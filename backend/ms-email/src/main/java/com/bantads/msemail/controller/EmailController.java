@@ -20,6 +20,7 @@ public class EmailController {
 
     @PostMapping ("/send")
     public ResponseEntity<String> sendEmail(@RequestBody EmailRequestDTO request) {
+        
         try{
             emailService.sendEmail(request.getTo(), request.getSubject(), request.getMessage());
             return ResponseEntity.ok("Email enviado com sucesso");
