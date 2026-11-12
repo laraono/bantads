@@ -39,58 +39,32 @@ public class RequestService {
     @Autowired
     private ClientRepository clientRepository;
 
+    public void conflictThrow(String error) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, error);
+    }
+
     public Request createRequest(RequestDTO requestDTO) {
         try {
-            if (requestDTO.getCpf() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
-            }
 
             if (requestRepository.existsByCpf(requestDTO.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+                conflictThrow("Já existe uma solicitação com o CPF informado");
             }
 
             if (requestRepository.existsByEmail(requestDTO.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
-            }
-
-            if (requestDTO.getEmail() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail não informado");
-            }
-
-            if (stateRepository.findByUf(requestDTO.getEndereco().getUf()) == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
-            }
-
-            if (requestRepository.findByCpf(requestDTO.getCpf()) != null) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+                conflictThrow("Já existe uma solicitação com o CPF informado");
             }
 
             if (clientRepository.existsByCpf(requestDTO.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+                conflictThrow("Já existe um cliente com o CPF informado");
             }
 
             if (clientRepository.existsByEmail(requestDTO.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
+                conflictThrow("Já existe um cliente com o e-mail informado");
             }
-
-            // R1: o e-mail é o login, então também não pode repetir entre solicitações
-            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o e-mail informado");
-            }
-
-            if (requestDTO.getCpf().length() < 11) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
-            }
-
-            System.out.println("verificou:" + requestDTO.toString());
 
             AddressDTO addressDTO = requestDTO.getEndereco();
 
-            System.out.println("endereco:" + addressDTO.toString());
-
             BigDecimal salary = new BigDecimal(requestDTO.getSalario());
-
-            System.out.println("salary:" + salary.toString());
 
             Request requestEntity = Request.builder()
                     .status(RequestStatus.PENDENTE)
@@ -125,7 +99,8 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 
-        // solicitação rejeitada não volta a ser aprovada: o cliente precisa pedir de novo
+        // solicitação rejeitada não volta a ser aprovada: o cliente precisa pedir de
+        // novo
         if (request.getStatus() != RequestStatus.PENDENTE) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Solicitação não está pendente");
         }

@@ -43,14 +43,6 @@ public class RequestController {
         }
     }
 
-    @PostMapping("/{cpf}/aprovacao")
-    @ResponseStatus(HttpStatus.CREATED)
-    public EntityModel<RequestResponseDTO> approveRequest(@PathVariable String cpf) {
-        Request request = this.requestService.approveRequest(cpf);
-        RequestResponseDTO response = RequestResponseDTO.from(request);
-            return assembler.toModel(response);
-    }
-
     @PostMapping("/{cpf}/reject")
     @ResponseStatus(HttpStatus.OK)
     public EntityModel<RequestResponseDTO> rejectRequest(@PathVariable String cpf, @Valid @RequestBody RejectRequestDTO dto) {

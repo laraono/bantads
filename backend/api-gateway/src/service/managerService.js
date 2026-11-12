@@ -9,7 +9,6 @@ const MS_MANAGER_HOST = process.env.MS_MANAGER_HOST || "ms-manager";
 const MS_MANAGER_PORT = process.env.MS_MANAGER_PORT || "8084";
 
 class MangerService {
-
   toManager(data) {
     return {
       id: data.id,
@@ -50,9 +49,9 @@ class MangerService {
           a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }),
         );
 
-      return { "gerentes": gerentes };
+      return { gerentes: gerentes };
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -74,7 +73,7 @@ class MangerService {
 
       return returnData;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -82,6 +81,12 @@ class MangerService {
   // R14: e-mail e CPF não podem ser alterados, então só nome e telefone seguem
   async updateManager(id, body, headers) {
     try {
+      if (!body) {
+        const error = new Error("Dados obrigatórios não informados");
+        error.status = 400;
+        throw error;
+      }
+
       if (body.email) {
         const error = new Error("Não é possível alterar o email");
         error.status = 400;
@@ -103,16 +108,14 @@ class MangerService {
       removeCache("gerente", managerAnswer.data.cpf);
 
       return this.toManager(managerAnswer.data);
-
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
 
   async deleteManager(id, headers) {
     try {
-
       const payload = {
         cpfGerente: id,
         cpfSolicitante: headers["x-user-cpf"],
@@ -136,8 +139,14 @@ class MangerService {
   }
 
   async createManager(gerente) {
-
-    if (!gerente || !gerente.nome || !gerente.cpf || !gerente.email || !gerente.telefone || !gerente.senha) {
+    if (
+      !gerente ||
+      !gerente.nome ||
+      !gerente.cpf ||
+      !gerente.email ||
+      !gerente.telefone ||
+      !gerente.senha
+    ) {
       const error = new Error("Dados obrigatórios não informados");
       error.status = 400;
       throw error;

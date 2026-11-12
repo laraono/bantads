@@ -1,6 +1,6 @@
 package com.bantads.orchestration.services;
 
-import java.time.Duration; 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -18,7 +18,7 @@ import com.bantads.orchestration.config.RabbitMQConfig;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
-@Service 
+@Service
 public class OrchestrationService {
 
     @Autowired
@@ -38,6 +38,7 @@ public class OrchestrationService {
                 .sagaId(sagaId)
                 .status(SagaStatus.EM_ANDAMENTO)
                 .step(step)
+                .attempt(0)
                 .stepIndex(0)
                 .payload(payload)
                 .build();
@@ -51,14 +52,21 @@ public class OrchestrationService {
 
     public void publishSagaCmd(@NonNull SagaStates sagaStates, RabbitRequest request) {
         Map<String, Object> cmd = sagaStates.getPayload();
-        cmd.put("compensation", false);
 
         StepDefinition step = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
 
         request.setSagaId(sagaStates.getSagaId());
+        request.setCompensation(false);
         request.setType(step.getActionType());
         request.setPayload(cmd);
+        request.setAttempt(request.getAttempt());
         request.setStepIndex(sagaStates.getStepIndex());
+
+        try {
+            log.info("\n \n ====== enviando {}", objectMapper.writeValueAsString(request));
+        } catch (Exception e) {
+            log.info("\n \n ===== enviando {}", request);
+        }
 
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, request);
@@ -66,14 +74,14 @@ public class OrchestrationService {
         Map<String, Object> timeoutToken = new HashMap<>();
         timeoutToken.put("sagaId", sagaStates.getSagaId());
         timeoutToken.put("stepIndex", sagaStates.getStepIndex());
-
+        timeoutToken.put("attempt", request.getAttempt());
         rabbitTemplate.convertAndSend(queue + ".wait", timeoutToken);
     }
 
     public int dealWithEmail(SagaStates sagaStates, RabbitRequest reply) {
         StepDefinition step = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
 
-        if(step.getActionType().contains("email.")) {
+        if (step.getActionType().contains("email.")) {
             String sagaKey = "saga:" + sagaStates.getSagaId();
 
             this.publishSagaCmd(sagaStates, reply);
@@ -91,7 +99,7 @@ public class OrchestrationService {
 
                 return 0;
             }
-            return sagaStates.getStepIndex() + 1;
+            return sagaStates.getStepIndex() + 1; // pula email
 
         }
 
@@ -104,29 +112,35 @@ public class OrchestrationService {
         String sagaKey = "saga:" + sagaId;
 
         Object object = redisTemplate.opsForValue().get(sagaKey);
-        SagaStates sagaStates = object == null ? null : objectMapper.convertValue(object, SagaStates.class);
+        SagaStates sagaStates = object == null ? null : objectMapper.convertValue(object, SagaStates.class); // descobre
+                                                                                                             // quem
+                                                                                                             // enviou o
+                                                                                                             // reply
+        String status = reply.getStatus();
 
         if (sagaStates == null) {
-            log.warn("Saga {} sem estado no Redis (perdido/expirado?); reply '{}' descartado", sagaId, reply.getStatus());
+            log.warn("Saga {} sem estado no Redis (perdido/expirado?); reply '{}' descartado", sagaId, status);
             return;
         }
 
-        String status = reply.getStatus();
         int attempt = reply.getAttempt();
 
         Map<String, Object> payload = reply.getPayload();
 
-        if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO) {
-            log.warn("Saga {} em {}; reply '{}' de '{}' descartado", sagaId, sagaStates.getStatus(), status, reply.getType());
+        if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO) { // se não esperamos receber reply, descarta
+            log.warn("Saga {} em {}; reply '{}' de '{}' descartado", sagaId, sagaStates.getStatus(), status,
+                    reply.getType());
             return;
         }
 
-        if (reply.getType() != null && !reply.getType().equals(sagaStates.getType())) {
-            log.warn("Saga {} no passo '{}'; reply obsoleto de '{}' descartado", sagaId, sagaStates.getType(), reply.getType());
+        if (reply.getType() != null && !reply.getType().equals(sagaStates.getType())) { // reply desatualizado, já
+                                                                                        // passou dessa etapa
+            log.warn("Saga {} no passo '{}'; reply obsoleto de '{}' descartado", sagaId, sagaStates.getType(),
+                    reply.getType());
             return;
         }
 
-        if ("SUCESSO".equals(status)) {
+        if ("SUCESSO".equals(status)) { // um step funcionou
 
             if (sagaStates.isLastStep()) {
                 sagaStates.setStatus(SagaStatus.CONCLUIDO);
@@ -138,13 +152,13 @@ public class OrchestrationService {
                 updateJob(sagaId, "CONCLUIDO");
 
                 sagaStates.setPayload(payload);
-                publishSagaCmd(sagaStates, reply);
             } else {
                 reply.setAttempt(0);
-                if(SagaSteps.INSERIR_GERENTE == sagaStates.getStep() && "conta.identificar-conta".equals(sagaStates.getType())) {
+                if (SagaSteps.INSERIR_GERENTE == sagaStates.getStep()
+                        && "conta.identificar-conta".equals(sagaStates.getType())) {
                     String accountNumber = payload.getOrDefault("numeroConta", "sem-conta").toString();
-                    
-                    if(accountNumber.equals("sem-conta")) {
+                    // bloquear etapa de linkar contas se não tem contas disponíveis
+                    if (accountNumber.equals("sem-conta")) {
                         sagaStates.setStatus(SagaStatus.CONCLUIDO);
                         redisTemplate.opsForValue().set(sagaKey, sagaStates);
                         redisTemplate.expire(sagaKey, Duration.ofHours(24));
@@ -161,11 +175,11 @@ public class OrchestrationService {
 
                 StepDefinition step = sagaStates.getStep().getSteps().get(nextStep);
 
-                if(step.getActionType().contains("email.")) {
+                if (step.getActionType().contains("email.")) {
                     nextStep = this.dealWithEmail(sagaStates, reply);
                 }
 
-                if(nextStep > 0) {
+                if (nextStep > 0) {
                     sagaStates.setStepIndex(nextStep);
                     publishSagaCmd(sagaStates, reply);
 
@@ -173,19 +187,20 @@ public class OrchestrationService {
                 }
             }
         } else if ("FALHA".equals(status)) {
-            if(attempt < ATTEMP_MAX) {
-                if("CONTA JÁ EXISTE".equals(reply.getError())) {
+            if (attempt < ATTEMP_MAX) {
+                if ("CONTA JÁ EXISTE".equals(reply.getError())) {
 
                     this.updateJob(sagaId, "FALHA", reply.getError());
 
                     sagaStates.setStatus(SagaStatus.COMPENSACAO);
                     sagaStates.setError(reply.getError());
 
+                    this.updateRedis(sagaStates);
+
                     compensate(sagaStates);
 
-                    this.updateRedis(sagaStates);
                 } else {
-                    reply.setAttempt(attempt  + 1);
+                    reply.setAttempt(attempt + 1);
                     sagaStates.setPayload(payload);
                     sagaStates.setStepIndex(sagaStates.getStepIndex());
                     publishSagaCmd(sagaStates, reply);
@@ -194,7 +209,8 @@ public class OrchestrationService {
                 }
             } else {
                 sagaStates.setStatus(SagaStatus.COMPENSACAO);
-                String erro = (reply.getError() == null || reply.getError().isBlank()) ? "ERRO-DESCONHECIDO" : reply.getError();
+                String erro = (reply.getError() == null || reply.getError().isBlank()) ? "ERRO-DESCONHECIDO"
+                        : reply.getError();
                 sagaStates.setError(erro);
 
                 this.updateJob(sagaId, "FALHA", erro);
@@ -238,7 +254,7 @@ public class OrchestrationService {
 
         String type = payload.get("type").toString();
 
-        switch(type) {
+        switch (type) {
             case "CRIACAO_CONTA":
                 this.startSaga(SagaSteps.CRIACAO_CONTA, payload, sagaId);
                 break;
@@ -257,17 +273,20 @@ public class OrchestrationService {
     public void handleTimeout(Map<String, Object> timedOut) {
         UUID sagaId = UUID.fromString(timedOut.get("sagaId").toString());
         int timeoutStepIndex = Integer.parseInt(timedOut.get("stepIndex").toString());
+        int timeoutAttempt = Integer.parseInt(timedOut.get("attempt").toString());
 
         String sagaKey = "saga:" + sagaId;
         Object object = redisTemplate.opsForValue().get(sagaKey);
         SagaStates sagaStates = object == null ? null : objectMapper.convertValue(object, SagaStates.class);
 
         if (sagaStates == null) {
-            log.warn("Saga {} sem estado no Redis (perdido/expirado?); timeout do passo {} ignorado", sagaId, timeoutStepIndex);
+            log.warn("Saga {} sem estado no Redis (perdido/expirado?); timeout do passo {} ignorado", sagaId,
+                    timeoutStepIndex);
             return;
         }
 
-        if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO || sagaStates.getStepIndex() != timeoutStepIndex) {
+        if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO || sagaStates.getStepIndex() != timeoutStepIndex
+                || sagaStates.getAttempt() != timeoutAttempt) {
             return;
         }
 
@@ -283,7 +302,8 @@ public class OrchestrationService {
     }
 
     public void compensate(SagaStates sagaStates, boolean includeCurrent) {
-        int first = includeCurrent ? sagaStates.getStepIndex() : sagaStates.getStepIndex() - 1; // se ja coloquei dados, ele reverte
+        int first = includeCurrent ? sagaStates.getStepIndex() : sagaStates.getStepIndex() - 1; // se ja coloquei dados,
+                                                                                                // ele reverte
         for (int i = first; i >= 0; i--) {
             compensateSingleStep(sagaStates, i);
         }
@@ -291,25 +311,25 @@ public class OrchestrationService {
         sendApprovalFailureEmail(sagaStates);
 
         sagaStates.setStatus(SagaStatus.FALHA);
-        
+
         String sagaKey = "saga:" + sagaStates.getSagaId();
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
         redisTemplate.expire(sagaKey, Duration.ofHours(24));
     }
 
     private void compensateSingleStep(SagaStates sagaStates, int stepIndex) {
-        if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size()) return;
+        if (stepIndex < 0 || stepIndex >= sagaStates.getStep().getSteps().size())
+            return;
 
         StepDefinition step = sagaStates.getStep().getSteps().get(stepIndex);
         String queue = step.getQueue() + ".dlq";
 
-        Map<String, Object> comp = sagaStates.getPayload();
-        comp.put("compensation", true);
+        Map<String, Object> comp = new HashMap<>(sagaStates.getPayload());
 
         RabbitRequest request = new RabbitRequest();
 
-
         request.setSagaId(sagaStates.getSagaId());
+        request.setCompensation(true);
         request.setType(step.getActionType());
         request.setPayload(comp);
         request.setError(sagaStates.getError());
@@ -319,7 +339,8 @@ public class OrchestrationService {
     }
 
     // R9: depois das compensações, avisa o cliente que a solicitação não foi
-    // efetuada (fire-and-forget). No e-mail duplicado o MS Cliente já envia o aviso.
+    // efetuada (fire-and-forget). No e-mail duplicado o MS Cliente já envia o
+    // aviso.
     @SuppressWarnings("unchecked")
     private void sendApprovalFailureEmail(SagaStates sagaStates) {
         if (sagaStates.getStep() != SagaSteps.CRIACAO_CONTA || "CONTA JÁ EXISTE".equals(sagaStates.getError())) {

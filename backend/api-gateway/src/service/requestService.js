@@ -101,6 +101,12 @@ class RequestService {
 
   async rejectRequest(cpf, body) {
     try {
+      if (!body) {
+        const error = new Error("Dados obrigatórios não informados");
+        error.status = 400;
+        throw error;
+      }
+
       if (!body.motivo) {
         const error = new Error("Motivo não informado");
         error.status = 400;

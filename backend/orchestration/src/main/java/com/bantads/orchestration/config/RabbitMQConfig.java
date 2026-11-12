@@ -7,11 +7,10 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-
+// configuração de filas
 @Configuration
 public class RabbitMQConfig {
-
-    public static final String SAGA_CMD = "saga.cmd";
+    public static final String SAGA_CMD = "saga.cmd"; // inicia uma saga
     public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
     public static final String ORQUESTRADOR_TIMEOUT = "orquestrador.timeout";
 

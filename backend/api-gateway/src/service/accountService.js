@@ -23,6 +23,12 @@ class AccountService {
 
   async transfer(id, body, headers) {
     try {
+      if (!body) {
+        const error = new Error("Dados obrigatórios não informados");
+        error.status = 400;
+        throw error;
+      }
+      
       if (!body?.contaDestino || !body.valor) {
         const error = new Error("Conta de destino não informada");
         error.status = 400;

@@ -19,7 +19,7 @@ class AuthService {
   }
 
   async authenticate(body) {
-    if (!body.email || !body.senha) {
+    if (!body || !body.email || !body.senha) {
       const error = new Error("Email e/ou senha não informados");
       error.status = 400;
       throw error;
@@ -43,7 +43,7 @@ class AuthService {
     }
 
     const jti = crypto.randomUUID();
-    const payload = { jti, cpf: data.cpf, tipo: data.tipo };
+    const payload = { jti, cpf: data.cpf, tipo: data.tipo }; 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 
     await redis.set(`sessao:${jti}`, "ativo", "EX", 1800);
@@ -68,7 +68,7 @@ class AuthService {
       }
       const { data } = await axios.get(
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`,
-        { headers: { "x-user-tipo": "CLIENTE" } },
+        { headers: { "x-user-tipo": "CLIENTE" } }, // o endpoint exige p/ personalizar assembler
       );
       return { cpf: data.cpf, nome: data.nome, email: data.email };
     } catch (err) {

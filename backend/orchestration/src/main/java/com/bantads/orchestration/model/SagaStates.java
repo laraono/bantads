@@ -15,7 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-// Gerencia uma saga só
+// Gerencia uma SAGA só
 public class SagaStates implements Serializable{
     private UUID sagaId;
     private SagaStatus status;
@@ -23,6 +23,7 @@ public class SagaStates implements Serializable{
     private int stepIndex;
     private String error;
     private Map<String, Object> payload;
+    private int attempt;
 
     public boolean isLastStep() {
         return stepIndex == step.getStepsSize() - 1;
@@ -38,9 +39,5 @@ public class SagaStates implements Serializable{
 
     public String getType() {
         return step.getSteps().get(stepIndex).getActionType();
-    }
-
-    public String compensationKey(){
-        return "saga:comp:" + sagaId + ":" + step.name();
     }
 }
