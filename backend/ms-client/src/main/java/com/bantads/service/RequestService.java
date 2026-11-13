@@ -62,9 +62,9 @@ public class RequestService {
                 conflictThrow("Já existe um cliente com o e-mail informado");
             }
 
-            AddressDTO addressDTO = requestDTO.getEndereco();
+            AddressDTO addressDTO = requestDTO.getEndereco(); // ajuda com legibilidade
 
-            BigDecimal salary = new BigDecimal(requestDTO.getSalario());
+            BigDecimal salary = new BigDecimal(requestDTO.getSalario()); // sai de string p/ decimal
 
             Request requestEntity = Request.builder()
                     .status(RequestStatus.PENDENTE)

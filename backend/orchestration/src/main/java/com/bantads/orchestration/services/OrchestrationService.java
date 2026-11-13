@@ -38,7 +38,6 @@ public class OrchestrationService {
                 .sagaId(sagaId)
                 .status(SagaStatus.EM_ANDAMENTO)
                 .step(step)
-                .attempt(0)
                 .stepIndex(0)
                 .payload(payload)
                 .build();
@@ -53,13 +52,14 @@ public class OrchestrationService {
     public void publishSagaCmd(@NonNull SagaStates sagaStates, RabbitRequest request) {
         Map<String, Object> cmd = sagaStates.getPayload();
 
+        // atualizado pelo reply
         StepDefinition step = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
 
         request.setSagaId(sagaStates.getSagaId());
         request.setCompensation(false);
         request.setType(step.getActionType());
         request.setPayload(cmd);
-        request.setAttempt(request.getAttempt());
+        request.setAttempt(request.getAttempt()); // zera pro passo seguinte no reply
         request.setStepIndex(sagaStates.getStepIndex());
 
         try {
@@ -157,6 +157,7 @@ public class OrchestrationService {
                 if (SagaSteps.INSERIR_GERENTE == sagaStates.getStep()
                         && "conta.identificar-conta".equals(sagaStates.getType())) {
                     String accountNumber = payload.getOrDefault("numeroConta", "sem-conta").toString();
+
                     // bloquear etapa de linkar contas se não tem contas disponíveis
                     if (accountNumber.equals("sem-conta")) {
                         sagaStates.setStatus(SagaStatus.CONCLUIDO);
@@ -179,7 +180,7 @@ public class OrchestrationService {
                     nextStep = this.dealWithEmail(sagaStates, reply);
                 }
 
-                if (nextStep > 0) {
+                if (nextStep > 0) { // verifica se ainda tem step
                     sagaStates.setStepIndex(nextStep);
                     publishSagaCmd(sagaStates, reply);
 
@@ -188,7 +189,8 @@ public class OrchestrationService {
             }
         } else if ("FALHA".equals(status)) {
             if (attempt < ATTEMP_MAX) {
-                if ("CONTA JÁ EXISTE".equals(reply.getError())) {
+                if ("CONTA JÁ EXISTE".equals(reply.getError())) { // falha especifica da criação de cliente, pula
+                                                                  // attempts
 
                     this.updateJob(sagaId, "FALHA", reply.getError());
 
@@ -249,7 +251,7 @@ public class OrchestrationService {
     }
 
     @RabbitListener(queues = RabbitMQConfig.SAGA_CMD)
-    public void handleSagaQueue(Map<String, Object> payload) {
+    public void handleSagaQueue(Map<String, Object> payload) { // recebe pedido do gateway
         UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
 
         String type = payload.get("type").toString();

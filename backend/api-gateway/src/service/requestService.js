@@ -145,7 +145,7 @@ class RequestService {
 
     removeCache("solicitacoes", cpf);
 
-    return await rabbitConnector.startSaga(payload, job);
+    return await rabbitConnector.startSaga(payload, job); // cria a job, persiste no redis e dispara no canal
   }
 }
 

@@ -16,7 +16,7 @@ class RabbitConnector {
                 const connection = await amqp.connect(RABBITMQ_URL)
                 channel = await connection.createChannel()
                 await channel.assertQueue(SAGA_CMD)
-                console.log("Connectado ao RabbitMQ")
+                console.log("Conectado ao RabbitMQ")
                 return channel
             } catch (err) {
                 retries--
@@ -27,7 +27,7 @@ class RabbitConnector {
         }
     }
 
-    async startSaga(payload, job) {
+    async startSaga(payload, job) { 
         if (!channel) {
             throw new Error("RabbitMQ channel is not initialized. Call connect() first.")
         }
@@ -39,11 +39,13 @@ class RabbitConnector {
 
         // "@class" é exigido pelo serializer JSON do Spring Data Redis usado no
         // orquestrador para conseguir ler esse valor de volta como um Map
-        await redis.set(jobKey, JSON.stringify({
+        await redis.set(jobKey, JSON.stringify({ // prepara dados pro redis persistir a job
             ...job,
             jobId: sagaId,
             "@class": "java.util.HashMap"
         }))
+
+        redis.expire(jobKey, 24*60*60)
 
         channel.sendToQueue(
             SAGA_CMD,
