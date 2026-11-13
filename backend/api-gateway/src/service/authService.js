@@ -19,7 +19,7 @@ class AuthService {
   }
 
   async authenticate(body) {
-    if (!body.email || !body.senha) {
+    if (!body || !body.email || !body.senha) {
       const error = new Error("Email e/ou senha não informados");
       error.status = 400;
       throw error;
@@ -34,7 +34,7 @@ class AuthService {
       );
       data = authResponse.data;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       this.unauthorizedError();
     }
 
@@ -68,11 +68,13 @@ class AuthService {
       }
       const { data } = await axios.get(
         `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`,
-        { headers: { "x-user-tipo": "CLIENTE" } },
+        { headers: { "x-user-tipo": "CLIENTE" } }, 
+        // O endpoint exige x-user-tipo para montar os links,
+        // aqui os links são descartados, mas o header é enviado por consistência ao HATEOAS.
       );
       return { cpf: data.cpf, nome: data.nome, email: data.email };
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       return { cpf, nome: "", email: "" };
     }
   }
@@ -81,8 +83,10 @@ class AuthService {
     if (!tokenValue) {
       return;
     }
-    
-    const decoded = jwt.decode(tokenValue);
+
+    const decoded = jwt.decode(tokenValue); 
+    // controla sessão pelo redis, que tem + controle por ser no servidor
+    // jwt se mantém por 7d
 
     if (decoded && decoded.jti) {
       await redis.del(`sessao:${decoded.jti}`);

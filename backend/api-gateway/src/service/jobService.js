@@ -3,7 +3,7 @@ const redis = require('../config/redis');
 class JobService {
 
     async getStatus(id) {
-        const job = await redis.get(id)
+        const job = await redis.get(id) // puxa qualquer atualização da saga vinculada
 
         if(!job) {
             console.warn(`job ${id} não encontrada no Redis (expirada ou Redis reiniciado)`);

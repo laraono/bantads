@@ -1,10 +1,10 @@
 const axios = require("axios");
+const { cacheObject, getByCache, removeCache } = require("../utils/cacheUtils");
 const linksUtils = require("../utils/linksUtils");
 const MS_CLIENT_HOST = process.env.MS_CLIENT_HOST || "ms-client";
 const MS_CLIENT_PORT = process.env.MS_CLIENT_PORT || "8082";
 
 class ClientService {
-  
   async listClients(busca) {
     const response = await axios.get(
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients`,
@@ -32,7 +32,10 @@ class ClientService {
   }
 
   async getClient(cpf, headers) {
-
+    const cached = await getByCache("cliente", cpf);
+    if (cached) {
+      return cached;
+    }
     const response = await axios.get(
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`,
       { headers: { "x-user-tipo": headers["x-user-tipo"] } },
@@ -44,7 +47,8 @@ class ClientService {
       email: response.data.email,
       telefone: response.data.telefone,
       // valores monetários trafegam como string (seção 5.1)
-      salario: response.data.salario != null ? String(response.data.salario) : null,
+      salario:
+        response.data.salario != null ? String(response.data.salario) : null,
       endereco: {
         cidade: response.data.endereco?.cidade,
         estado: {
@@ -52,8 +56,10 @@ class ClientService {
         },
       },
       _links: linksUtils.rewriteLinks(response.data._links),
-    }
-    
+    };
+
+    cacheObject("cliente", client);
+
     return client;
   }
 }
