@@ -1,5 +1,6 @@
 const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:3000";
 
+// todos os caminhos possíveis, traduzidos para português
 const DICIONARIO = {
   accounts: "contas",
   events: "contas",
@@ -16,13 +17,13 @@ const DICIONARIO = {
 
 function translate(href, gatewayUrl) {
   const [base, template = ""] = href.split(/(?=\{)/);
-  const segmentos = new URL(base).pathname.split("/").filter(Boolean);
-  const traduzidos = segmentos.map((s) => (s in DICIONARIO ? DICIONARIO[s] : s));
+  const segmentos = new URL(base).pathname.split("/").filter(Boolean);  // separa cada "/" do link
+  const traduzidos = segmentos.map((s) => (s in DICIONARIO ? DICIONARIO[s] : s)); // e mapeia o que bater
   if (traduzidos.includes(null)) return null;
   return `${gatewayUrl}/${traduzidos.join("/")}${template}`;
 }
 function rewriteLinks(links, gatewayUrl = GATEWAY_URL) {
-  const entries = Array.isArray(links)
+  const entries = Array.isArray(links) // se tivermos vários links
     ? links.map(({ rel, ...link }) => [rel, link])
     : Object.entries(links ?? {});
 

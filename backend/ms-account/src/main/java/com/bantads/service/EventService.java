@@ -50,7 +50,7 @@ public class EventService {
         }
     }
 
-    public String deposit(String userCPF, CreateEventDTO event, String objectId) {
+    public void deposit(String userCPF, CreateEventDTO event, String objectId) {
 
         if(event.getPayload().get("valor") == null || event.getPayload().get("valor").toString().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor não informado");
@@ -94,9 +94,6 @@ public class EventService {
                 .build();
 
         this.sendReadModelCommand(command, userCPF);
-        
-        String balance = this.getBalance(objectId).toString();
-        return balance;
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {

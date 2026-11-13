@@ -16,7 +16,7 @@ class AccountService {
       );
       return accounts.data;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -28,15 +28,26 @@ class AccountService {
         error.status = 400;
         throw error;
       }
-      
-      if (!body?.contaDestino || !body.valor) {
+
+      if (!body?.contaDestino) {
         const error = new Error("Conta de destino não informada");
+        error.status = 400;
+        throw error;
+      }
+
+      if (
+        !body.valor ||
+        typeof body.valor !== "string" ||
+        !/^\d+(\.\d{1,2})?$/.test(body.valor)
+      ) {
+        const error = new Error("Valor não informado");
         error.status = 400;
         throw error;
       }
 
       const msBody = { contaDestino: body.contaDestino, valor: body.valor };
 
+      // verificação da existência da CONTA destino
       const destinationCPF = await axios.get(
         `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/accounts/${msBody.contaDestino}/cpf`,
         {
@@ -65,7 +76,7 @@ class AccountService {
 
       const destinationClient = await clientService.getClient(cpf, headers);
 
-      if (!destinationClient.nome) {
+      if (!destinationClient.nome) { // nome será utilizado no extrato
         const error = new Error("Usuário não existe");
         error.status = 422;
         throw error;
@@ -99,13 +110,24 @@ class AccountService {
 
       return transferAnswer.data;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
 
   async withdraw(id, body, headers) {
     try {
+      if (
+        !body ||
+        !body.valor ||
+        typeof body.valor !== "string" ||
+        !/^\d+(\.\d{1,2})?$/.test(body.valor) // filtra para strings em forma de dinheiro
+      ) {
+        const error = new Error("Valor do depósito inválido");
+        error.status = 400;
+        throw error;
+      }
+
       await axios.post(
         `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/withdraw`,
         { payload: body },
@@ -114,7 +136,7 @@ class AccountService {
 
       return;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -135,7 +157,7 @@ class AccountService {
       const cpf = headers["x-user-cpf"];
       const client = await clientService.getClient(cpf, headers);
 
-      const balance = await axios.post(
+      await axios.post(
         `http://${MS_ACCOUNT_HOST}:${MS_ACCOUNT_PORT}/events/${id}/deposit`,
         {
           payload: {
@@ -146,10 +168,9 @@ class AccountService {
         },
         { headers: { "x-user-cpf": headers["x-user-cpf"] } },
       );
-
-      return balance.data;
+      return;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -189,7 +210,7 @@ class AccountService {
 
       return result;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -224,13 +245,13 @@ class AccountService {
         cpfCliente: accountAnswer.data.cpfCliente,
         saldo: accountAnswer.data.saldo,
         cpfGerente: accountAnswer.data.cpfGerente,
-                criado: accountAnswer.data.criado,
+        criado: accountAnswer.data.criado,
         _links: linksUtils.rewriteLinks(accountAnswer.data._links),
       };
 
       return result;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }
@@ -246,7 +267,7 @@ class AccountService {
       );
 
       if (!extractAnswer.data) {
-        const error = new Error("Conta não encontrado");
+        const error = new Error("Conta não encontrada");
         error.status = 404;
         throw error;
       }
@@ -262,7 +283,7 @@ class AccountService {
 
       return extractAnswer.data;
     } catch (err) {
-      console.log(err.message)
+      console.log(err.message);
       rethrow(err);
     }
   }

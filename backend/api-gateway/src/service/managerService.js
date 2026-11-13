@@ -23,7 +23,7 @@ class MangerService {
 
   async list() {
     try {
-      const [managersAnswer, accounts] = await Promise.all([
+      const [managersAnswer, accounts] = await Promise.all([ // composition ms-manager + account
         axios.get(`http://${MS_MANAGER_HOST}:${MS_MANAGER_PORT}/managers`),
         accountService.listAccounts(),
       ]);
