@@ -1,5 +1,7 @@
 package com.bantads.orchestration.model;
 
+
+// definição de 1 step de um fluxo
 public class StepDefinition {
     private final String queue;
     private final String actionType;

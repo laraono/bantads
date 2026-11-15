@@ -14,9 +14,7 @@ public class RabbitMQConfig {
     public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
     public static final String ORQUESTRADOR_TIMEOUT = "orquestrador.timeout";
 
-    // SAGA_TIMEOUT_MS ajuda na hora de testar as compensações
-    public static final int SAGA_TIMEOUT_MS = Integer.parseInt(
-            System.getenv().getOrDefault("SAGA_TIMEOUT_MS", "30000"));
+    public static final int SAGA_TIMEOUT_MS = 30000;
 
     public static final String MS_CLIENTE_CMD = "ms.cliente.cmd";
     public static final String MS_CONTA_CMD = "ms.conta.cmd";
@@ -29,7 +27,7 @@ public class RabbitMQConfig {
         return new JacksonJsonMessageConverter();
     }
 
-    // filas sem retry/DLQ 
+    // filas sem retry/DLQ
 
     @Bean
     public Queue sagaCmdQueue() {
@@ -45,14 +43,10 @@ public class RabbitMQConfig {
     public Queue orquestradorTimeoutQueue() {
         return QueueBuilder.durable(ORQUESTRADOR_TIMEOUT).build();
     }
+
     @Bean
     public Queue msEmailCmdQueue() {
         return QueueBuilder.durable(MS_EMAIL_CMD).build();
-    }
-
-    @Bean
-    public Queue msEmailCmdWaitQueue() {
-        return waitQueue(MS_EMAIL_CMD);
     }
 
     @Bean
@@ -115,7 +109,7 @@ public class RabbitMQConfig {
         return dlq(MS_AUTH_CMD);
     }
 
-    //helpers 
+    // helpers
 
     private static Queue commandQueue(String name) {
         return QueueBuilder.durable(name)
@@ -123,7 +117,6 @@ public class RabbitMQConfig {
                 .withArgument("x-dead-letter-routing-key", name + ".dlq")
                 .build();
     }
-
 
     private static Queue waitQueue(String name) {
         return QueueBuilder.durable(name + ".wait")

@@ -5,7 +5,6 @@ import com.bantads.dto.RejectRequestDTO;
 import com.bantads.dto.RequestDTO;
 import com.bantads.dto.RequestResponseDTO;
 import com.bantads.entity.Request;
-import com.bantads.entity.RequestStatus;
 import com.bantads.service.RequestService;
 
 import jakarta.validation.Valid;
@@ -13,7 +12,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

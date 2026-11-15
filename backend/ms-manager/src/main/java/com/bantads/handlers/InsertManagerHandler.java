@@ -46,6 +46,7 @@ public class InsertManagerHandler implements SagaStepHandler {
                 .senha(asString(dados.get("senha")))
                 .build();
 
+        // verifica os checks do DTO, porque o builder não faz isso
         Set<ConstraintViolation<CreateManagerDTO>> violacoes = validator.validate(managerDTO);
         if (!violacoes.isEmpty()) {
             throw new IllegalArgumentException(violacoes.stream()

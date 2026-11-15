@@ -42,11 +42,11 @@ public class OrchestrationService {
                 .payload(payload)
                 .build();
 
-        redisTemplate.opsForValue().set("saga:" + sagaId, sagaStates);
-
         RabbitRequest request = new RabbitRequest();
         request.setAttempt(0);
         publishSagaCmd(sagaStates, request);
+
+        redisTemplate.opsForValue().set("saga:" + sagaId, sagaStates);
     }
 
     public void publishSagaCmd(@NonNull SagaStates sagaStates, RabbitRequest request) {
@@ -59,8 +59,9 @@ public class OrchestrationService {
         request.setCompensation(false);
         request.setType(step.getActionType());
         request.setPayload(cmd);
-        request.setAttempt(request.getAttempt()); // zera pro passo seguinte no reply
         request.setStepIndex(sagaStates.getStepIndex());
+        sagaStates.setAttempt(request.getAttempt()); 
+        // não seta aqui porque o attempt deve ser decidido por quem envia
 
         try {
             log.info("\n \n ====== enviando {}", objectMapper.writeValueAsString(request));
@@ -71,11 +72,16 @@ public class OrchestrationService {
         String queue = sagaStates.currentStep();
         rabbitTemplate.convertAndSend(queue, request);
 
-        Map<String, Object> timeoutToken = new HashMap<>();
-        timeoutToken.put("sagaId", sagaStates.getSagaId());
-        timeoutToken.put("stepIndex", sagaStates.getStepIndex());
-        timeoutToken.put("attempt", request.getAttempt());
-        rabbitTemplate.convertAndSend(queue + ".wait", timeoutToken);
+        StepDefinition stepDefinition = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
+
+        // criação do wait
+        if (!stepDefinition.getActionType().contains("email.")) { // não esperamos reply, é fire & forget
+            Map<String, Object> timeoutToken = new HashMap<>();
+            timeoutToken.put("sagaId", sagaStates.getSagaId());
+            timeoutToken.put("stepIndex", sagaStates.getStepIndex());
+            timeoutToken.put("attempt", request.getAttempt());
+            rabbitTemplate.convertAndSend(queue + ".wait", timeoutToken);
+        }
     }
 
     public int dealWithEmail(SagaStates sagaStates, RabbitRequest reply) {
@@ -99,7 +105,7 @@ public class OrchestrationService {
 
                 return 0;
             }
-            return sagaStates.getStepIndex() + 1; // pula email
+            return sagaStates.getStepIndex() + 1; // porque o email não faz reply
 
         }
 
@@ -123,7 +129,7 @@ public class OrchestrationService {
             return;
         }
 
-        int attempt = reply.getAttempt();
+        int attempt = sagaStates.getAttempt();
 
         Map<String, Object> payload = reply.getPayload();
 
@@ -133,17 +139,17 @@ public class OrchestrationService {
             return;
         }
 
-        if (reply.getType() != null && !reply.getType().equals(sagaStates.getType())) { // reply desatualizado, já
-                                                                                        // passou dessa etapa
+        // reply desatualizado, já passou dessa etapa
+        if (reply.getType() != null && !reply.getType().equals(sagaStates.getType())) {
             log.warn("Saga {} no passo '{}'; reply obsoleto de '{}' descartado", sagaId, sagaStates.getType(),
                     reply.getType());
             return;
         }
 
-        if ("SUCESSO".equals(status)) { // um step funcionou
+        if ("SUCESSO".equals(status)) { // um STEP (não tudo) funcionou
 
             if (sagaStates.isLastStep()) {
-                sagaStates.setStatus(SagaStatus.CONCLUIDO);
+                sagaStates.setStatus(SagaStatus.CONCLUIDO); // SAGA concluiu
                 sagaStates.setPayload(payload);
 
                 redisTemplate.opsForValue().set(sagaKey, sagaStates);
@@ -189,8 +195,8 @@ public class OrchestrationService {
             }
         } else if ("FALHA".equals(status)) {
             if (attempt < ATTEMP_MAX) {
-                if ("CONTA JÁ EXISTE".equals(reply.getError())) { // falha especifica da criação de cliente, pula
-                                                                  // attempts
+                if ("CONTA JÁ EXISTE".equals(reply.getError())) {
+                    // falha especifica da criação de cliente / de negócio, pula attempts
 
                     this.updateJob(sagaId, "FALHA", reply.getError());
 
@@ -199,7 +205,7 @@ public class OrchestrationService {
 
                     this.updateRedis(sagaStates);
 
-                    compensate(sagaStates);
+                    compensate(sagaStates); // já bloqueou no step atual, não compensa ele
 
                 } else {
                     reply.setAttempt(attempt + 1);
@@ -218,7 +224,7 @@ public class OrchestrationService {
                 this.updateJob(sagaId, "FALHA", erro);
                 this.updateRedis(sagaStates);
 
-                compensate(sagaStates);
+                compensate(sagaStates); // já bloqueou no step atual, não compensa ele
             }
         }
     }
@@ -250,6 +256,7 @@ public class OrchestrationService {
         redisTemplate.opsForValue().set("job-" + sagaId, job);
     }
 
+    // 01. aqui que o fluxo começa
     @RabbitListener(queues = RabbitMQConfig.SAGA_CMD)
     public void handleSagaQueue(Map<String, Object> payload) { // recebe pedido do gateway
         UUID sagaId = UUID.fromString(payload.get("sagaId").toString());
@@ -287,6 +294,8 @@ public class OrchestrationService {
             return;
         }
 
+        // se não verifica stepIndex, todos os attempts terão timeout se o 1o deles
+        // chegar aqui
         if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO || sagaStates.getStepIndex() != timeoutStepIndex
                 || sagaStates.getAttempt() != timeoutAttempt) {
             return;
@@ -296,7 +305,9 @@ public class OrchestrationService {
         sagaStates.setError("TIMEOUT");
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
         updateJob(sagaId, "FALHA", "TIMEOUT");
-        compensate(sagaStates, true);
+        
+        // pode ter timeout durante operações no step, compensa ele junto
+        compensate(sagaStates, true); 
     }
 
     public void compensate(SagaStates sagaStates) {
@@ -304,8 +315,10 @@ public class OrchestrationService {
     }
 
     public void compensate(SagaStates sagaStates, boolean includeCurrent) {
-        int first = includeCurrent ? sagaStates.getStepIndex() : sagaStates.getStepIndex() - 1; // se ja coloquei dados,
-                                                                                                // ele reverte
+
+        // se ja coloquei dados, ele reverte
+        int first = includeCurrent ? sagaStates.getStepIndex() : sagaStates.getStepIndex() - 1;
+
         for (int i = first; i >= 0; i--) {
             compensateSingleStep(sagaStates, i);
         }
@@ -316,7 +329,7 @@ public class OrchestrationService {
 
         String sagaKey = "saga:" + sagaStates.getSagaId();
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
-        redisTemplate.expire(sagaKey, Duration.ofHours(24));
+        redisTemplate.expire(sagaKey, Duration.ofHours(1));
     }
 
     private void compensateSingleStep(SagaStates sagaStates, int stepIndex) {

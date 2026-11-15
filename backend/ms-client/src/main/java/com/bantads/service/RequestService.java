@@ -3,7 +3,6 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.AddressDTO;
 import com.bantads.dto.RequestDTO;
-import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
 import com.bantads.model.RabbitRequest;
@@ -99,8 +98,6 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 
-        // solicitação rejeitada não volta a ser aprovada: o cliente precisa pedir de
-        // novo
         if (request.getStatus() != RequestStatus.PENDENTE) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Solicitação não está pendente");
         }
@@ -199,11 +196,7 @@ public class RequestService {
     public List<Request> listRequests() {
         return requestRepository.findAll();
     }
-
-    public Request getRequestByClient(Client client) {
-        return requestRepository.findByClient(client);
-    }
-
+    
     public Request getRequestByCpf(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 

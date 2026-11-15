@@ -52,15 +52,6 @@ public class EventService {
 
     public void deposit(String userCPF, CreateEventDTO event, String objectId) {
 
-        if(event.getPayload().get("valor") == null || event.getPayload().get("valor").toString().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor não informado");
-        }
-        if(!this.doesAccountExists(objectId)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
-        }
-
-        this.checkUserCPF(userCPF, objectId);
-
         Map<String, Object> payload = event.getPayload();
 
         String nome = payload.get("nome").toString();
@@ -70,6 +61,12 @@ public class EventService {
         if(nome.isEmpty() || cpf.isEmpty() || valor.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Campos obrigatórios");
         }
+        
+        if(!this.doesAccountExists(objectId)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
+        }
+
+        this.checkUserCPF(userCPF, objectId);
         
         Event newEvent = Event.builder()
                 .payload(payload)

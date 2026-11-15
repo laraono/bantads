@@ -43,6 +43,15 @@ public class ManagerService {
     }
 
     public ManagerDTO createManager(CreateManagerDTO createManagerDTO) {
+
+        if (managerRepository.existsByEmail(createManagerDTO.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
+        }
+
+        if (managerRepository.existsByCpf(createManagerDTO.getCpf())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado");
+        }
+
         Manager manager = Manager.builder()
                 .cpf(createManagerDTO.getCpf())
                 .email(createManagerDTO.getEmail())
@@ -51,24 +60,16 @@ public class ManagerService {
                 .isActive(true)
                 .build();
 
-        if (managerRepository.existsByEmail(manager.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "E-mail já cadastrado");
-        }
-
-        if (managerRepository.existsByCpf(manager.getCpf())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF já cadastrado");
-        }
+        Manager managerSaved = managerRepository.save(manager); // obtém o id
 
         ManagerDTO managerDto = ManagerDTO.builder()
-                .id(manager.getManagerId())
-                .ativo(manager.isActive())
-                .cpf(manager.getCpf())
-                .email(manager.getEmail())
-                .nome(manager.getName())
-                .telefone(manager.getPhone())
+                .id(managerSaved.getManagerId())
+                .ativo(managerSaved.isActive())
+                .cpf(managerSaved.getCpf())
+                .email(managerSaved.getEmail())
+                .nome(managerSaved.getName())
+                .telefone(managerSaved.getPhone())
                 .build();
-
-        managerRepository.save(manager);
 
         return managerDto;
     }
@@ -117,8 +118,11 @@ public class ManagerService {
 
         ManagerDTO managerDto = this.getManager(managerCPF);
 
-        managerDto.setNome(updateManagerDTO.getNome());
-        managerDto.setTelefone(updateManagerDTO.getTelefone());
+        if (updateManagerDTO.getNome() != null)
+            managerDto.setNome(updateManagerDTO.getNome());
+
+        if (updateManagerDTO.getTelefone() != null)
+            managerDto.setTelefone(updateManagerDTO.getTelefone());
 
         Manager manager = new Manager();
         manager.setManagerId(managerDto.getId());
@@ -139,20 +143,18 @@ public class ManagerService {
                 .telefone(manager.getPhone())
                 .build();
     }
-    
+
     @Transactional
     public void deleteByCpf(String cpf) {
         this.managerRepository.deleteByCpf(cpf);
     }
-    
-    // --- MANAGER SAGA --
-    
+
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
     public void handleManagerQueue(RabbitRequest command) {
-        
+
         Status status = Status.SUCESSO;
         String error = null;
-        // em caso de falha devolve o payload original, senão a retentativa do orquestrador vai sem dados
+
         Map<String, Object> payload = command.getPayload();
 
         String action = command.getType();
@@ -164,6 +166,7 @@ public class ManagerService {
 
         try {
 
+            // idempotência do step
             boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(),
                     command.isCompensation() ? command.getType() + ".comp" : command.getType());
 
@@ -171,22 +174,15 @@ public class ManagerService {
                 this.sendReadModelCommand(command);
                 return;
             }
+           
+            payload = handler.execute(command.getPayload());
 
-            if (!command.isCompensation() && requestRepository.existsBySagaIdAndType(command.getSagaId(), command.getType() + ".comp")) {
-                return;
-            }
-
-            if (command.isCompensation()) {
-                handler.compensate(command.getPayload());
-            } else {
-                payload = handler.execute(command.getPayload());
-            }
 
             requestRepository.save(Request.builder()
                     .sagaId(command.getSagaId())
-                    .type((command.isCompensation() ? command.getType() + ".comp" : command.getType())) // comp para sinalizar um registro de compensacao no banco
+                    .type(command.getType())
                     .build());
-            
+
         } catch (Exception e) {
             status = Status.FALHA;
             error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
@@ -202,7 +198,6 @@ public class ManagerService {
         this.sendReadModelCommand(command);
     }
 
-    // -- COMPENSACAO --
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
     public void handleDlqQueue(RabbitRequest command) {
         UUID sagaId = command.getSagaId();
@@ -215,15 +210,23 @@ public class ManagerService {
         SagaStepHandler handler = this.handlers.get(type);
 
         Map<String, Object> payload = command.getPayload();
-
-        if (handler != null) {
-            handler.compensate(payload);
-        }
-
-        requestRepository.save(Request.builder()
+        
+        Request marker = requestRepository.save(Request.builder()
+        // é útil pra sinalizar o quanto antes que uma compensação está acontecendo
+        // para uma msg válida
                 .sagaId(sagaId)
                 .type(type + ".comp")
                 .build());
+
+        try {
+            if (handler != null) {
+                handler.compensate(payload);
+            }
+        } catch (RuntimeException e) {
+            requestRepository.delete(marker); // se der erro ainda dá pra refazer a compensação
+            throw e;
+        }
+
     }
 
     public void sendReadModelCommand(RabbitRequest answer) {
