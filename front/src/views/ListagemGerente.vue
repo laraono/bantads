@@ -87,6 +87,7 @@ async function salvarNovo() {
 
     salvandoNovo.value = true
     try {
+        // Envia os dados ao Backend
         const response = await inserirGerente({
             nome: novo.value.nome.trim(),
             cpf: somenteDigitos(novo.value.cpf),
@@ -213,6 +214,7 @@ async function remover() {
                                 <div class="primeiro-bloco">
                                     <div class="gerente-cpf">
                                         <label class="field-label" for="cadastro-cpf">CPF</label>
+                                        // Tag v-mask-input de Vuetify, método mask para aplicar a formatação correta
                                         <v-mask-input id="cadastro-cpf" v-model="novo.cpf" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" :rules="[rules.required, rules.cpf]" mask="###.###.###-##"/>
                                     </div>
                                     <div class="gerente-telefone">
