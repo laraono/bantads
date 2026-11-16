@@ -41,45 +41,39 @@ public class RequestService {
 
     public Request createRequest(RequestDTO requestDTO) {
         try {
+            
             if (requestDTO.getCpf() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
-            }
-
-            if (requestRepository.existsByCpf(requestDTO.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
-            }
-
-            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
             }
 
             if (requestDTO.getEmail() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail não informado");
             }
 
+            if (requestDTO.getCpf().length() < 11) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
+            }
+
             if (stateRepository.findByUf(requestDTO.getEndereco().getUf()) == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
             }
 
-            if (requestRepository.findByCpf(requestDTO.getCpf()) != null) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
-            }
-
+            // CPF duplicado (cliente já aprovado ou solicitação existente)
             if (clientRepository.existsByCpf(requestDTO.getCpf())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
             }
 
+            if (requestRepository.existsByCpf(requestDTO.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+            }
+
+            // não pode utilizar o mesmo email para constas diferentes
             if (clientRepository.existsByEmail(requestDTO.getEmail())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
             }
 
-            // R1: o e-mail é o login, então também não pode repetir entre solicitações
             if (requestRepository.existsByEmail(requestDTO.getEmail())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o e-mail informado");
-            }
-
-            if (requestDTO.getCpf().length() < 11) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
             }
 
             System.out.println("verificou:" + requestDTO.toString());
