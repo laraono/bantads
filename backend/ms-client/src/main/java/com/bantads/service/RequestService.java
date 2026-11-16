@@ -79,15 +79,9 @@ public class RequestService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o e-mail informado");
             }
 
-            System.out.println("verificou:" + requestDTO.toString());
-
             AddressDTO addressDTO = requestDTO.getEndereco();
 
-            System.out.println("endereco:" + addressDTO.toString());
-
             BigDecimal salary = new BigDecimal(requestDTO.getSalario());
-
-            System.out.println("salary:" + salary.toString());
 
             Request requestEntity = Request.builder()
                     .status(RequestStatus.PENDENTE)

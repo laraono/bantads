@@ -9,6 +9,8 @@ import com.bantads.entity.event.EventType;
 import com.bantads.entity.read.AccountData;
 import com.bantads.repository.event.EventRepository;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import java.util.*;
 
 @Service
 @Transactional
+@Slf4j
 
 // Serviço de alterações (eventos)
 public class EventService {
@@ -45,7 +48,7 @@ public class EventService {
 
         String cpf = String.valueOf(event.getPayload().get("cpfCliente"));
 
-        if(!cpf.equals(userCPF)) {
+        if (!cpf.equals(userCPF)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não é a sua conta");
         }
     }
@@ -58,16 +61,16 @@ public class EventService {
         String cpf = payload.get("cpfCliente").toString();
         String valor = payload.get("valor").toString();
 
-        if(nome.isEmpty() || cpf.isEmpty() || valor.isEmpty()) {
+        if (nome.isEmpty() || cpf.isEmpty() || valor.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Campos obrigatórios");
         }
-        
-        if(!this.doesAccountExists(objectId)) {
+
+        if (!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
         this.checkUserCPF(userCPF, objectId);
-        
+
         Event newEvent = Event.builder()
                 .payload(payload)
                 .objectId(objectId)
@@ -79,7 +82,7 @@ public class EventService {
         this.eventRepository.save(newEvent);
 
         Map<String, Object> newPayload = newEvent.getPayload();
-        
+
         newPayload.putIfAbsent("eventId", newEvent.getEventId());
         newPayload.putIfAbsent("version", newEvent.getVersion());
 
@@ -94,7 +97,7 @@ public class EventService {
     }
 
     public void updateManager(CreateEventDTO event, String objectId) {
-        if(!this.doesAccountExists(objectId)) {
+        if (!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
@@ -126,7 +129,7 @@ public class EventService {
     }
 
     public Event withdraw(String userCPF, CreateEventDTO event, String objectId) {
-        if(!this.doesAccountExists(objectId)) {
+        if (!this.doesAccountExists(objectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
@@ -161,7 +164,7 @@ public class EventService {
         this.sendReadModelCommand(command, userCPF);
 
         return newEvent;
-}
+    }
 
     public Event createAccount(Map<String, Object> payload) {
 
@@ -198,7 +201,8 @@ public class EventService {
         List<String> gerentes = new ArrayList<>(this.accountDataService.getAllManagersCpf());
 
         if (gerentes.size() <= 1) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Não é possível remover o último gerente");
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                    "Não é possível remover o último gerente");
         }
 
         gerentes.remove(cpfGerente);
@@ -231,14 +235,14 @@ public class EventService {
         int maxTries = 100;
         int tries = 0;
 
-        while(tries < maxTries) {
+        while (tries < maxTries) {
             int accountNumber = rand.nextInt(10000);
 
-            String objectId = String.format("%04d" , accountNumber);
+            String objectId = String.format("%04d", accountNumber);
 
             isNumberUnique = !doesAccountExists(objectId);
 
-            if(isNumberUnique) {
+            if (isNumberUnique) {
                 return objectId;
             }
 
@@ -255,31 +259,31 @@ public class EventService {
 
         BigDecimal balance = new BigDecimal(0);
 
-        while(eventIterator.hasNext()) {
+        while (eventIterator.hasNext()) {
             Event event = eventIterator.next();
             EventType eventType = event.getEventType();
-            if(eventType == EventType.DEPOSIT || eventType == EventType.WITHDRAW) {
+            if (eventType == EventType.DEPOSIT || eventType == EventType.WITHDRAW) {
                 String textValue = String.valueOf(event.getPayload().get("valor"));
                 BigDecimal value = new BigDecimal(textValue);
 
-                if(eventType == EventType.DEPOSIT) {
+                if (eventType == EventType.DEPOSIT) {
                     balance = balance.add(value);
                 }
 
-                if(eventType == EventType.WITHDRAW) {
+                if (eventType == EventType.WITHDRAW) {
                     balance = balance.subtract(value);
                 }
             }
-            if(eventType == EventType.DESTINATIONTRANSFER || eventType == EventType.ORIGINTRANSFER) {
+            if (eventType == EventType.DESTINATIONTRANSFER || eventType == EventType.ORIGINTRANSFER) {
                 Map<String, Object> origem = (Map<String, Object>) event.getPayload().get("origem");
                 String textValue = String.valueOf(origem.get("valor"));
                 BigDecimal value = new BigDecimal(textValue);
 
-                if(eventType == EventType.DESTINATIONTRANSFER) {
+                if (eventType == EventType.DESTINATIONTRANSFER) {
                     balance = balance.add(value);
                 }
 
-                if(eventType == EventType.ORIGINTRANSFER) {
+                if (eventType == EventType.ORIGINTRANSFER) {
                     balance = balance.subtract(value);
                 }
             }
@@ -299,11 +303,12 @@ public class EventService {
         String destinationCPF = String.valueOf(destination.get("cpf"));
         String destinationObjectId = String.valueOf(destination.get("conta"));
 
-        if(userCPF.equals(destinationCPF)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Não pode transferir para sua própria conta");
+        if (userCPF.equals(destinationCPF)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                    "Não pode transferir para sua própria conta");
         }
 
-        if(!this.doesAccountExists(originObjectId) || !this.doesAccountExists(destinationObjectId)) {
+        if (!this.doesAccountExists(originObjectId) || !this.doesAccountExists(destinationObjectId)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Conta não existe");
         }
 
@@ -312,22 +317,22 @@ public class EventService {
         this.checkBalance(originObjectId, origin);
 
         Event originTransfer = Event.builder()
-            .payload(payload)
-            .objectId(originObjectId)
-            .eventType(EventType.ORIGINTRANSFER)
-            .version(this.getVersion(originObjectId))
-            .createdAt(new Date())
-            .build();
+                .payload(payload)
+                .objectId(originObjectId)
+                .eventType(EventType.ORIGINTRANSFER)
+                .version(this.getVersion(originObjectId))
+                .createdAt(new Date())
+                .build();
 
         this.eventRepository.save(originTransfer);
 
         Event destinationTransfer = Event.builder()
-            .payload(payload)
-            .objectId(destinationObjectId)
-            .eventType(EventType.DESTINATIONTRANSFER)
-            .version(this.getVersion(destinationObjectId))
-            .createdAt(new Date())
-            .build();
+                .payload(payload)
+                .objectId(destinationObjectId)
+                .eventType(EventType.DESTINATIONTRANSFER)
+                .version(this.getVersion(destinationObjectId))
+                .createdAt(new Date())
+                .build();
 
         this.eventRepository.save(destinationTransfer);
 
@@ -359,7 +364,7 @@ public class EventService {
         String nome = String.valueOf(destination.get("nome"));
 
         return ReturnTransferDTO.builder().nome(nome).build();
-        
+
     }
 
     public void checkBalance(String objectId, Map<String, Object> payload) {
@@ -368,11 +373,11 @@ public class EventService {
         BigDecimal value = new BigDecimal(objectValue.toString());
 
         // saque/transferência com valor negativo viraria entrada de dinheiro
-        if(value.signum() <= 0) {
+        if (value.signum() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor inválido");
         }
 
-        if(value.compareTo(balance) > 0) {
+        if (value.compareTo(balance) > 0) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Sem saldo suficiente");
         }
     }
@@ -383,6 +388,9 @@ public class EventService {
     }
 
     public void sendReadModelCommand(RabbitCommandDTO command, String cpf) {
+
+        log.info("\n \n ======= ENVIANDO PARA REQUEST ======= \n \n");
+
         Map<String, Object> payload = command.getPayload();
 
         payload.put("clienteCpf", cpf);

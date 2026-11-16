@@ -11,6 +11,9 @@ import com.bantads.model.RabbitRequest;
 import com.bantads.model.Status;
 import com.bantads.repository.ManagerRepository;
 import com.bantads.repository.RequestRepository;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ManagerService {
 
@@ -151,6 +155,8 @@ public class ManagerService {
 
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE)
     public void handleManagerQueue(RabbitRequest command) {
+        log.info("\n \n \n ======== RECEBIDO type={} saga={} attempt={} comp={} ========= \n \n \n",
+                command.getType(), command.getSagaId(), command.getAttempt(), command.isCompensation());
 
         Status status = Status.SUCESSO;
         String error = null;
@@ -167,16 +173,30 @@ public class ManagerService {
         try {
 
             // idempotência do step
-            boolean alreadyProcessed = requestRepository.existsBySagaIdAndType(command.getSagaId(),
-                    command.isCompensation() ? command.getType() + ".comp" : command.getType());
+            if (this.alreadyProcessed(command.getSagaId(), command.getType())) {
+                log.info("\n \n ======= JÁ PROCESSADO, IGNORANDO ======= \n \n");
 
-            if (alreadyProcessed) {
                 this.sendReadModelCommand(command);
                 return;
             }
-           
-            payload = handler.execute(command.getPayload());
 
+            try {
+                payload = handler.execute(command.getPayload());
+                status = Status.SUCESSO;
+            } catch (Exception e) {
+                status = Status.FALHA;
+                error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
+                        : e.getMessage();
+                e.printStackTrace();
+            }
+
+            if (this.alreadyProcessed(command.getSagaId(), command.getType())) {
+                if (status == Status.SUCESSO) {
+                    log.info("\n \n ======= COMPENSANDO ======= \n \n");
+                    handler.compensate(command.getPayload());
+                }
+                return;
+            }
 
             requestRepository.save(Request.builder()
                     .sagaId(command.getSagaId())
@@ -200,6 +220,8 @@ public class ManagerService {
 
     @RabbitListener(queues = RabbitMQConfig.MANAGER_QUEUE_DLQ)
     public void handleDlqQueue(RabbitRequest command) {
+        log.info("\n \n ======= EM DLQ ======= \n \n");
+
         UUID sagaId = command.getSagaId();
         String type = command.getType();
 
@@ -210,16 +232,18 @@ public class ManagerService {
         SagaStepHandler handler = this.handlers.get(type);
 
         Map<String, Object> payload = command.getPayload();
-        
+
         Request marker = requestRepository.save(Request.builder()
-        // é útil pra sinalizar o quanto antes que uma compensação está acontecendo
-        // para uma msg válida
+                // é útil pra sinalizar o quanto antes que uma compensação está acontecendo
+                // para uma msg válida
                 .sagaId(sagaId)
                 .type(type + ".comp")
                 .build());
 
         try {
             if (handler != null) {
+                log.info("\n \n ======= COMPENSANDO ======= \n \n");
+
                 handler.compensate(payload);
             }
         } catch (RuntimeException e) {
@@ -231,5 +255,12 @@ public class ManagerService {
 
     public void sendReadModelCommand(RabbitRequest answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
+    }
+
+    // no stop e retorno, pode acontecer da msg ser consumida e armazenada mesmo dps
+    // de todos os que vinham antes compensarem
+    private boolean alreadyProcessed(UUID sagaId, String type) {
+        return requestRepository.existsBySagaIdAndType(sagaId, type)
+                || requestRepository.existsBySagaIdAndType(sagaId, type + ".comp");
     }
 }

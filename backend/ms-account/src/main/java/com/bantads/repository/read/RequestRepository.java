@@ -10,4 +10,6 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
 
     boolean existsBySagaIdAndTypeAndCompensation(UUID sagaId, String type, boolean compensation);
 
+    boolean existsBySagaIdAndType(UUID sagaId, String type);
+
 }
