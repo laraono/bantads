@@ -60,16 +60,16 @@ public class Request {
     @Column(nullable = false, length = 9)
     private String cep;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 100)
     private String city;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 100)
     private String street;
 
     @Column(nullable = false)
     private String number;
 
-    @Column(nullable = true, length = 30, name = "additional_info")
+    @Column(nullable = true, length = 100, name = "additional_info")
     private String additionalInfo;
 
     @ManyToOne

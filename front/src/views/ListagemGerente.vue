@@ -285,37 +285,33 @@ async function remover() {
                                             <span class="initials">{{ iniciais(gerente.nome) }}</span>
                                         </div>
                                         <div class="title-nome">
-                                            <h1>{{ gerente.nome }}</h1>
+                                            <h1 :title="gerente.nome">{{ gerente.nome }}</h1>
                                         </div>
                                     </div>
                                 </v-card-title>
                                 <v-card-text class="flex-grow-1">
-                                    <div class="mb-2">
-                                        <v-icon icon="mdi-email-outline" start />
-                                        {{ gerente.email }} <br />
+                                    <div class="info-linha">
+                                        <v-icon icon="mdi-email-outline" size="20" />
+                                        <span class="info-texto" :title="gerente.email">{{ gerente.email }}</span>
                                     </div>
-                                    <div class="mb-2">
-                                        <v-icon icon="mdi-account-outline" start />
-                                        {{ formatCpf(gerente.cpf) }} <br />
+                                    <div class="info-linha">
+                                        <v-icon icon="mdi-account-outline" size="20" />
+                                        <span class="info-texto">{{ formatCpf(gerente.cpf) }}</span>
                                     </div>
-                                    <div class="mb-2">
-                                        <v-icon icon="mdi-phone-outline" start />
-                                        {{ formatTelefone(gerente.telefone) }} <br />
+                                    <div class="info-linha">
+                                        <v-icon icon="mdi-phone-outline" size="20" />
+                                        <span class="info-texto">{{ formatTelefone(gerente.telefone) }}</span>
                                     </div>
-                                    <div class="mb-2">
-                                        <v-icon icon="mdi-account-multiple-outline" start />
-                                        {{ rotuloClientes(gerente.quantidadeClientes) }} <br />
+                                    <div class="info-linha">
+                                        <v-icon icon="mdi-account-multiple-outline" size="20" />
+                                        <span class="info-texto">{{ rotuloClientes(gerente.quantidadeClientes) }}</span>
                                     </div>
                                 </v-card-text>
-                                <div class="">
-                                    <v-divider class="mx-4" />
-                                </div>
-                                <v-card-actions class="justify-end">
-                                    <div class="card-actions">
-                                        <v-btn variant="text" color="primary" prepend-icon="mdi-pencil-outline" @click="abrirEdicao(gerente)">
-                                            Editar
-                                        </v-btn>
-                                    </div>
+                                <v-divider class="mx-4" />
+                                <v-card-actions class="card-actions">
+                                    <v-btn variant="text" color="primary" prepend-icon="mdi-pencil-outline" @click="abrirEdicao(gerente)">
+                                        Editar
+                                    </v-btn>
                                 </v-card-actions>
                             </v-card>
                         </v-col>
@@ -550,8 +546,9 @@ async function remover() {
 
 .title {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    min-width: 0;
+    white-space: normal;
 }
 
 .initials {
@@ -577,20 +574,39 @@ async function remover() {
     margin: 0 auto;
 }
 
+/* nome quebra em até 2 linhas; o resto vira "..." (nome completo no title) */
 .title h1 {
-    font-size: 24px;
+    font-size: 20px;
+    line-height: 1.25;
+    font-weight: 700;
+    margin: 0;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ícone e texto sempre na mesma linha; e-mail longo vira "..." */
+.info-linha {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin-bottom: 10px;
+}
+
+.info-texto {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .card-actions {
-    padding: 28px 32px 0px;
-    margin: 0 auto;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    max-width: 1180px;
-    min-width: 0;
-    flex: 1;
-    display: flex;
+    justify-content: flex-end;
+    padding: 8px 12px;
 }
 
 @keyframes spin {
