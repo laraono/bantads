@@ -11,6 +11,8 @@ import com.bantads.service.RequestService;
 @Component
 public class ApproveRequestHandler implements SagaStepHandler {
 
+    // private static final java.util.concurrent.atomic.AtomicInteger falhas = new java.util.concurrent.atomic.AtomicInteger();
+
     @Autowired
     private RequestService requestService;
 
@@ -21,10 +23,12 @@ public class ApproveRequestHandler implements SagaStepHandler {
 
     @Override
     public Map<String, Object> execute(Map<String, Object> payload) {
+    //    if (falhas.getAndIncrement() % 3 < 2) throw new RuntimeException("\n \n =========== Attempt: "+ falhas + " em " + action() + " ========== \n \n");
+
         String cpf = String.valueOf(payload.get("idSolicitacao"));
         this.requestService.approveRequest(cpf);
         Request request = this.requestService.getRequestByCpf(cpf);
-        payload.put("cpfCliente", request.getCpf());
+        payload.put("cpfCliente", cpf);
         payload.put("requisicao", request);
         return payload;
 

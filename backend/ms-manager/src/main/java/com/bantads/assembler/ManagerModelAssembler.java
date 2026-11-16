@@ -17,13 +17,19 @@ public class ManagerModelAssembler implements RepresentationModelAssembler<Manag
     @Override
     public EntityModel<Manager> toModel(Manager manager) {
         EntityModel<Manager> model = EntityModel.of(manager);
-        model.add(linkTo(methodOn(ManagerController.class).getManagerByCpf(manager.getCpf())).withSelfRel());
+        if (manager.isActive()) {
+            model.add(linkTo(methodOn(ManagerController.class).getManagerByCpf(manager.getCpf())).withSelfRel());
+            model.add(linkTo(methodOn(ManagerController.class)).slash(manager.getCpf()).withRel("atualizacao"));
+        }
         return model;
     }
 
     public EntityModel<ManagerDTO> toModel(ManagerDTO manager) {
         EntityModel<ManagerDTO> model = EntityModel.of(manager);
-        model.add(linkTo(methodOn(ManagerController.class).getManagerByCpf(manager.getCpf())).withSelfRel());
+        if (manager.getAtivo()) {
+            model.add(linkTo(methodOn(ManagerController.class).getManagerByCpf(manager.getCpf())).withSelfRel());
+            model.add(linkTo(methodOn(ManagerController.class)).slash(manager.getCpf()).withRel("atualizacao"));
+        }
         return model;
     }
 

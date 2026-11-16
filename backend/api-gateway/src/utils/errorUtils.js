@@ -4,7 +4,7 @@ function rethrow(err) {
     const data = err.response.data;
     let message = err.message;
 
-    if (data && typeof data === "object") {
+    if (data && typeof data === "object") { // pra lista de erros de DTOs com @Valid
       const fieldErrors = Array.isArray(data.errors)
         ? data.errors.map((e) => e.defaultMessage).filter(Boolean)
         : [];

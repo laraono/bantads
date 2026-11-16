@@ -50,7 +50,7 @@ public class AccountController {
         try {
             GetAccountDTO account = this.accountService.getAccountDataByCpf(cpf, userCPF);
 
-            System.out.println("accoutn criado");
+            System.out.println("account criado");
             System.out.println(account.getCriado());
             return assembler.toModel(account);
         } catch (Exception e) {

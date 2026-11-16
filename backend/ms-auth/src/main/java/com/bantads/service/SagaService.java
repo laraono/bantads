@@ -45,11 +45,6 @@ public class SagaService {
             return;
         }
 
-        if (!command.isCompensation() && requestRepository.existsBySagaIdAndTypeAndCompensation(
-                command.getSagaId(), command.getType() + ".comp", true)) {
-            return;
-        }
-
         SagaStepHandler handler = this.handlers.get(command.getType());
 
         if (handler == null) {
@@ -61,30 +56,17 @@ public class SagaService {
         String error = null;
 
         try {
-            if (command.isCompensation()) {
-                handler.compensate(command.getPayload());
-            } else {
                 payload = handler.execute(command.getPayload());
-            }
         } catch (Exception e) {
             status = Status.FALHA;
             error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason() : e.getMessage();
             e.printStackTrace();
         }
 
-        // quando o ms pausa, vem msg, depois despausa, tem a msg .comp e a normal sendo mandadas junto
-        // então coloquei isso pra checar se tá compensando
-        if (!command.isCompensation() && status == Status.SUCESSO
-                && requestRepository.existsBySagaIdAndTypeAndCompensation(
-                        command.getSagaId(), command.getType() + ".comp", true)) {
-            handler.compensate(payload);
-            return;
-        }
-
         Request req = Request.builder()
             .id(new ObjectId())
             .sagaId(command.getSagaId())
-            .type(command.isCompensation() ? command.getType() + ".comp" : command.getType())
+            .type(command.getType())
             .compensation(command.isCompensation())
             .build();
             
@@ -110,7 +92,9 @@ public class SagaService {
             return;
         }
 
-        Request marker = requestRepository.save(Request.builder()
+        Request marker = requestRepository.save(Request.builder() 
+        // é útil pra sinalizar o quanto antes que uma compensação está acontecendo
+        // para uma msg válida
                 .id(new ObjectId())
                 .sagaId(sagaId)
                 .type(type + ".comp")

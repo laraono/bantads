@@ -3,7 +3,6 @@ package com.bantads.service;
 import com.bantads.config.RabbitMQConfig;
 import com.bantads.dto.AddressDTO;
 import com.bantads.dto.RequestDTO;
-import com.bantads.entity.Client;
 import com.bantads.entity.Request;
 import com.bantads.entity.RequestStatus;
 import com.bantads.model.RabbitRequest;
@@ -39,6 +38,10 @@ public class RequestService {
     @Autowired
     private ClientRepository clientRepository;
 
+    public void conflictThrow(String error) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, error);
+    }
+
     public Request createRequest(RequestDTO requestDTO) {
         try {
             
@@ -60,7 +63,7 @@ public class RequestService {
 
             // CPF duplicado (cliente já aprovado ou solicitação existente)
             if (clientRepository.existsByCpf(requestDTO.getCpf())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o CPF informado");
+                conflictThrow("Já existe um cliente com o CPF informado");
             }
 
             if (requestRepository.existsByCpf(requestDTO.getCpf())) {
@@ -69,7 +72,7 @@ public class RequestService {
 
             // não pode utilizar o mesmo email para constas diferentes
             if (clientRepository.existsByEmail(requestDTO.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um cliente com o e-mail informado");
+                conflictThrow("Já existe um cliente com o e-mail informado");
             }
 
             if (requestRepository.existsByEmail(requestDTO.getEmail())) {
@@ -119,7 +122,6 @@ public class RequestService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada");
         }
 
-        // solicitação rejeitada não volta a ser aprovada: o cliente precisa pedir de novo
         if (request.getStatus() != RequestStatus.PENDENTE) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Solicitação não está pendente");
         }
@@ -217,10 +219,6 @@ public class RequestService {
 
     public List<Request> listRequests() {
         return requestRepository.findAll();
-    }
-
-    public Request getRequestByClient(Client client) {
-        return requestRepository.findByClient(client);
     }
 
     public Request getRequestByCpf(String cpf) {

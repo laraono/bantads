@@ -31,7 +31,7 @@ public class AuthService {
         Auth auth = authRepository.findByEmail(login)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NÃO AUTORIZADO"));
 
-        if (!Boolean.TRUE.equals(auth.getActive())) {
+        if (!auth.getActive()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "NÃO AUTORIZADO");
         }
 
@@ -65,7 +65,7 @@ public class AuthService {
         auth.setEmail(login);
         auth.setActive(active);
 
-        String password = rawPassword.isEmpty() ? generateRandomPassword() : rawPassword;
+        String password = rawPassword.isEmpty() ? generateRandomPassword() : rawPassword; // clientes vs gerentes
 
         String hash = Password.hash(password).withArgon2().getResult();
 
@@ -77,7 +77,7 @@ public class AuthService {
 
     }
 
-    public void invalidateAuth(String cpf) {
+    public void invalidateAuth(String cpf) { // não deleto para dê para reverter em uma compensação
         Auth auth = authRepository.findByCpf(cpf);
 
         if (auth == null) {

@@ -29,7 +29,6 @@ public class RabbitMQConfig {
             .build();
     }
 
-    // Fila se erros
     @Bean
     public Queue managerQueueDlq() {
         return QueueBuilder.durable(MANAGER_QUEUE_DLQ).build();
@@ -55,7 +54,6 @@ public class RabbitMQConfig {
         return factory;
     }
 
-    // Tenta enviar MAX_TENTATIVAS vezes e se der errado dá dlq
     private RetryOperationsInterceptor retryInterceptor() {
         return RetryInterceptorBuilder.stateless()
                 .maxAttempts(MAX_TENTATIVAS)
