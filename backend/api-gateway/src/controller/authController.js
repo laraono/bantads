@@ -16,7 +16,7 @@ class AuthController {
         try {
             const authHeader = req.headers['x-access-token'];
             await authService.invalidateSession(authHeader);
-            return res.status(204).json({ message: 'Logout realizado com sucesso' });
+            return res.status(204).json({});
         } catch (err) {
             console.log(err.message)
             const status = err.status || 500;
