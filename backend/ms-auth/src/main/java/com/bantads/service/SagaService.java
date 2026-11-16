@@ -38,17 +38,14 @@ public class SagaService {
     @RabbitListener(queues = RabbitMQConfig.AUTH_QUEUE)
     public void handleAuthCommand(RabbitRequest command) {
 
-        boolean alreadyProcessed = requestRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
-                command.isCompensation() ? command.getType() + ".comp" : command.getType(), command.isCompensation());
-
-        if (alreadyProcessed) {
+        if (this.alreadyProcessed(command.getSagaId(), command.getType())) {
             return;
         }
 
         SagaStepHandler handler = this.handlers.get(command.getType());
 
         if (handler == null) {
-            throw new RuntimeException("Handler não encontrado para a ação " + command.getType());
+            throw new RuntimeException("Handler não encontrado para:" + command.getType());
         }
 
         Map<String, Object> payload = command.getPayload();
@@ -56,20 +53,27 @@ public class SagaService {
         String error = null;
 
         try {
-                payload = handler.execute(command.getPayload());
+            payload = handler.execute(command.getPayload());
         } catch (Exception e) {
             status = Status.FALHA;
-            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason() : e.getMessage();
+            error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
+                    : e.getMessage();
             e.printStackTrace();
         }
 
+        if (this.alreadyProcessed(command.getSagaId(), command.getType())) {
+            if (status == Status.SUCESSO) {
+                handler.compensate(command.getPayload());
+            }
+            return;
+        }
+
         Request req = Request.builder()
-            .id(new ObjectId())
-            .sagaId(command.getSagaId())
-            .type(command.getType())
-            .compensation(command.isCompensation())
-            .build();
-            
+                .id(new ObjectId())
+                .sagaId(command.getSagaId())
+                .type(command.getType())
+                .compensation(command.isCompensation())
+                .build();
 
         command.setPayload(payload);
         command.setStatus(status.toString());
@@ -92,9 +96,9 @@ public class SagaService {
             return;
         }
 
-        Request marker = requestRepository.save(Request.builder() 
-        // é útil pra sinalizar o quanto antes que uma compensação está acontecendo
-        // para uma msg válida
+        Request marker = requestRepository.save(Request.builder()
+                // é útil pra sinalizar o quanto antes que uma compensação está acontecendo
+                // para uma msg válida
                 .id(new ObjectId())
                 .sagaId(sagaId)
                 .type(type + ".comp")
@@ -111,5 +115,12 @@ public class SagaService {
             requestRepository.delete(marker); // se der erro ainda dá pra refazer a compensação
             throw e;
         }
+    }
+
+    // no stop e retorno, pode acontecer da msg ser consumida e armazenada mesmo dps
+    // de todos os que vinham antes compensarem
+    private boolean alreadyProcessed(UUID sagaId, String type) {
+        return requestRepository.existsBySagaIdAndType(sagaId, type)
+                || requestRepository.existsBySagaIdAndType(sagaId, type + ".comp");
     }
 }
