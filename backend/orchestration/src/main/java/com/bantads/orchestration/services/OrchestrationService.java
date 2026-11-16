@@ -173,6 +173,12 @@ public class OrchestrationService {
                 }
             }
         } else if ("FALHA".equals(status)) {
+            if (sagaStates.getStatus() == SagaStatus.COMPENSACAO ||
+                    sagaStates.getStatus() == SagaStatus.CONCLUIDO) {
+                log.warn("Saga {} já se encontra em estado terminal/compensação. Sinal de falha ignorado (idempotência).", sagaId);
+                return;
+            }
+
             if(attempt < ATTEMP_MAX) {
                 if("CONTA JÁ EXISTE".equals(reply.getError())) {
 
