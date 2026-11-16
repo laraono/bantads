@@ -16,6 +16,7 @@ import jakarta.validation.constraints.NotNull;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
 public class RequestDTO {
 
     @NotBlank(message = "Nome é obrigatório") 
