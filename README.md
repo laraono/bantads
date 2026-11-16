@@ -19,7 +19,7 @@ UFPR
 
 ## Configuração
 
-Crie um arquivo `.env` na raiz da pasta com as variáveis abaixo (valores à sua escolha, utilize o arquivo .env.examplo como referência):
+Crie um arquivo `.env` na raiz da pasta com as variáveis abaixo (valores à sua escolha, utilize o arquivo .env.example como referência):
 
 ```
 POSTGRES_USER=  
