@@ -48,5 +48,5 @@ docker compose logs -f ms-client   # acompanha os logs de um serviço
 
 docker compose down        # para todos os serviços (adicione -v para apagar os dados)
 
-docker compose down --rmi all # apaga todas as imagens
+docker compose down --rmi all   # apaga todas as imagens
 ```
