@@ -64,9 +64,9 @@ public class OrchestrationService {
         // não seta aqui porque o attempt deve ser decidido por quem envia
 
         try {
-            log.info("\n \n ====== enviando {}", objectMapper.writeValueAsString(request));
+            log.info("\n \n ====== ENVIANDO {} ======== \n \n", objectMapper.writeValueAsString(request));
         } catch (Exception e) {
-            log.info("\n \n ===== enviando {}", request);
+            log.info("\n \n ===== ENVIANDO {} ======== \n \n", request);
         }
 
         String queue = sagaStates.currentStep();
@@ -88,6 +88,7 @@ public class OrchestrationService {
         StepDefinition step = sagaStates.getStep().getSteps().get(sagaStates.getStepIndex());
 
         if (step.getActionType().contains("email.")) {
+
             String sagaKey = "saga:" + sagaStates.getSagaId();
 
             this.publishSagaCmd(sagaStates, reply);
@@ -125,7 +126,7 @@ public class OrchestrationService {
         String status = reply.getStatus();
 
         if (sagaStates == null) {
-            log.warn("Saga {} sem estado no Redis (perdido/expirado?); reply '{}' descartado", sagaId, status);
+            log.warn("\n\n===== SAGA {} NÃO ENCONTRADA (EXPIRADA? DELETADA?) ===== \n\n", sagaId);
             return;
         }
 
@@ -134,14 +135,14 @@ public class OrchestrationService {
         Map<String, Object> payload = reply.getPayload();
 
         if (sagaStates.getStatus() != SagaStatus.EM_ANDAMENTO) { // se não esperamos receber reply, descarta
-            log.warn("Saga {} em {}; reply '{}' de '{}' descartado", sagaId, sagaStates.getStatus(), status,
+            log.warn("\n\n ==== SAGA {} EM {}: '{}' DE '{}' DESCARTADO === \n\n", sagaId, sagaStates.getStatus(), status,
                     reply.getType());
             return;
         }
 
         // reply desatualizado, já passou dessa etapa
         if (reply.getType() != null && !reply.getType().equals(sagaStates.getType())) {
-            log.warn("Saga {} no passo '{}'; reply obsoleto de '{}' descartado", sagaId, sagaStates.getType(),
+            log.warn("\n\n===== SAGA {} NO STEP '{}': '{}' DESCARTADO ====\n\n", sagaId, sagaStates.getType(),
                     reply.getType());
             return;
         }
@@ -197,7 +198,7 @@ public class OrchestrationService {
             if (sagaStates.getStatus() == SagaStatus.COMPENSACAO ||
                     sagaStates.getStatus() == SagaStatus.CONCLUIDO) {
                 log.warn(
-                        "Saga {} já se encontra em estado terminal/compensação. Sinal de falha ignorado (idempotência).",
+                        "\n\n===== SAGA {} JÁ FINALIZOU, IGNORANDO =====\n\n",
                         sagaId);
                 return;
             }
@@ -253,7 +254,7 @@ public class OrchestrationService {
     public void updateJob(UUID sagaId, String status, String erro) {
         Object jobObject = redisTemplate.opsForValue().get("job-" + sagaId);
         if (jobObject == null) {
-            log.warn("Job {} não encontrada no Redis; status '{}' não atualizado", sagaId, status);
+            log.warn("\n\n======= JOB {} NÃO ENCONTRADA =====\n\n", sagaId);
             return;
         }
         Map<String, String> job = objectMapper.convertValue(jobObject, Map.class);
@@ -297,7 +298,7 @@ public class OrchestrationService {
         SagaStates sagaStates = object == null ? null : objectMapper.convertValue(object, SagaStates.class);
 
         if (sagaStates == null) {
-            log.warn("Saga {} sem estado no Redis (perdido/expirado?); timeout do passo {} ignorado", sagaId,
+            log.warn("\n\n ===== SAGA {} NÃO ENCONTRADA ==== \n\n", sagaId,
                     timeoutStepIndex);
             return;
         }

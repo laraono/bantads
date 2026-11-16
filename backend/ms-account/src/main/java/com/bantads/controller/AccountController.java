@@ -49,9 +49,6 @@ public class AccountController {
             @RequestHeader("x-user-cpf") String userCPF) {
         try {
             GetAccountDTO account = this.accountService.getAccountDataByCpf(cpf, userCPF);
-
-            System.out.println("account criado");
-            System.out.println(account.getCriado());
             return assembler.toModel(account);
         } catch (Exception e) {
             e.printStackTrace();

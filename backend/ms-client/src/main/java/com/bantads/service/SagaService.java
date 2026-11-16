@@ -42,16 +42,7 @@ public class SagaService {
         log.info("\n \n \n ======== RECEBIDO type={} saga={} attempt={} comp={} ========= \n \n \n",
                 command.getType(), command.getSagaId(), command.getAttempt(), command.isCompensation());
 
-        boolean alreadyProcessed = rabbitRepository.existsBySagaIdAndTypeAndCompensation(command.getSagaId(),
-                command.isCompensation() ? command.getType() + ".comp" : command.getType(), command.isCompensation());
-
-        if (alreadyProcessed) {
-            log.info("\n \n ======= JÁ PROCESSADO, IGNORANDO ======= \n \n");
-            return;
-        }
-
-        if (!command.isCompensation() && rabbitRepository.existsBySagaIdAndTypeAndCompensation(
-                command.getSagaId(), command.getType() + ".comp", true)) {
+        if (this.alreadyProcessed(command.getSagaId(), command.getType())) {
             return;
         }
 
@@ -62,13 +53,8 @@ public class SagaService {
         Status status = Status.SUCESSO;
         String error = null;
         try {
-            if (command.isCompensation()) {
-                log.info("\n \n ======= COMPENSANDO ======= \n \n");
-                handler.compensate(command.getPayload(), command.getError());
-            } else {
                 payload = handler.execute(command.getPayload());
                 status = Status.SUCESSO;
-            }
         } catch (Exception e) {
             status = Status.FALHA;
             error = (e instanceof ResponseStatusException rse && rse.getReason() != null) ? rse.getReason()
@@ -79,16 +65,16 @@ public class SagaService {
         // quando o ms pausa, vem msg, depois despausa, tem a msg .comp e a normal sendo
         // mandadas junto
         // então coloquei isso pra checar se tá compensando
-        if (!command.isCompensation() && status == Status.SUCESSO
-                && rabbitRepository.existsBySagaIdAndTypeAndCompensation(
-                        command.getSagaId(), command.getType() + ".comp", true)) {
-            handler.compensate(payload, command.getError());
+        if (this.alreadyProcessed(command.getSagaId(), command.getType())) {
+            if (status == Status.SUCESSO) {
+                handler.compensate(command.getPayload(), command.getError());
+            }
             return;
         }
 
         Rabbit req = Rabbit.builder()
                 .sagaId(command.getSagaId())
-                .type((command.isCompensation() ? command.getType() + ".comp" : command.getType()))
+                .type(command.getType())
                 .compensation(command.isCompensation())
                 .build();
 
@@ -125,8 +111,9 @@ public class SagaService {
         SagaStepHandler handler = this.handlers.get(type);
 
         try {
-            
+
             if (handler != null) {
+                log.info("\n \n ======= COMPENSANDO ======= \n \n");
                 handler.compensate(payload, command.getError());
             }
 
@@ -138,5 +125,12 @@ public class SagaService {
 
     public void sendCommand(RabbitRequest answer) {
         rabbitTemplate.convertAndSend(RabbitMQConfig.ORQUESTRADOR_QUEUE, answer);
+    }
+
+    // no stop e retorno, pode acontecer da msg ser consumida e armazenada mesmo dps
+    // de todos os que vinham antes compensarem
+    private boolean alreadyProcessed(UUID sagaId, String type) {
+        return rabbitRepository.existsBySagaIdAndType(sagaId, type)
+                || rabbitRepository.existsBySagaIdAndType(sagaId, type + ".comp");
     }
 }
