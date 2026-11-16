@@ -39,10 +39,4 @@ public class ClientController {
         Client client = clientService.getClient(cpf);
         return assembler.toModel(ClientResponseDTO.from(client), tipo);
     }
-
-    @GetMapping("/{id}/requests")
-    public
-    Request getRequest(@PathVariable Long id) {
-        return clientService.getRequestByClient(id);
-    }
 }

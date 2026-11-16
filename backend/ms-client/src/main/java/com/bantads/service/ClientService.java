@@ -53,12 +53,6 @@ public class ClientService {
         }
     }
 
-    public Request getRequestByClient(Long id) {
-        Client client = clientRepository.getReferenceById(id);
-
-        return requestService.getRequestByClient(client);
-    }
-
     public List<Client> getClientsByCpf(List<String> cpfs) {
         return clientRepository.findAllByCpfIn(cpfs);
     }
@@ -76,7 +70,7 @@ public class ClientService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Requisição não encontrada");
         }
 
-        if (this.clientRepository.findByCpf(req.getCpf()) != null) {
+        if (this.clientRepository.existsByCpf(req.getCpf()) || this.clientRepository.existsByEmail(req.getEmail())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "CONTA JÁ EXISTE");
 
         }

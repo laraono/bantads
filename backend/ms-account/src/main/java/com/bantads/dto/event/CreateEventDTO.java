@@ -1,6 +1,5 @@
 package com.bantads.dto.event;
 
-import com.bantads.entity.event.EventType;
 import lombok.*;
 
 import java.util.Map;

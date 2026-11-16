@@ -1,7 +1,6 @@
 package com.bantads.assembler;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
@@ -21,9 +20,8 @@ public class ClientModelAssembler implements RepresentationModelAssembler<Client
     public EntityModel<ClientResponseDTO> toModel(ClientResponseDTO client, String tipo) {
         EntityModel<ClientResponseDTO> model = EntityModel.of(client);
         model.add(linkTo(ClientController.class).slash(client.getCpf()).withSelfRel());
-        model.add(linkTo(methodOn(ClientController.class).getRequest(client.getId())).withRel("solicitacoes"));
         if ("GERENTE".equals(tipo)) {
-            model.add(linkTo(methodOn(ClientController.class).listClients(null)).withRel("clientes"));
+            model.add(linkTo(ClientController.class).withRel("clientes"));
         }
 
         return model;

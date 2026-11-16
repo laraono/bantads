@@ -19,10 +19,10 @@ CREATE TABLE state(
 CREATE TABLE address(
     address_id      SERIAL PRIMARY KEY,
     cep                 VARCHAR(9) NOT NULL,
-    city                VARCHAR(30) NOT NULL,
-    street              VARCHAR(30) NOT NULL,
+    city                VARCHAR(100) NOT NULL,
+    street              VARCHAR(100) NOT NULL,
     number              INTEGER NOT NULL,
-    additional_info     VARCHAR(30) NULL,
+    additional_info     VARCHAR(100) NULL,
     state_id            INTEGER NOT NULL,
 
     FOREIGN KEY(state_id) REFERENCES state(state_id)
@@ -54,11 +54,11 @@ CREATE TABLE request (
     phone               VARCHAR(20) NOT NULL,
     salary              NUMERIC(19, 4) NOT NULL,
     cep                 VARCHAR(9) NOT NULL,
-    city                VARCHAR(30) NOT NULL,
+    city                VARCHAR(100) NOT NULL,
     state_id            INTEGER NOT NULL,
-    street              VARCHAR(30) NOT NULL,
+    street              VARCHAR(100) NOT NULL,
     number              INTEGER NOT NULL,
-    additional_info     VARCHAR(30) NULL,
+    additional_info     VARCHAR(100) NULL,
 
     FOREIGN KEY(client_id) REFERENCES client(client_id)
 );

@@ -14,11 +14,10 @@ import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String EVENT_QUEUE = "ms.conta.events";
+    public static final String EVENT_QUEUE = "ms.conta.events"; // não tem dlq por regra de negócio
     public static final String ACCOUNT_QUEUE = "ms.conta.cmd";
     public static final String ACCOUNT_QUEUE_DLQ = "ms.conta.cmd.dlq";
     public static final String ORQUESTRADOR_QUEUE = "orquestrador.reply";
-    public static final String EMAIL_QUEUE = "ms.email.cmd";
 
     private static final int MAX_TENTATIVAS = 3;
     private static final long INTERVALO_RETRY_MS = 5000L;
@@ -56,7 +55,6 @@ public class RabbitMQConfig {
         return new JacksonJsonMessageConverter();
     }
 
-    
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
