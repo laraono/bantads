@@ -6,22 +6,18 @@ import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import java.time.Duration;
-import java.util.Map;
-import java.util.UUID;
 
-// configuração de filas
 
 @Configuration
 public class RabbitMQConfig {
-    public static final String SAGA_CMD = "saga.cmd"; // inicia uma saga
+
+    public static final String SAGA_CMD = "saga.cmd";
     public static final String ORQUESTRADOR_REPLY = "orquestrador.reply";
     public static final String ORQUESTRADOR_TIMEOUT = "orquestrador.timeout";
 
-    public static final int SAGA_TIMEOUT_MS = 30000;
-
-    public static final int RETRY_DELAY_MS = 5000;
+    // SAGA_TIMEOUT_MS ajuda na hora de testar as compensações
+    public static final int SAGA_TIMEOUT_MS = Integer.parseInt(
+            System.getenv().getOrDefault("SAGA_TIMEOUT_MS", "30000"));
 
     public static final String MS_CLIENTE_CMD = "ms.cliente.cmd";
     public static final String MS_CONTA_CMD = "ms.conta.cmd";
@@ -33,6 +29,8 @@ public class RabbitMQConfig {
     public MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
     }
+
+    // filas sem retry/DLQ 
 
     @Bean
     public Queue sagaCmdQueue() {
@@ -48,7 +46,6 @@ public class RabbitMQConfig {
     public Queue orquestradorTimeoutQueue() {
         return QueueBuilder.durable(ORQUESTRADOR_TIMEOUT).build();
     }
-
     @Bean
     public Queue msEmailCmdQueue() {
         return QueueBuilder.durable(MS_EMAIL_CMD).build();
@@ -60,13 +57,28 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue msClienteCmdQueue() {
-        return commandQueue(MS_CLIENTE_CMD);
+    public Queue msClienteCmdWaitQueue() {
+        return waitQueue(MS_CLIENTE_CMD);
     }
 
     @Bean
-    public Queue msClienteCmdRetryQueue() {
-        return retryQueue(MS_CLIENTE_CMD);
+    public Queue msContaCmdWaitQueue() {
+        return waitQueue(MS_CONTA_CMD);
+    }
+
+    @Bean
+    public Queue msGerenteCmdWaitQueue() {
+        return waitQueue(MS_GERENTE_CMD);
+    }
+
+    @Bean
+    public Queue msAuthCmdWaitQueue() {
+        return waitQueue(MS_AUTH_CMD);
+    }
+
+    @Bean
+    public Queue msClienteCmdQueue() {
+        return commandQueue(MS_CLIENTE_CMD);
     }
 
     @Bean
@@ -80,11 +92,6 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue msContaCmdRetryQueue() {
-        return retryQueue(MS_CONTA_CMD);
-    }
-
-    @Bean
     public Queue msContaCmdDlq() {
         return dlq(MS_CONTA_CMD);
     }
@@ -92,11 +99,6 @@ public class RabbitMQConfig {
     @Bean
     public Queue msGerenteCmdQueue() {
         return commandQueue(MS_GERENTE_CMD);
-    }
-
-    @Bean
-    public Queue msGerenteCmdRetryQueue() {
-        return retryQueue(MS_GERENTE_CMD);
     }
 
     @Bean
@@ -110,29 +112,19 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue msAuthCmdRetryQueue() {
-        return retryQueue(MS_AUTH_CMD);
-    }
-
-    @Bean
     public Queue msAuthCmdDlq() {
         return dlq(MS_AUTH_CMD);
     }
 
+    //helpers 
+
     private static Queue commandQueue(String name) {
         return QueueBuilder.durable(name)
                 .withArgument("x-dead-letter-exchange", "")
-                .withArgument("x-dead-letter-routing-key", name + ".retry")
+                .withArgument("x-dead-letter-routing-key", name + ".dlq")
                 .build();
     }
 
-    private static Queue retryQueue(String name) {
-        return QueueBuilder.durable(name + ".retry")
-                .withArgument("x-message-ttl", RETRY_DELAY_MS)
-                .withArgument("x-dead-letter-exchange", "")
-                .withArgument("x-dead-letter-routing-key", name)
-                .build();
-    }
 
     private static Queue waitQueue(String name) {
         return QueueBuilder.durable(name + ".wait")
