@@ -44,30 +44,50 @@ public class RequestService {
 
     public Request createRequest(RequestDTO requestDTO) {
         try {
-
-            if (requestRepository.existsByCpf(requestDTO.getCpf())) {
-                conflictThrow("Já existe uma solicitação com o CPF informado");
+            
+            if (requestDTO.getCpf() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF não informado");
             }
 
-            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
-                conflictThrow("Já existe uma solicitação com o e-mail informado");
+            if (requestDTO.getEmail() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "E-mail não informado");
             }
 
+            if (requestDTO.getCpf().length() < 11) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF inválido");
+            }
+
+            if (stateRepository.findByUf(requestDTO.getEndereco().getUf()) == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrado");
+            }
+
+            // CPF duplicado (cliente já aprovado ou solicitação existente)
             if (clientRepository.existsByCpf(requestDTO.getCpf())) {
                 conflictThrow("Já existe um cliente com o CPF informado");
             }
 
+            if (requestRepository.existsByCpf(requestDTO.getCpf())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o CPF informado");
+            }
+
+            // não pode utilizar o mesmo email para constas diferentes
             if (clientRepository.existsByEmail(requestDTO.getEmail())) {
                 conflictThrow("Já existe um cliente com o e-mail informado");
             }
 
-            AddressDTO addressDTO = requestDTO.getEndereco(); // ajuda com legibilidade
-
-            if (stateRepository.findByUf(addressDTO.getUf()) == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrada");
+            if (requestRepository.existsByEmail(requestDTO.getEmail())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação com o e-mail informado");
             }
 
-            BigDecimal salary = new BigDecimal(requestDTO.getSalario()); // sai de string p/ decimal
+            System.out.println("verificou:" + requestDTO.toString());
+
+            AddressDTO addressDTO = requestDTO.getEndereco();
+
+            System.out.println("endereco:" + addressDTO.toString());
+
+            BigDecimal salary = new BigDecimal(requestDTO.getSalario());
+
+            System.out.println("salary:" + salary.toString());
 
             Request requestEntity = Request.builder()
                     .status(RequestStatus.PENDENTE)

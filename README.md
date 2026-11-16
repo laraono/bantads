@@ -1,15 +1,15 @@
 # BANTADS
 Integrantes do projeto: 
 
-- **Lara Ono Glufke Reis**: GRR 20230943
+- **Lara Ono Glufke Reis**: **GRR** 20230943
 
-- **Emanuelle Rodrigues Silveira**: GRR 20242389
+- **Emanuelle Rodrigues Silveira**: **GRR** 20242389
 
-- **Gabriela Morais Gandine**: GRR 20234968
+- **Gabriela Morais Gandine**: **GRR** 20234968
 
-- **Cauã Henrique Dias Barbosa**: GRR 20230951
+- **Cauã Henrique Dias Barbosa**: **GRR** 20230951
 
-- **Ender Efrain Ruiz Carrasco**: GRR 20250037
+- **Ender Efrain Ruiz Carrasco**: **GRR** 20250037
 
 Disciplina:
 DAC - Desenvolvimento de Aplicações Corporativas
@@ -47,4 +47,6 @@ docker compose ps          # confere se os serviços estão healthy
 docker compose logs -f ms-client   # acompanha os logs de um serviço
 
 docker compose down        # para todos os serviços (adicione -v para apagar os dados)
+
+docker compose down --rmi all # apaga todas as imagens
 ```

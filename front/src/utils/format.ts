@@ -55,7 +55,8 @@ export function formatDataHora(iso: string | null | undefined): string {
 }
 
 export function iniciais(nome: string | null | undefined): string {
-  const partes = (nome ?? '').trim().split(/\s+/).filter(Boolean)
+  // só palavras que começam com letra: "Gerente Novo 1 (editado)" vira "GN", não "G("
+  const partes = (nome ?? '').trim().split(/\s+/).filter((p) => /^\p{L}/u.test(p))
   if (partes.length === 0) return '?'
   const primeira = partes[0]!.charAt(0)
   const ultima = partes.length > 1 ? partes[partes.length - 1]!.charAt(0) : ''
