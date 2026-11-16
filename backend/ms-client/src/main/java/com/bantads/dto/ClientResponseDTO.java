@@ -37,6 +37,7 @@ public class ClientResponseDTO {
         if (client == null) {
             return null;
         }
+        
         return ClientResponseDTO.builder()
                 .id(client.getClientId())
                 .nome(client.getName())

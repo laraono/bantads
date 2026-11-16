@@ -60,7 +60,7 @@ public class OrchestrationService {
         request.setType(step.getActionType());
         request.setPayload(cmd);
         request.setStepIndex(sagaStates.getStepIndex());
-        sagaStates.setAttempt(request.getAttempt()); 
+        sagaStates.setAttempt(request.getAttempt());
         // não seta aqui porque o attempt deve ser decidido por quem envia
 
         try {
@@ -194,6 +194,14 @@ public class OrchestrationService {
                 }
             }
         } else if ("FALHA".equals(status)) {
+            if (sagaStates.getStatus() == SagaStatus.COMPENSACAO ||
+                    sagaStates.getStatus() == SagaStatus.CONCLUIDO) {
+                log.warn(
+                        "Saga {} já se encontra em estado terminal/compensação. Sinal de falha ignorado (idempotência).",
+                        sagaId);
+                return;
+            }
+
             if (attempt < ATTEMP_MAX) {
                 if ("CONTA JÁ EXISTE".equals(reply.getError())) {
                     // falha especifica da criação de cliente / de negócio, pula attempts
@@ -305,9 +313,9 @@ public class OrchestrationService {
         sagaStates.setError("TIMEOUT");
         redisTemplate.opsForValue().set(sagaKey, sagaStates);
         updateJob(sagaId, "FALHA", "TIMEOUT");
-        
+
         // pode ter timeout durante operações no step, compensa ele junto
-        compensate(sagaStates, true); 
+        compensate(sagaStates, true);
     }
 
     public void compensate(SagaStates sagaStates) {
