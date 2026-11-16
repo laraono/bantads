@@ -50,7 +50,7 @@ public class RequestService {
             }
 
             if (requestRepository.existsByEmail(requestDTO.getEmail())) {
-                conflictThrow("Já existe uma solicitação com o CPF informado");
+                conflictThrow("Já existe uma solicitação com o e-mail informado");
             }
 
             if (clientRepository.existsByCpf(requestDTO.getCpf())) {
@@ -62,6 +62,10 @@ public class RequestService {
             }
 
             AddressDTO addressDTO = requestDTO.getEndereco(); // ajuda com legibilidade
+
+            if (stateRepository.findByUf(addressDTO.getUf()) == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "UF não encontrada");
+            }
 
             BigDecimal salary = new BigDecimal(requestDTO.getSalario()); // sai de string p/ decimal
 
@@ -196,7 +200,7 @@ public class RequestService {
     public List<Request> listRequests() {
         return requestRepository.findAll();
     }
-    
+
     public Request getRequestByCpf(String cpf) {
         Request request = requestRepository.findByCpf(cpf);
 

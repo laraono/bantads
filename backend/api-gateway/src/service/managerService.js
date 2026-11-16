@@ -69,7 +69,7 @@ class MangerService {
 
       const returnData = this.toManager(managerAnswer.data);
 
-      cacheObject("gerente", returnData);
+      await cacheObject("gerente", returnData);
 
       return returnData;
     } catch (err) {
@@ -105,7 +105,7 @@ class MangerService {
         { headers: { "x-user-cpf": headers["x-user-cpf"] } },
       );
 
-      removeCache("gerente", managerAnswer.data.cpf);
+      await removeCache("gerente", managerAnswer.data.cpf);
 
       return this.toManager(managerAnswer.data);
     } catch (err) {
@@ -130,7 +130,7 @@ class MangerService {
         erro: null,
       };
 
-      removeCache("gerente", id);
+      await removeCache("gerente", id);
 
       return await rabbitConnector.startSaga(payload, job);
     } catch (err) {
@@ -165,7 +165,7 @@ class MangerService {
       erro: null,
     };
 
-    removeCache("gerente", gerente.cpf);
+    await removeCache("gerente", gerente.cpf);
 
     return await rabbitConnector.startSaga(payload, job);
   }

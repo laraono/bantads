@@ -39,7 +39,7 @@ class ClientService {
     const response = await axios.get(
       `http://${MS_CLIENT_HOST}:${MS_CLIENT_PORT}/clients/${cpf}`,
       { headers: { "x-user-tipo": headers["x-user-tipo"] } },
-    );
+    ); // se dá erro, nem chega na linha de cachear
 
     const client = {
       cpf: response.data.cpf,
@@ -58,7 +58,7 @@ class ClientService {
       _links: linksUtils.rewriteLinks(response.data._links),
     };
 
-    cacheObject("cliente", client);
+    await cacheObject("cliente", client);
 
     return client;
   }
