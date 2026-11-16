@@ -10,6 +10,7 @@ import lombok.Setter;
 @Setter
 @Builder
 @AllArgsConstructor 
+
 public class RejectRequestDTO {
     @NotBlank(message = "Motivo é obrigatório")
     private String motivo; 

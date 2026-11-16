@@ -117,9 +117,11 @@ public class SagaService {
         SagaStepHandler handler = this.handlers.get(type);
 
         try {
+            
             if (handler != null) {
                 handler.compensate(payload);
             }
+
         } catch (RuntimeException e) {
             rabbitRepository.delete(req); // se der erro ainda dá pra refazer a compensação
             throw e;
