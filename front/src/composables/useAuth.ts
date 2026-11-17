@@ -1,5 +1,5 @@
-import { ref } from "vue";
 import type { UserRole } from "@/services/authService";
+import { ref } from "vue";
 
 export interface Usuario {
     cpf: string

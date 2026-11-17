@@ -1,5 +1,5 @@
-import { isAxiosError, type AxiosResponse } from 'axios'
 import { http } from '@/services/http'
+import { isAxiosError, type AxiosResponse } from 'axios'
 
 export type JobStatus = 'PENDENTE' | 'CONCLUIDO' | 'SUCESSO' | 'FALHA'
 

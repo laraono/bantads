@@ -1,11 +1,10 @@
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
-
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { VMaskInput } from 'vuetify/labs/VMaskInput'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import { VMaskInput } from 'vuetify/labs/VMaskInput'
 
 export default createVuetify({
     components: {

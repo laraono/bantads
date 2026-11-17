@@ -1,7 +1,8 @@
 package com.bantads.msemail.service;
 
-import com.bantads.msemail.config.RabbitMQConfig;
-import com.bantads.msemail.model.RabbitRequest;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +10,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import com.bantads.msemail.config.RabbitMQConfig;
+import com.bantads.msemail.model.RabbitRequest;
 
 @Service
 public class EmailService {

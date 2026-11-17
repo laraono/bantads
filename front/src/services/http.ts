@@ -1,5 +1,5 @@
-import axios from 'axios'
 import { useAuth } from '@/composables/useAuth'
+import axios from 'axios'
 
 export const http = axios.create({
   baseURL: import.meta.env.VITE_GATEWAY_URL,

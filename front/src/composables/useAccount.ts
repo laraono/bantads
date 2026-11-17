@@ -1,16 +1,16 @@
-import { computed, ref, shallowRef } from 'vue'
-import { DateTime } from 'luxon'
-import Decimal from 'decimal.js'
 import { useAuth } from '@/composables/useAuth'
 import {
-  getContaPorCpf,
-  getConta,
-  getExtrato,
   depositar,
+  getConta,
+  getContaPorCpf,
+  getExtrato,
   sacar,
   transferir,
   type MovimentacaoDTO,
 } from '@/services/accountService'
+import Decimal from 'decimal.js'
+import { DateTime } from 'luxon'
+import { computed, ref, shallowRef } from 'vue'
 
 export type OperationType = 'Depósito' | 'Transferência' | 'Saque'
 

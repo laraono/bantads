@@ -1,16 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-
-import Login from '../views/Login.vue'
-import HomeCliente from '../views/HomeCliente.vue'
-import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
-import HomeGerente from '../views/HomeGerente.vue'
-import Cadastro from '../views/Cadastro.vue'
-import CadastroEndereco from '../views/CadastroEndereco.vue'
 import ClienteList from '@/views/ClienteList.vue'
 import ListagemGerente from '@/views/ListagemGerente.vue'
 import RelatorioClientes from '@/views/RelatorioClientes.vue'
+import Cadastro from '../views/Cadastro.vue'
+import CadastroEndereco from '../views/CadastroEndereco.vue'
+import ExtratoDetalhado from '../views/ExtratoDetalhado.vue'
+import HomeCliente from '../views/HomeCliente.vue'
+import HomeGerente from '../views/HomeGerente.vue'
+import Login from '../views/Login.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -81,7 +80,8 @@ const routes: Array<RouteRecordRaw> = [
   }
 ]
 
-const router = createRouter({
+const router = createRouter
+({
   history: createWebHistory(),
   routes
 })
@@ -92,20 +92,22 @@ router.beforeEach((to) => {
   const isAuthenticated = auth.isAuthenticated()
   const userRole = auth.getUserRole()
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
+  if (to.meta.requiresAuth && !isAuthenticated) 
+  {
     return { name: 'login'}
   }
 
   const homeRoute = userRole === 'gerente' ? 'gerente' : 'home'
 
-  if (to.name === 'login' && isAuthenticated) {
+  if (to.name === 'login' && isAuthenticated) 
+  {
     return { name: homeRoute }
   }
 
-  if (to.meta.role && to.meta.role !== userRole) {
+  if (to.meta.role && to.meta.role !== userRole) 
+  {
     return { name: homeRoute }
   }
 })
-
 
 export default router

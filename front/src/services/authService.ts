@@ -1,5 +1,5 @@
-import { http } from '@/services/http'
 import type { Usuario } from '@/composables/useAuth'
+import { http } from '@/services/http'
 
 export type UserRole = 'cliente' | 'gerente'
 
