@@ -19,6 +19,7 @@ const carregando = ref(true)
 const erroCarregamento = ref('')
 const busca = ref('')
 
+// Controla as notificações exibidas na tela
 const snackbar = ref({ aberto: false, texto: '', cor: 'success' })
 
 function avisar(texto: string, cor: 'success' | 'error' | 'warning' = 'success') {
@@ -30,6 +31,7 @@ function avisar(texto: string, cor: 'success' | 'error' | 'warning' = 'success')
 // pegando o domínio + o id e aí sim fazendo uma chamada pro back
 // porém não sei se faz sentido considerando nossa lógica
 
+// Função para buscar os gerentes no Backend
 async function carregar() {
     erroCarregamento.value = ''
     try {
@@ -43,6 +45,7 @@ async function carregar() {
 
 onMounted(carregar)
 
+// Filtrar gerentes
 const gerentesFiltrados = computed(() => {
     const valor = busca.value.toLowerCase().trim()
     if (!valor) return gerentes.value
@@ -55,10 +58,12 @@ const gerentesFiltrados = computed(() => {
     )
 })
 
+// Quantidade de clientes
 function rotuloClientes(qtd: number) {
     return qtd === 1 ? '1 cliente' : `${qtd} clientes`
 }
 
+// Validação dos formularios
 const rules = {
     required: (v: string) => !!v || 'Campo obrigatório',
     // sem tamanho mínimo: há gerentes no seed com nome curto (ex.: Geniéve)
@@ -71,6 +76,7 @@ const rules = {
 // ---------- R13: inserção ----------
 const novoGerente = ref(false)
 const salvandoNovo = ref(false)
+// Cria uma referência ao formulário
 const formNovo = ref<{ validate: () => Promise<{ valid: boolean }>; reset: () => void } | null>(null)
 const novo = ref({ nome: '', cpf: '', telefone: '', email: '', senha: '', confirmarSenha: '' })
 
@@ -106,6 +112,7 @@ async function salvarNovo() {
         }
     } finally {
         salvandoNovo.value = false
+        // Atualiza a lista de gerentes consultando novamente o backend
         await carregar()
     }
 }
@@ -114,6 +121,7 @@ async function salvarNovo() {
 const editarGerente = ref(false)
 const salvandoEdicao = ref(false)
 const formEdicao = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
+// Armazena o gerente que está sendo editado
 const emEdicao = ref<GerenteDTO | null>(null)
 const edicao = ref({ nome: '', telefone: '' })
 
@@ -214,7 +222,8 @@ async function remover() {
                                 <div class="primeiro-bloco">
                                     <div class="gerente-cpf">
                                         <label class="field-label" for="cadastro-cpf">CPF</label>
-                                        // Tag v-mask-input de Vuetify, método mask para aplicar a formatação correta
+                                        
+                                        <!-- Tag v-mask-input de Vuetify, método mask para aplicar a formatação correta -->
                                         <v-mask-input id="cadastro-cpf" v-model="novo.cpf" class="field-input" variant="outlined" flat single-line density="comfortable" placeholder="000.000.000-00" type="text" :rules="[rules.required, rules.cpf]" mask="###.###.###-##"/>
                                     </div>
                                     <div class="gerente-telefone">
